@@ -245,9 +245,13 @@ export interface WorkflowState extends WorkflowCollections {
   createCreditNote: () => void;
   createDebitNote: () => void;
   createWorkOrder: () => void;
-  updateTaskStatus: () => void;
-  markAlertRead: () => void;
-  sendMessage: () => void;
+  updateTaskStatus: (taskId: string, status: string, extraData?: Record<string, any>) => void;
+  reassignTask?: (taskId: string, newAssignedTo: string) => void;
+  markAlertRead: (alertId: string) => void;
+  markAllAlertsRead?: () => void;
+  deleteAlert?: (alertId: string) => void;
+  sendMessage: (conversationId: string, text: string) => void;
+  addCalendarEvent?: (event: Record<string, any>) => void;
 }
 
 const WorkflowContext = createContext<WorkflowState | undefined>(undefined);
@@ -312,10 +316,71 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     creditNotes: [],
     debitNotes: [],
     workOrders: [],
-    tasks: [],
-    alerts: [],
-    messages: [],
-    calendarEvents: [],
+    tasks: [
+      { id: 't-101', taskCode: 'TSK-101', subject: 'Finalize Joinery Vendor Rates for Lobby', description: 'Review quotation matrix for Asian Paints and Century Ply for Nexus Tech Park lobby woodwork.', assignedTo: 'Amit Dev', assignedBy: 'Rajesh Kumar', relatedSite: 'Nexus Tech Park', relatedModule: 'Procurement', relatedRecord: 'RFQ-2026-089', relatedRoute: '/rfqs', priority: 'high', assignedDate: '2026-07-15', dueDate: '2026-07-22', status: 'overdue', readDate: '2026-07-16' },
+      { id: 't-102', taskCode: 'TSK-102', subject: 'Verify Material GRN PO-2026-089', description: 'Inspect 500 Pcs 18mm Plywood delivered at Grand Hyatt Goa site.', assignedTo: 'Amit Dev', assignedBy: 'Anita Rao', relatedSite: 'Grand Hyatt Goa', relatedModule: 'GRN', relatedRecord: 'GRN-2026-014', relatedRoute: '/grns', priority: 'medium', assignedDate: '2026-07-20', dueDate: '2026-07-28', status: 'in_progress', readDate: '2026-07-21' },
+      { id: 't-103', taskCode: 'TSK-103', subject: 'Approve Payment Request REQ-2026-042', description: 'Final signoff on ₹14.5 L vendor payment request.', assignedTo: 'Amit Dev', assignedBy: 'Sanjay Mehta', relatedSite: 'Imperial Heights', relatedModule: 'Finance', relatedRecord: 'PREQ-2026-042', relatedRoute: '/payment-requests', priority: 'urgent', assignedDate: '2026-07-22', dueDate: '2026-07-25', status: 'pending_acceptance', readDate: '2026-07-22' },
+      { id: 't-104', taskCode: 'TSK-104', subject: 'Submit Client Milestone Bill #3', description: 'Prepare and upload 3rd stage client billing certificate for ₹45.0 L.', assignedTo: 'Amit Dev', assignedBy: 'Priya Sharma', relatedSite: 'Nexus Tech Park', relatedModule: 'Billing', relatedRecord: 'BILL-2026-003', relatedRoute: '/sites', priority: 'high', assignedDate: '2026-07-10', dueDate: '2026-07-20', completedDate: '2026-07-24', status: 'completed', readDate: '2026-07-11' },
+      { id: 't-105', taskCode: 'TSK-105', subject: 'Site Electrical Audit Inspection', description: 'Perform safety inspection for high-voltage panel room.', assignedTo: 'Rohan Verma', assignedBy: 'Amit Dev', relatedSite: 'Oberoi Sky City', relatedModule: 'Sites', relatedRecord: 'SITE-2026-004', relatedRoute: '/sites', priority: 'medium', assignedDate: '2026-07-24', dueDate: '2026-07-29', status: 'upcoming', readDate: '2026-07-24' },
+      { id: 't-106', taskCode: 'TSK-106', subject: 'Architect Drawing Approval', description: 'Sign off on revised HVAC layout drawings.', assignedTo: 'Rohan Verma', assignedBy: 'Amit Dev', relatedSite: 'Imperial Heights', relatedModule: 'Projects', relatedRecord: 'ARCH-2026-002', relatedRoute: '/projects', priority: 'low', assignedDate: '2026-07-18', dueDate: '2026-07-23', status: 'overdue', readDate: '2026-07-19' }
+    ],
+    alerts: [
+      { id: 'alt-801', alertCode: 'ALT-801', title: 'Site SITE-2026-006 Pending Budget Approval', description: 'Project budget revision requested for structural reinforcement.', alertDate: '2026-07-24', dueDate: '2026-07-26', raisedBy: 'Rajesh Kumar', alertFor: 'Amit Dev', relatedSite: 'Nexus Tech Park', relatedRecord: 'SITE-2026-006', relatedRoute: '/sites', priority: 'high', readStatus: 'unread' },
+      { id: 'alt-802', alertCode: 'ALT-802', title: 'Material Delivery Exception PO-2026-089', description: 'Partial delivery of 200 Pcs gypsum board reported at site.', alertDate: '2026-07-24', dueDate: '2026-07-27', raisedBy: 'Site Logistics', alertFor: 'Amit Dev', relatedSite: 'Grand Hyatt Goa', relatedRecord: 'PO-2026-089', relatedRoute: '/purchase-orders', priority: 'medium', readStatus: 'unread' },
+      { id: 'alt-803', alertCode: 'ALT-803', title: 'Rate Finalization Approved', description: 'Chairman approved rate card for Schneider Electric fittings.', alertDate: '2026-07-23', dueDate: '2026-07-24', raisedBy: 'System Engine', alertFor: 'Amit Dev', relatedSite: 'Imperial Heights', relatedRecord: 'RFQ-2026-077', relatedRoute: '/rfqs', priority: 'low', readStatus: 'read' },
+      { id: 'alt-804', alertCode: 'ALT-804', title: 'Client Bill Payment Received', description: 'Direct wire credit of ₹25.0 L received from Hyatt Hotels.', alertDate: '2026-07-22', dueDate: '2026-07-23', raisedBy: 'Accounts Dept', alertFor: 'Amit Dev', relatedSite: 'Grand Hyatt Goa', relatedRecord: 'INV-2026-031', relatedRoute: '/invoices', priority: 'high', readStatus: 'read' },
+      { id: 'alt-805', alertCode: 'ALT-805', title: 'Vendor Payment Overdue Alert', description: 'Asian Paints invoice INV-VND-8902 overdue by 5 days.', alertDate: '2026-07-20', dueDate: '2026-07-22', raisedBy: 'System Engine', alertFor: 'Rohan Verma', relatedSite: 'Nexus Tech Park', relatedRecord: 'INV-VND-8902', relatedRoute: '/invoices', priority: 'urgent', readStatus: 'unread' }
+    ],
+    messages: [
+      {
+        id: 'conv-1',
+        userName: 'Rajesh Kumar',
+        userRole: 'Project Manager',
+        avatar: 'RK',
+        lastMessage: 'Please review the updated Joinery rates for Nexus Tech Park.',
+        timestamp: '10:45 AM',
+        unreadCount: 1,
+        messages: [
+          { id: 'm1', sender: 'Rajesh Kumar', text: 'Hi Amit, I have uploaded the joinery vendor rates.', time: '10:30 AM', isMine: false },
+          { id: 'm2', sender: 'Amit Dev', text: 'Thanks Rajesh. Will verify the comparison matrix shortly.', time: '10:38 AM', isMine: true },
+          { id: 'm3', sender: 'Rajesh Kumar', text: 'Please review the updated Joinery rates for Nexus Tech Park.', time: '10:45 AM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-2',
+        userName: 'Anita Rao',
+        userRole: 'Procurement Lead',
+        avatar: 'AR',
+        lastMessage: 'GRN inspection is completed for Grand Hyatt.',
+        timestamp: 'Yesterday',
+        unreadCount: 0,
+        messages: [
+          { id: 'm1', sender: 'Anita Rao', text: 'The plywood delivery arrived at Goa site.', time: '4:15 PM', isMine: false },
+          { id: 'm2', sender: 'Amit Dev', text: 'Great, please ensure physical tally before approving GRN.', time: '4:20 PM', isMine: true },
+          { id: 'm3', sender: 'Anita Rao', text: 'GRN inspection is completed for Grand Hyatt.', time: '5:00 PM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-3',
+        userName: 'Sanjay Mehta',
+        userRole: 'Finance Head',
+        avatar: 'SM',
+        lastMessage: 'Payment batch #42 sent to HDFC Bank for RTGS processing.',
+        timestamp: 'Jul 23',
+        unreadCount: 0,
+        messages: [
+          { id: 'm1', sender: 'Sanjay Mehta', text: 'Payment batch #42 sent to HDFC Bank for RTGS processing.', time: '3:30 PM', isMine: false }
+        ]
+      }
+    ],
+    calendarEvents: [
+      { id: 'ce-1', title: 'Joinery Rates Due (TSK-101)', date: '2026-07-22', type: 'task', userScope: 'my', relatedSite: 'Nexus Tech Park', relatedRecord: 'TSK-101', relatedRoute: '/overview/my-tasks', details: 'Task due date' },
+      { id: 'ce-2', title: 'Material GRN Inspection (TSK-102)', date: '2026-07-28', type: 'task', userScope: 'my', relatedSite: 'Grand Hyatt Goa', relatedRecord: 'TSK-102', relatedRoute: '/overview/my-tasks', details: 'GRN physical verification' },
+      { id: 'ce-3', title: 'Budget Signoff Alert (ALT-801)', date: '2026-07-26', type: 'alert', userScope: 'my', relatedSite: 'Nexus Tech Park', relatedRecord: 'ALT-801', relatedRoute: '/overview/notifications', details: 'High priority alert' },
+      { id: 'ce-4', title: 'Plywood Delivery Expected', date: '2026-07-26', type: 'delivery', userScope: 'my', relatedSite: 'Grand Hyatt Goa', relatedRecord: 'PO-2026-089', relatedRoute: '/orders', details: 'Century Ply shipment' },
+      { id: 'ce-5', title: 'Vendor Invoice Settlement Due', date: '2026-07-30', type: 'invoice', userScope: 'my', relatedSite: 'Imperial Heights', relatedRecord: 'INV-2026-044', relatedRoute: '/invoices', details: 'Asian Paints invoice due' },
+      { id: 'ce-6', title: 'Tender Submission Deadline', date: '2026-07-29', type: 'tender', userScope: 'other', relatedSite: 'Oberoi Sky City', relatedRecord: 'TND-2026-009', relatedRoute: '/projects', details: 'MEP contractor tender' }
+    ],
     brands: initCollection<BrandRecord>(ROUTES.BRANDS),
     locations: initCollection<LocationRecord>(ROUTES.LOCATIONS),
     pmcs: initCollection<PMCRecord>(ROUTES.PMC),
@@ -597,9 +662,84 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const createCreditNote = () => {};
   const createDebitNote = () => {};
   const createWorkOrder = () => {};
-  const updateTaskStatus = () => {};
-  const markAlertRead = () => {};
-  const sendMessage = () => {};
+  const updateTaskStatus = (taskId: string, newStatus: string, extraData?: Record<string, any>) => {
+    setCollections(prev => ({
+      ...prev,
+      tasks: prev.tasks.map((t: any) => {
+        if (t.id === taskId) {
+          const updated = { ...t, status: newStatus, ...extraData };
+          if (newStatus === 'completed' && !updated.completedDate) {
+            updated.completedDate = new Date().toISOString().split('T')[0];
+          }
+          return updated;
+        }
+        return t;
+      })
+    }));
+  };
+
+  const reassignTask = (taskId: string, newAssignedTo: string) => {
+    setCollections(prev => ({
+      ...prev,
+      tasks: prev.tasks.map((t: any) => t.id === taskId ? { ...t, assignedTo: newAssignedTo } : t)
+    }));
+  };
+
+  const markAlertRead = (alertId: string) => {
+    setCollections(prev => ({
+      ...prev,
+      alerts: prev.alerts.map((a: any) => a.id === alertId ? { ...a, readStatus: 'read' } : a)
+    }));
+  };
+
+  const markAllAlertsRead = () => {
+    setCollections(prev => ({
+      ...prev,
+      alerts: prev.alerts.map((a: any) => ({ ...a, readStatus: 'read' }))
+    }));
+  };
+
+  const deleteAlert = (alertId: string) => {
+    setCollections(prev => ({
+      ...prev,
+      alerts: prev.alerts.filter((a: any) => a.id !== alertId)
+    }));
+  };
+
+  const sendMessage = (conversationId: string, text: string) => {
+    if (!text || !text.trim()) return;
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    setCollections(prev => ({
+      ...prev,
+      messages: prev.messages.map((c: any) => {
+        if (c.id === conversationId) {
+          const newMsg = {
+            id: `msg-${Date.now()}`,
+            sender: 'Amit Dev',
+            text: text.trim(),
+            time: nowStr,
+            isMine: true
+          };
+          return {
+            ...c,
+            lastMessage: text.trim(),
+            timestamp: nowStr,
+            messages: [...(c.messages || []), newMsg]
+          };
+        }
+        return c;
+      })
+    }));
+  };
+
+  const addCalendarEvent = (evt: Record<string, any>) => {
+    const newEvt = { ...evt, id: evt.id || `ce-${Date.now()}` };
+    setCollections(prev => ({
+      ...prev,
+      calendarEvents: [newEvt as any, ...prev.calendarEvents]
+    }));
+  };
 
   return (
     <WorkflowContext.Provider
@@ -644,8 +784,12 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         createDebitNote,
         createWorkOrder,
         updateTaskStatus,
+        reassignTask,
         markAlertRead,
-        sendMessage
+        markAllAlertsRead,
+        deleteAlert,
+        sendMessage,
+        addCalendarEvent
       }}
     >
       {children}

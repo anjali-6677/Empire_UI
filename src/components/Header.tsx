@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronsUpDown, 
@@ -30,43 +31,88 @@ interface HeaderProps {
 }
 
 // ==========================================
-// 1. Project Switcher Subcomponent
+// 1. Project Switcher Subcomponent (Portal Stacked)
 // ==========================================
 
 export const ProjectSwitcher: React.FC = () => {
   const { sites, selectedSiteId, setSelectedSiteId } = useSites();
   const [isOpen, setIsOpen] = React.useState(false);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [position, setPosition] = React.useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 240 });
 
   const activeSite = sites.find((s) => s.id === selectedSiteId) || sites[0];
 
+  const updatePosition = React.useCallback(() => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const dropdownWidth = Math.max(rect.width, 280);
+      const left = Math.min(rect.left, window.innerWidth - dropdownWidth - 12);
+      setPosition({
+        top: rect.bottom + 6,
+        left: Math.max(12, left),
+        width: dropdownWidth
+      });
+    }
+  }, []);
+
+  const handleOpenToggle = () => {
+    if (!isOpen) {
+      updatePosition();
+    }
+    setIsOpen(!isOpen);
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
+
   React.useEffect(() => {
+    if (!isOpen) return;
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(target) &&
+        triggerRef.current && !triggerRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     }
+
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setIsOpen(false);
+      if (event.key === 'Escape') {
+        handleClose();
+      }
     }
+
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
+
     return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [isOpen, updatePosition]);
 
   return (
-    <div className="relative font-sans text-xs" ref={dropdownRef}>
+    <div className="relative font-sans text-xs shrink-0">
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2 py-1.5 border border-gray-200 rounded bg-white hover:bg-gray-55/60 transition-all select-none text-left w-[180px] sm:w-[240px] justify-between cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-500/50"
+        ref={triggerRef}
+        onClick={handleOpenToggle}
+        className="flex items-center gap-1.5 px-2 py-1.5 border border-gray-200 rounded bg-white hover:bg-gray-50 transition-all select-none text-left w-[180px] sm:w-[240px] max-w-[calc(100vw-60px)] justify-between cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-500/50"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <div className="truncate">
-          <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-bold">
+        <div className="truncate pr-1">
+          <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-bold truncate">
             Active Site
           </span>
           <span className="font-semibold text-gray-700 truncate block text-[11px] leading-tight">
@@ -76,28 +122,41 @@ export const ProjectSwitcher: React.FC = () => {
         <ChevronsUpDown className="h-3.5 w-3.5 text-gray-400 shrink-0" />
       </button>
 
-      {isOpen && (
-        <div className="absolute left-0 mt-1 w-[280px] bg-white border border-gray-150 rounded shadow-lg z-50 py-1.5 focus:outline-none max-h-[320px] overflow-y-auto">
-          <div className="px-2.5 pb-1 mb-1 border-b border-gray-100">
-            <span className="font-bold text-[9px] text-gray-400 uppercase tracking-widest block">Project Sites</span>
+      {isOpen && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            position: 'fixed',
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            width: `${position.width}px`,
+            maxHeight: 'min(420px, calc(100vh - 100px))',
+            zIndex: 999
+          }}
+          className="bg-white border border-gray-200 rounded-lg shadow-2xl py-1.5 focus:outline-none overflow-y-auto font-sans text-xs"
+        >
+          <div className="px-3 pb-1.5 mb-1 border-b border-gray-100 sticky top-0 bg-white z-10 flex items-center justify-between">
+            <span className="font-bold text-[9.5px] text-gray-400 uppercase tracking-widest block">Project Sites</span>
+            <span className="text-[9.5px] font-semibold text-brand-650 bg-brand-50 px-1.5 py-0.25 rounded">{sites.length} Sites</span>
           </div>
           {sites.map((site) => (
             <button
               key={site.id}
               onClick={() => {
                 setSelectedSiteId(site.id);
-                setIsOpen(false);
+                handleClose();
               }}
-              className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center justify-between text-[11px] font-medium text-gray-700 cursor-pointer"
+              className={`w-full text-left px-3 py-2 hover:bg-brand-50/50 flex items-center justify-between text-[11px] font-medium transition-colors cursor-pointer ${selectedSiteId === site.id ? 'bg-brand-50/40 text-brand-700 font-bold' : 'text-gray-700'}`}
             >
-              <div className="flex items-center gap-1.5 truncate">
-                <Briefcase className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                <span className="truncate">{site.code} - {site.name}</span>
+              <div className="flex items-center gap-2 truncate pr-2">
+                <Briefcase className={`h-3.5 w-3.5 shrink-0 ${selectedSiteId === site.id ? 'text-brand-600' : 'text-gray-400'}`} />
+                <span className="truncate" title={`${site.code} - ${site.name}`}>{site.code} - {site.name}</span>
               </div>
               {selectedSiteId === site.id && <Check className="h-3.5 w-3.5 text-brand-600 shrink-0" />}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

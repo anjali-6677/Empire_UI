@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { ModuleSchema } from '../config/moduleSchemas';
 import { StatusBadge } from './StatusBadge';
-import { safeFormatCurrency, safeFormatText } from '../utils/formatStatus';
+import { safeFormatCurrency, safeFormatText, formatStatusLabel } from '../utils/formatStatus';
 
 interface GenericReportPageProps {
   schema: ModuleSchema;
@@ -175,9 +175,36 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
     const csvLines = filteredRows.map((row: any) => {
       return cols
         .map((col) => {
-          const val = row[col.key];
+          let val = row[col.key];
           if (val === null || val === undefined) return '""';
-          if (typeof val === 'number') return String(val);
+          
+          // Format numeric values cleanly as raw numbers without ₹ or currency suffixes
+          if (typeof val === 'number') {
+            return String(val);
+          }
+
+          // Convert numeric strings or raw currency strings if col type is currency
+          if (col.type === 'currency' && typeof val === 'string') {
+            const numericOnly = val.replace(/[^0-9.-]/g, '');
+            if (numericOnly && !isNaN(Number(numericOnly))) {
+              return numericOnly;
+            }
+          }
+
+          // Format status enum codes to clean human-readable labels
+          if (col.type === 'badge' || typeof val === 'string') {
+            const rawStr = String(val).trim();
+            // Check if matches known status enum format
+            if (/^[a-z0-9_]+$/.test(rawStr) && (col.type === 'badge' || rawStr.includes('_') || ['pending', 'completed', 'active', 'inactive', 'draft', 'closed'].includes(rawStr))) {
+              val = formatStatusLabel(rawStr);
+            }
+          }
+
+          // Format ISO Dates strictly as YYYY-MM-DD
+          if (col.type === 'date' && typeof val === 'string' && val.includes('T')) {
+            val = val.split('T')[0];
+          }
+
           const str = String(val).replace(/"/g, '""');
           return `"${str}"`;
         })

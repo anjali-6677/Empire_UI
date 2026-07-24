@@ -11,6 +11,10 @@ import { AppSettings } from './pages/AppSettings';
 import { ModulePageRenderer } from './components/ModulePageRenderer';
 import { UtilitySplitForm } from './pages/UtilitySplitForm';
 import { SalarySplitForm } from './pages/SalarySplitForm';
+import { MyTasksPage } from './pages/MyTasksPage';
+import { NotificationsPage } from './pages/NotificationsPage';
+import { CalendarPage } from './pages/CalendarPage';
+import { MessagesPage } from './pages/MessagesPage';
 import { ROUTES } from './config/navigation';
 
 export const AppRouter: React.FC = () => {
@@ -24,9 +28,11 @@ export const AppRouter: React.FC = () => {
           <Route path="sites/new" element={<CreateSite />} />
           <Route path="projects/map" element={<ProjectMap />} />
 
-          {/* Overview Routes */}
-          <Route path={ROUTES.MY_TASKS.replace(/^\//, '')} element={<ModulePageRenderer />} />
-          <Route path={ROUTES.NOTIFICATIONS.replace(/^\//, '')} element={<ModulePageRenderer />} />
+          {/* Overview Communication Routes */}
+          <Route path={ROUTES.MY_TASKS.replace(/^\//, '')} element={<MyTasksPage />} />
+          <Route path={ROUTES.NOTIFICATIONS.replace(/^\//, '')} element={<NotificationsPage />} />
+          <Route path={ROUTES.CALENDAR.replace(/^\//, '')} element={<CalendarPage />} />
+          <Route path={ROUTES.MESSAGES.replace(/^\//, '')} element={<MessagesPage />} />
 
           {/* Projects Routes */}
           <Route path={ROUTES.PROJECTS.replace(/^\//, '')} element={<ModulePageRenderer />} />

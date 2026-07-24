@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { safeFormatCurrency } from '../utils/formatStatus';
 import { SiteSchema } from '../types';
+import { useWorkflow } from '../context/WorkflowContext';
 
 interface SectionWrapperProps {
   id: string;
@@ -407,31 +408,17 @@ export const ApprovalPendingSection: React.FC = () => {
 // Section 7: Notifications, Tasks and Activity
 // ==========================================
 export const NotificationsTasksActivitySection: React.FC = () => {
+  const navigate = useNavigate();
+  const { alerts, tasks, calendarEvents } = useWorkflow();
   const [unreadTab, setUnreadTab] = React.useState<'all' | 'unread'>('all');
-  const [notifications, setNotifications] = React.useState([
-    { id: '1', title: 'Site SITE-2026-006 pending approval', time: '2026-07-24 10:30', read: false },
-    { id: '2', title: 'Material GRN pending for Order PO-892', time: '2026-07-24 09:15', read: false },
-    { id: '3', title: 'Rate Finalization approved by Chairman', time: '2026-07-24 07:00', read: true },
-    { id: '4', title: 'Client Bill payment received (₹15.0 L)', time: '2026-07-23 16:45', read: true }
-  ]);
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const clearAllNotifications = () => {
-    setNotifications([]);
-  };
-
-  const filteredNotifications = notifications.filter((n) => unreadTab === 'all' || !n.read);
-
   const [taskTab, setTaskTab] = React.useState<'overdue' | 'upcoming'>('overdue');
 
-  const myTasks = [
-    { id: 't1', title: 'Finalize Joinery Vendor Rates', project: 'Nexus Tech Park', due: '2026-07-22', type: 'overdue', days: '2 days overdue', from: 'Rajesh Kumar' },
-    { id: 't2', title: 'Submit Client Bill #3', project: 'Grand Hyatt Goa', due: '2026-07-20', type: 'overdue', days: '4 days overdue', from: 'Anita Rao' },
-    { id: 't3', title: 'Approve Site Indent #104', project: 'Imperial Heights', due: '2026-07-26', type: 'upcoming', days: 'In 2 days', from: 'Sanjay Mehta' }
-  ];
+  const filteredNotifications = (alerts || []).filter((n: any) => unreadTab === 'all' || n.readStatus === 'unread');
+  const filteredTasks = (tasks || []).filter((t: any) => {
+    const today = new Date().toISOString().split('T')[0];
+    if (taskTab === 'overdue') return t.dueDate < today && t.status !== 'completed';
+    return t.dueDate >= today && t.status !== 'completed';
+  });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 font-sans">
@@ -440,30 +427,27 @@ export const NotificationsTasksActivitySection: React.FC = () => {
         <div className="space-y-2">
           <div className="flex items-center justify-between border-b pb-2">
             <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Bell className="h-4 w-4 text-brand-600" /> Notifications
+              <Bell className="h-4 w-4 text-brand-600" /> System Notifications
             </h4>
             <div className="flex items-center gap-1 text-[9.5px]">
               <button
                 onClick={() => setUnreadTab('all')}
                 className={`px-2 py-0.5 rounded font-bold cursor-pointer ${unreadTab === 'all' ? 'bg-brand-50 text-brand-700' : 'text-gray-400'}`}
               >
-                All
+                All ({alerts.length})
               </button>
               <button
                 onClick={() => setUnreadTab('unread')}
                 className={`px-2 py-0.5 rounded font-bold cursor-pointer ${unreadTab === 'unread' ? 'bg-brand-50 text-brand-700' : 'text-gray-400'}`}
               >
-                Unread ({notifications.filter((n) => !n.read).length})
+                Unread ({alerts.filter((n: any) => n.readStatus === 'unread').length})
               </button>
             </div>
           </div>
 
           <div className="flex items-center justify-between text-[10px]">
-            <button onClick={markAllRead} className="text-brand-650 hover:underline font-bold cursor-pointer">
-              Mark All As Read
-            </button>
-            <button onClick={clearAllNotifications} className="text-gray-400 hover:text-rose-600 font-medium cursor-pointer">
-              Clear All
+            <button onClick={() => navigate('/overview/notifications')} className="text-brand-650 hover:underline font-bold cursor-pointer">
+              View All Notifications &rarr;
             </button>
           </div>
 
@@ -471,10 +455,14 @@ export const NotificationsTasksActivitySection: React.FC = () => {
             {filteredNotifications.length === 0 ? (
               <p className="text-[11px] text-gray-400 text-center py-6 italic">No notifications found</p>
             ) : (
-              filteredNotifications.map((n) => (
-                <div key={n.id} className={`p-2 rounded border text-xs flex items-start justify-between gap-2 ${n.read ? 'bg-gray-50/50 border-gray-100' : 'bg-brand-50/30 border-brand-100 font-semibold'}`}>
-                  <span>{n.title}</span>
-                  <span className="text-[9px] text-gray-400 whitespace-nowrap shrink-0">{n.time}</span>
+              filteredNotifications.slice(0, 4).map((n: any) => (
+                <div 
+                  key={n.id} 
+                  onClick={() => navigate('/overview/notifications')}
+                  className={`p-2 rounded border text-xs flex items-start justify-between gap-2 cursor-pointer transition-colors hover:bg-gray-50 ${n.readStatus === 'unread' ? 'bg-brand-50/30 border-brand-100 font-semibold' : 'bg-gray-50/50 border-gray-100'}`}
+                >
+                  <span className="truncate">{n.title}</span>
+                  <span className="text-[9px] text-gray-400 whitespace-nowrap shrink-0">{n.alertDate}</span>
                 </div>
               ))
             )}
@@ -482,63 +470,90 @@ export const NotificationsTasksActivitySection: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. My Tasks & Alerts */}
-      <div className="border border-gray-150 rounded bg-white p-3.5 space-y-3">
-        <div className="flex items-center justify-between border-b pb-2">
-          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
-            <CheckSquare className="h-4 w-4 text-blue-600" /> My Tasks & Alerts
-          </h4>
-          <div className="flex items-center gap-1 text-[9.5px]">
-            <button
-              onClick={() => setTaskTab('overdue')}
-              className={`px-2 py-0.5 rounded font-bold cursor-pointer ${taskTab === 'overdue' ? 'bg-rose-50 text-rose-700' : 'text-gray-400'}`}
-            >
-              Overdue
-            </button>
-            <button
-              onClick={() => setTaskTab('upcoming')}
-              className={`px-2 py-0.5 rounded font-bold cursor-pointer ${taskTab === 'upcoming' ? 'bg-blue-50 text-blue-700' : 'text-gray-400'}`}
-            >
-              Upcoming
+      {/* 2. My Tasks & Action Items */}
+      <div className="border border-gray-150 rounded bg-white p-3.5 space-y-3 flex flex-col justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckSquare className="h-4 w-4 text-blue-600" /> My Tasks & Action Items
+            </h4>
+            <div className="flex items-center gap-1 text-[9.5px]">
+              <button
+                onClick={() => setTaskTab('overdue')}
+                className={`px-2 py-0.5 rounded font-bold cursor-pointer ${taskTab === 'overdue' ? 'bg-rose-50 text-rose-700' : 'text-gray-400'}`}
+              >
+                Overdue
+              </button>
+              <button
+                onClick={() => setTaskTab('upcoming')}
+                className={`px-2 py-0.5 rounded font-bold cursor-pointer ${taskTab === 'upcoming' ? 'bg-blue-50 text-blue-700' : 'text-gray-400'}`}
+              >
+                Upcoming
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px]">
+            <button onClick={() => navigate('/overview/my-tasks')} className="text-brand-650 hover:underline font-bold cursor-pointer">
+              Manage All Tasks ({tasks.length}) &rarr;
             </button>
           </div>
-        </div>
 
-        <div className="space-y-2 max-h-[220px] overflow-y-auto">
-          {myTasks.filter((t) => taskTab === 'overdue' ? t.type === 'overdue' : t.type === 'upcoming').map((task) => (
-            <div key={task.id} className="p-2.5 border border-gray-150 rounded bg-gray-50/40 text-xs space-y-1">
-              <div className="flex items-center justify-between font-bold text-gray-800">
-                <span>{task.title}</span>
-                <span className={`text-[9px] px-1.5 py-0.25 rounded ${task.type === 'overdue' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'}`}>
-                  {task.days}
-                </span>
-              </div>
-              <div className="flex justify-between text-[10px] text-gray-500">
-                <span>Site: {task.project}</span>
-                <span>From: {task.from}</span>
-              </div>
-            </div>
-          ))}
+          <div className="space-y-2 max-h-[220px] overflow-y-auto">
+            {filteredTasks.length === 0 ? (
+              <p className="text-[11px] text-gray-400 text-center py-6 italic">No tasks found</p>
+            ) : (
+              filteredTasks.slice(0, 3).map((task: any) => (
+                <div 
+                  key={task.id} 
+                  onClick={() => navigate('/overview/my-tasks')}
+                  className="p-2.5 border border-gray-150 rounded bg-gray-50/40 text-xs space-y-1 cursor-pointer hover:bg-gray-100/50 transition-colors"
+                >
+                  <div className="flex items-center justify-between font-bold text-gray-800">
+                    <span className="truncate">{task.subject}</span>
+                    <span className={`text-[9px] px-1.5 py-0.25 rounded font-mono ${taskTab === 'overdue' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'}`}>
+                      {task.dueDate}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-500">
+                    <span>Site: {task.relatedSite}</span>
+                    <span>From: {task.assignedBy}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
-      {/* 3. Operational Activity Feed */}
-      <div className="border border-gray-150 rounded bg-white p-3.5 space-y-3">
-        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
-          <Layers className="h-4 w-4 text-emerald-600" /> Recent Activity History
-        </h4>
-        <div className="space-y-2 text-xs">
-          <div className="p-2 border-b border-gray-100 space-y-0.5">
-            <span className="font-bold text-gray-800 block">SITE-2026-003 Submitted for Approval</span>
-            <span className="text-[10px] text-gray-400 block">By Rajesh Kumar • 2026-07-24 11:00</span>
-          </div>
-          <div className="p-2 border-b border-gray-100 space-y-0.5">
-            <span className="font-bold text-gray-800 block">PO-2026-089 Issued to Asian Paints</span>
-            <span className="text-[10px] text-gray-400 block">By Procurement Desk • 2026-07-24 09:30</span>
-          </div>
-          <div className="p-2 border-b border-gray-100 space-y-0.5">
-            <span className="font-bold text-gray-800 block">Client Payment ₹25.0 L Received</span>
-            <span className="text-[10px] text-gray-400 block">By Accounts Team • 2026-07-23 15:00</span>
+      {/* 3. Operational Calendar & Messages Direct Quicklinks */}
+      <div className="border border-gray-150 rounded bg-white p-3.5 space-y-3 flex flex-col justify-between">
+        <div className="space-y-2">
+          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
+            <Layers className="h-4 w-4 text-emerald-600" /> Operational Feed & Messages
+          </h4>
+          <div className="space-y-2 text-xs">
+            <button
+              onClick={() => navigate('/overview/calendar')}
+              className="w-full p-2.5 border border-gray-200 rounded bg-gray-50/50 text-left hover:bg-brand-50/30 hover:border-brand-200 transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-gray-800 group-hover:text-brand-700">Project & Delivery Calendar</span>
+                <span className="text-[9.5px] font-extrabold text-brand-650 bg-white px-2 py-0.5 rounded border">{calendarEvents.length} Events</span>
+              </div>
+              <span className="text-[10px] text-gray-400 block mt-0.5">Track GRN arrivals, payment due dates & tender milestones</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/overview/messages')}
+              className="w-full p-2.5 border border-gray-200 rounded bg-gray-50/50 text-left hover:bg-brand-50/30 hover:border-brand-200 transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-gray-800 group-hover:text-brand-700">Internal Team Messages</span>
+                <span className="text-[9.5px] font-extrabold text-emerald-700 bg-white px-2 py-0.5 rounded border">Live Chat</span>
+              </div>
+              <span className="text-[10px] text-gray-400 block mt-0.5">Direct chat with Project Managers & Procurement team</span>
+            </button>
           </div>
         </div>
       </div>
