@@ -25,6 +25,8 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
   
   const [isRejecting, setIsRejecting] = React.useState(false);
   const [rejectReason, setRejectReason] = React.useState('');
+  
+  const [activeTab, setActiveTab] = React.useState(schema.tabs?.[0]?.id || 'overview');
 
   const [isRecordingQuotations, setIsRecordingQuotations] = React.useState(false);
   const [qVendor, setQVendor] = React.useState('');
@@ -77,19 +79,19 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
     return (
       <div className="flex flex-col items-center justify-center p-20 gap-3 font-sans h-full">
         <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">Record Not Found</h2>
-        <p className="text-sm font-medium text-gray-500 text-center max-w-sm">The requested record <span className="font-mono text-gray-900">{id}</span> could not be located in this module's active data store.</p>
+        <p className="text-sm font-medium text-gray-500 text-center max-w-sm">The requested record does not exist in the current frontend session.</p>
         <button 
           onClick={() => navigate(parentListPath)} 
           className="mt-4 px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 bg-white hover:bg-gray-50 cursor-pointer shadow-sm"
         >
-          Return to Directory
+          [Back to List]
         </button>
       </div>
     );
   }
 
-  const recordCode = activeRecord.code || activeRecord.referenceNo || activeRecord.indentNo || activeRecord.poNo || activeRecord.invoiceNo || activeRecord.vendorCode || activeRecord.clientCode || activeRecord.empCode || id?.toUpperCase() || 'REC-GEN';
-  const recordTitle = activeRecord.name || activeRecord.clientName || activeRecord.vendor || activeRecord.title || activeRecord.subject || `${schema.title} Record`;
+  const recordCode = String(activeRecord.code || activeRecord.referenceNo || activeRecord.indentNo || activeRecord.poNo || activeRecord.invoiceNo || activeRecord.vendorCode || activeRecord.clientCode || activeRecord.empCode || id?.toUpperCase() || 'REC-GEN');
+  const recordTitle = String(activeRecord.name || activeRecord.clientName || activeRecord.vendor || activeRecord.title || activeRecord.subject || `${schema.title} Record`);
   const recordStatus = activeRecord.status || 'draft';
 
   return (
@@ -246,25 +248,48 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
         </div>
       )}
 
+      {/* Parity Tabs Header */}
+      {schema.tabs && schema.tabs.length > 0 && (
+        <div className="flex border-b border-gray-200 mt-2 mb-4 overflow-x-auto">
+          {schema.tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 font-bold text-xs whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-brand-600 text-brand-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Dynamic Detail Attributes */}
-      <div className="bg-white border border-gray-150 rounded-lg p-5 shadow-sm space-y-5">
+      {(!schema.tabs || activeTab === schema.tabs?.[0]?.id || activeTab === 'overview') ? (
+        <div className="bg-white border border-gray-150 rounded-lg p-5 shadow-sm space-y-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
           {Object.entries(activeRecord)
               .filter(([k]) => !['id', 'items', 'status'].includes(k))
-              .map(([key, value]) => (
+              .map(([key, value]) => {
+                const dispValue = typeof value === 'number' && (key.toLowerCase().includes('amount') || key.toLowerCase().includes('spend') || key.toLowerCase().includes('val') || key.toLowerCase().includes('budget') || key.toLowerCase().includes('lowest'))
+                  ? safeFormatCurrency(value as number)
+                  : String(value as string | number | boolean);
+                return (
                 <div key={key}>
                   <span className="text-gray-400 block text-[9.5px] uppercase font-bold">{key.replace(/([A-Z])/g, ' $1')}:</span>
                   <span className={`font-bold text-gray-900 ${key === 'rejectionComment' ? 'text-rose-600' : ''}`}>
-                    {typeof value === 'number' && (key.toLowerCase().includes('amount') || key.toLowerCase().includes('spend') || key.toLowerCase().includes('val') || key.toLowerCase().includes('budget') || key.toLowerCase().includes('lowest'))
-                      ? safeFormatCurrency(value)
-                      : String(value)}
+                    {dispValue}
                   </span>
                 </div>
-              ))}
+                );
+              })}
         </div>
 
         {/* Item Table if present */}
-        {activeRecord?.items && (
+        {Array.isArray(activeRecord?.items) && (
           <div className="border-t pt-4 space-y-2">
             <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Associated Line Items</h4>
             <table className="w-full text-left text-xs border border-gray-150 rounded divide-y divide-gray-100">
@@ -278,7 +303,7 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-                {activeRecord.items.map((it: any, idx: number) => (
+                {(activeRecord.items as any[]).map((it: any, idx: number) => (
                   <tr key={idx}>
                     <td className="p-2.5 font-bold text-gray-800">{it.item}</td>
                     <td className="p-2.5 text-center">{it.unit}</td>
@@ -292,6 +317,12 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
           </div>
         )}
       </div>
+      ) : (
+        <div className="bg-white border border-gray-150 rounded-lg p-10 flex flex-col items-center justify-center text-center shadow-sm">
+           <div className="text-gray-400 font-bold text-sm mb-2 uppercase tracking-wide">{schema.tabs?.find(t => t.id === activeTab)?.label} Integration</div>
+           <p className="text-gray-500 font-medium text-xs">This view pulls aggregated contextual records for the active site.</p>
+        </div>
+      )}
     </div>
   );
 };

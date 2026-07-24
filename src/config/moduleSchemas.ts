@@ -58,6 +58,7 @@ export interface ModuleSchema {
   summaryCards?: SummaryCardSchema[];
   tabs?: TabSchema[];
   columns?: ColumnSchema[];
+  tabColumns?: Record<string, ColumnSchema[]>;
   sections?: SectionSchema[];
   createFields?: FieldSchema[];
   mockRows?: Record<string, any>[];
@@ -152,10 +153,18 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
   [ROUTES.SITE_DETAILS]: {
     id: 'projects-site-details',
     route: ROUTES.SITE_DETAILS,
-    pageType: 'custom',
+    pageType: 'details',
     title: 'Site Identity & Master Details Overview',
     description: 'Detailed commercial, architectural, PMC, management and compliance record for selected site.',
-    breadcrumbs: ['Projects', 'Site Details']
+    breadcrumbs: ['Projects', 'Site Details'],
+    tabs: [
+      { id: 'overview', label: 'Overview' },
+      { id: 'schedule', label: 'Project Schedule' },
+      { id: 'budgets', label: 'Approved Budgets' },
+      { id: 'indents', label: 'Material Indents' },
+      { id: 'work_orders', label: 'Work Orders' },
+      { id: 'invoices', label: 'Billing Invoices' }
+    ]
   },
   [ROUTES.PROJECT_TEAMS]: {
     id: 'projects-teams',
@@ -365,28 +374,38 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     ]
   },
   [ROUTES.WORK_ORDERS]: {
-    id: 'procurement-work-orders',
+    id: 'mod-work-orders',
+    title: 'Work Orders',
+    description: 'Contractor instructions defined by specific service milestones instead of line items.',
     route: ROUTES.WORK_ORDERS,
     pageType: 'list',
-    title: 'Work Orders Registry (Labour Contracts)',
-    description: 'Labour subcontracts, scope of work measurements, retention rates and site signoffs.',
     breadcrumbs: ['Procurement', 'Work Orders'],
-    primaryAction: { label: 'Create Work Order', route: '/procurement/work-orders/new' },
+    primaryAction: { label: 'Create WO', route: `${ROUTES.WORK_ORDERS}/new` },
     columns: [
-      { key: 'woNo', label: 'Work Order #', type: 'mono' },
-      { key: 'vendor', label: 'Labour Subcontractor', type: 'text' },
-      { key: 'site', label: 'Project Site', type: 'text' },
-      { key: 'scope', label: 'Scope of Work', type: 'text' },
-      { key: 'startDate', label: 'Start Date', type: 'date' },
-      { key: 'completionDate', label: 'Target Completion', type: 'date' },
-      { key: 'amount', label: 'Contract Value', type: 'currency', align: 'right' },
-      { key: 'progress', label: 'Progress (%)', type: 'text', align: 'center' },
+      { key: 'woNumber', label: 'WO Ref', type: 'mono' },
+      { key: 'contractor', label: 'Contractor' },
+      { key: 'site', label: 'Site Profile' },
+      { key: 'totalValue', label: 'Total Value', type: 'currency', align: 'right' },
       { key: 'status', label: 'Status', type: 'badge' }
     ],
-    mockRows: [
-      { id: 'wo-1', woNo: 'WO-2026-012', vendor: 'Precision Joinery Contractors', site: 'Nexus Tech Park', scope: 'False Ceiling & Paneling', startDate: '2026-06-01', completionDate: '2026-09-15', amount: 3200000, progress: '65%', status: 'in_progress' },
-      { id: 'wo-2', woNo: 'WO-2026-015', vendor: 'Royal Civil Solutions', site: 'Grand Hyatt Goa', scope: 'Flooring & Tiling Work', startDate: '2026-05-15', completionDate: '2026-08-30', amount: 1800000, progress: '85%', status: 'in_progress' }
-    ]
+    sections: [
+      {
+        id: 'wo-details',
+        title: 'Work Order Details',
+        fields: [
+          { name: 'woNumber', label: 'WO Number', type: 'text', required: true },
+          { name: 'contractor', label: 'Contractor (Vendor)', type: 'select', required: true, options: [{value:'Ace Builders', label:'Ace Builders'}, {value:'Modern Interiors', label:'Modern Interiors'}] },
+          { name: 'site', label: 'Project Site', type: 'select', required: true, options: [{value:'Grand Hyatt Goa', label:'Grand Hyatt Goa'}] }
+        ]
+      },
+      {
+        id: 'wo-milestones',
+        title: 'Service Milestones / Payment Stages',
+        description: 'Provide each payment milestone in the Item Description, use Lumpsum for UOM, 1 for quantity and Milestone Value for Rate.',
+        hasItemTable: true
+      }
+    ],
+    mockRows: []
   },
   [ROUTES.ORDERS]: {
     id: 'procurement-orders',
@@ -583,6 +602,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     title: 'Site Utility Bills & Overhead Allocations',
     description: 'Electricity, water, diesel generator, site security, and internet utility bills.',
     breadcrumbs: ['Finance', 'Utility Bills'],
+    primaryAction: { label: 'Log Bill', route: `${ROUTES.UTILITY_BILLS}/new` },
     columns: [
       { key: 'billNo', label: 'Bill Reference', type: 'mono' },
       { key: 'utilityType', label: 'Utility Category', type: 'text' },
@@ -592,10 +612,26 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       { key: 'approvalStatus', label: 'Approval Status', type: 'badge' },
       { key: 'paymentStatus', label: 'Payment Status', type: 'badge' }
     ],
+    sections: [
+      {
+        id: 'bill-details',
+        title: 'Utility Bill Information',
+        fields: [
+          { name: 'billNo', label: 'Bill Reference No', type: 'text', required: true },
+          { name: 'utilityType', label: 'Utility Category', type: 'select', required: true, options: [{value:'Power', label:'Site Power (BESCOM)'}, {value:'Fuel', label:'DG Fuel'}] },
+          { name: 'billDate', label: 'Billing Period', type: 'date', required: true },
+          { name: 'amount', label: 'Total Billed Amount', type: 'number', required: true }
+        ]
+      },
+      {
+        id: 'allocations',
+        title: 'Cost Center Splitting (Use Items to list sites)',
+        hasItemTable: true
+      }
+    ],
     mockRows: [
-      { id: 'ub-1', billNo: 'UTIL-2026-04', utilityType: 'Temporary Site Power (BESCOM)', site: 'Nexus Tech Park', billDate: '2026-07-05', amount: 85000, approvalStatus: 'approved', paymentStatus: 'paid' },
-      { id: 'ub-2', billNo: 'UTIL-2026-05', utilityType: 'Diesel Generator Fuel Supply', site: 'Grand Hyatt Goa', billDate: '2026-07-10', amount: 145000, approvalStatus: 'approved', paymentStatus: 'paid' },
-      { id: 'ub-3', billNo: 'UTIL-2026-06', utilityType: 'Site Security & Housekeeping', site: 'Imperial Heights', billDate: '2026-07-18', amount: 92000, approvalStatus: 'pending_approval', paymentStatus: 'unpaid' }
+      { id: 'ub-1', billNo: 'UTIL-2026-04', utilityType: 'Temporary Site Power', site: 'Multiple Sites', billDate: '2026-07-05', amount: 85000, approvalStatus: 'approved', paymentStatus: 'paid' },
+      { id: 'ub-2', billNo: 'UTIL-2026-05', utilityType: 'Diesel Generator Fuel Supply', site: 'Grand Hyatt Goa', billDate: '2026-07-10', amount: 145000, approvalStatus: 'approved', paymentStatus: 'paid' }
     ]
   },
   [ROUTES.SALARY]: {
@@ -605,6 +641,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     title: 'Staff Salary Disbursements & Site Cost Allocations',
     description: 'Monthly payroll disbursements, site engineer salary allocations, and staff allowances.',
     breadcrumbs: ['Finance', 'Salary'],
+    primaryAction: { label: 'Log Payroll', route: `${ROUTES.SALARY}/new` },
     columns: [
       { key: 'payrollNo', label: 'Payroll Period', type: 'mono' },
       { key: 'department', label: 'Department / Unit', type: 'text' },
@@ -613,9 +650,26 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       { key: 'totalGross', label: 'Gross Payroll Value', type: 'currency', align: 'right' },
       { key: 'status', label: 'Payroll Status', type: 'badge' }
     ],
+    sections: [
+      {
+        id: 'payroll-details',
+        title: 'Payroll Disbursement Record',
+        fields: [
+          { name: 'payrollNo', label: 'Payroll Identifier', type: 'text', required: true },
+          { name: 'department', label: 'Business Unit', type: 'select', required: true, options: [{value:'Engineers', label:'Site Engineers'}, {value:'Corporate', label:'Corporate Staff'}] },
+          { name: 'employeeCount', label: 'Number of Employees', type: 'number' },
+          { name: 'disbursementDate', label: 'Disbursement Date', type: 'date', required: true },
+          { name: 'totalGross', label: 'Gross Total Payroll', type: 'number', required: true }
+        ]
+      },
+      {
+        id: 'salary-splitting',
+        title: 'Payroll Splitting (Enumerate site allocations as Items)',
+        hasItemTable: true
+      }
+    ],
     mockRows: [
-      { id: 'sal-1', payrollNo: 'PAYROLL-2026-06', department: 'Project Execution & Site Engineers', employeeCount: '24 Staff', disbursementDate: '2026-07-01', totalGross: 3850000, status: 'paid' },
-      { id: 'sal-2', payrollNo: 'PAYROLL-2026-07', department: 'Project Execution & Site Engineers', employeeCount: '26 Staff', disbursementDate: '2026-07-24', totalGross: 4100000, status: 'processing' }
+      { id: 'sal-1', payrollNo: 'PAYROLL-2026-06', department: 'Site Engineers', employeeCount: '24 Staff', disbursementDate: '2026-07-01', totalGross: 3850000, status: 'paid' }
     ]
   },
 
@@ -1228,5 +1282,179 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
         ]
       }
     ]
-  }
+  },
+  [ROUTES.ON_ACCOUNT_DASHBOARD]: {
+    id: 'mod-on-account-dashboard',
+    title: 'On-Account Dashboard',
+    description: 'Centralized overview of vendor and site on-account balances, and recent transfers.',
+    route: ROUTES.ON_ACCOUNT_DASHBOARD,
+    pageType: 'list',
+    breadcrumbs: ['Finance', 'On-Account Dashboard'],
+    summaryCards: [
+      { id: 'sc1', label: 'Total Vendor Balance', value: 1205000, isCurrency: true, color: 'text-brand-700' },
+      { id: 'sc2', label: 'Total Site Balance', value: 3450000, isCurrency: true, color: 'text-brand-700' },
+      { id: 'sc3', label: 'Transfers This Month', value: 18, color: 'text-gray-900' }
+    ],
+    tabs: [
+      { id: 'vendors', label: 'Vendor Balances' },
+      { id: 'sites', label: 'Site Balances' },
+      { id: 'transactions', label: 'Recent Transactions' }
+    ],
+    tabColumns: {
+      vendors: [
+        { key: 'referenceNo', label: 'Ref No', type: 'mono' },
+        { key: 'vendor', label: 'Vendor' },
+        { key: 'opening', label: 'Total Received', type: 'currency' },
+        { key: 'allocated', label: 'Allocated', type: 'currency' },
+        { key: 'balance', label: 'Available', type: 'currency' },
+        { key: 'status', label: 'Status', type: 'badge' }
+      ],
+      sites: [
+        { key: 'referenceNo', label: 'Ref No', type: 'mono' },
+        { key: 'site', label: 'Site' },
+        { key: 'opening', label: 'Opening', type: 'currency' },
+        { key: 'transferredIn', label: 'Transferred In', type: 'currency' },
+        { key: 'transferredOut', label: 'Transferred Out', type: 'currency' },
+        { key: 'balance', label: 'Available', type: 'currency' },
+        { key: 'status', label: 'Status', type: 'badge' }
+      ],
+      transactions: [
+        { key: 'referenceNo', label: 'Transaction ID', type: 'mono' },
+        { key: 'date', label: 'Date', type: 'date' },
+        { key: 'type', label: 'Type' },
+        { key: 'source', label: 'Source' },
+        { key: 'destination', label: 'Destination' },
+        { key: 'amount', label: 'Amount', type: 'currency', align: 'right' },
+        { key: 'status', label: 'Status', type: 'badge' }
+      ]
+    },
+    primaryAction: { label: 'New Transfer', route: '' },
+    createFields: [
+      { name: 'type', label: 'Transfer Type', type: 'select', required: true, options: [{ value: 'Payment', label: 'Payment' }, { value: 'Site Transfer', label: 'Site Transfer' }] },
+      { name: 'source', label: 'Source', type: 'text', required: true },
+      { name: 'destination', label: 'Destination', type: 'text', required: true },
+      { name: 'amount', label: 'Amount', type: 'number', required: true }
+    ],
+    mockRows: [
+      { id: 'v1', tab: 'vendors', referenceNo: 'OAP-V1001', vendor: 'Global Trade Co', opening: 500000, allocated: 200000, balance: 300000, status: 'active' },
+      { id: 'v2', tab: 'vendors', referenceNo: 'OAP-V1002', vendor: 'Apex Supplies', opening: 100000, allocated: 100000, balance: 0, status: 'completed' },
+      { id: 's1', tab: 'sites', referenceNo: 'OAP-S1001', site: 'Downtown Tower', opening: 2000000, transferredIn: 500000, transferredOut: 100000, balance: 2400000, status: 'healthy' },
+      { id: 's2', tab: 'sites', referenceNo: 'OAP-S1002', site: 'Riverside Complex', opening: 1000000, transferredIn: 0, transferredOut: 200000, balance: 800000, status: 'active' },
+      { id: 't1', tab: 'transactions', referenceNo: 'TX-4921', date: '2024-03-24', type: 'Site Transfer', source: 'Downtown Tower', destination: 'Riverside Complex', amount: 100000, status: 'processed' },
+      { id: 't2', tab: 'transactions', referenceNo: 'TX-4922', date: '2024-03-25', type: 'Payment', source: 'Bank', destination: 'Global Trade Co', amount: 500000, status: 'processed' }
+    ]
+  },
+  [ROUTES.BUDGET_TRANSFERS]: {
+    id: 'mod-budget-transfers',
+    title: 'Budget Transfers',
+    description: 'Relocate approved budgets between sites or categories.',
+    route: ROUTES.BUDGET_TRANSFERS,
+    pageType: 'list',
+    breadcrumbs: ['Finance', 'Budget Transfers'],
+    primaryAction: { label: 'New Transfer', route: '' },
+    createFields: [
+      { name: 'sourceSite', label: 'Source Site', type: 'select', required: true, options: [{ value: 'S-001', label: 'Riverside Complex' }, { value: 'S-002', label: 'Downtown Tower' }] },
+      { name: 'destinationSite', label: 'Destination Site', type: 'select', required: true, options: [{ value: 'S-001', label: 'Riverside Complex' }, { value: 'S-002', label: 'Downtown Tower' }] },
+      { name: 'amount', label: 'Transfer Amount', type: 'number', required: true },
+      { name: 'reason', label: 'Justification', type: 'textarea', required: true }
+    ],
+    columns: [
+      { key: 'referenceNo', label: 'Transfer ID', type: 'mono' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'sourceSite', label: 'From Site' },
+      { key: 'destinationSite', label: 'To Site' },
+      { key: 'amount', label: 'Amount', type: 'currency', align: 'right' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ],
+    mockRows: []
+  },
+
+  [ROUTES.ACCOUNTING_INVOICES]: {
+    id: 'mod-acc-invoices',
+    title: 'Accounting Invoices',
+    description: 'Non-inventory financial invoices logged directly against the ledger.',
+    route: ROUTES.ACCOUNTING_INVOICES,
+    pageType: 'list',
+    breadcrumbs: ['Finance', 'Accounting Invoices'],
+    primaryAction: { label: 'New Invoice', route: `${ROUTES.ACCOUNTING_INVOICES}/new` },
+    columns: [
+      { key: 'invoiceNo', label: 'Invoice No', type: 'mono' },
+      { key: 'vendor', label: 'Vendor / Contact' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'amount', label: 'Base Amount', type: 'currency', align: 'right' },
+      { key: 'tax', label: 'Taxes', type: 'currency', align: 'right' },
+      { key: 'total', label: 'Total Value', type: 'currency', align: 'right' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ],
+    sections: [
+      {
+        id: 'acc-details',
+        title: 'Invoice Registration',
+        fields: [
+          { name: 'invoiceNo', label: 'Invoice Reference', type: 'text', required: true },
+          { name: 'vendor', label: 'Registered Contact', type: 'text', required: true },
+          { name: 'date', label: 'Invoice Date', type: 'date', required: true },
+          { name: 'amount', label: 'Base Amount', type: 'number', required: true },
+          { name: 'tax', label: 'Calculated Tax', type: 'number', required: true }
+        ]
+      }
+    ],
+    mockRows: []
+  },
+  [ROUTES.CREDIT_NOTES]: {
+    id: 'mod-credit-notes',
+    title: 'Credit Notes',
+    description: 'Adjust ledger balances reflecting amounts credited to us.',
+    route: ROUTES.CREDIT_NOTES,
+    pageType: 'list',
+    breadcrumbs: ['Finance', 'Credit Notes'],
+    primaryAction: { label: 'Issue Note', route: '' },
+    createFields: [
+      { name: 'reference', label: 'Against Invoice/Reference', type: 'text', required: true },
+      { name: 'amount', label: 'Credit Amount', type: 'number', required: true },
+      { name: 'reason', label: 'Reason for Adjustment', type: 'textarea', required: true }
+    ],
+    columns: [
+      { key: 'cnNumber', label: 'CN Code', type: 'mono' },
+      { key: 'reference', label: 'Original Ref', type: 'mono' },
+      { key: 'amount', label: 'Credited Value', type: 'currency', align: 'right' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ],
+    mockRows: []
+  },
+  [ROUTES.DEBIT_NOTES]: {
+    id: 'mod-debit-notes',
+    title: 'Debit Notes',
+    description: 'Adjust ledger balances for additional sums charged to the party.',
+    route: ROUTES.DEBIT_NOTES,
+    pageType: 'list',
+    breadcrumbs: ['Finance', 'Debit Notes'],
+    primaryAction: { label: 'Issue Note', route: '' },
+    createFields: [
+      { name: 'reference', label: 'Against Invoice/Reference', type: 'text', required: true },
+      { name: 'amount', label: 'Debit Amount', type: 'number', required: true },
+      { name: 'reason', label: 'Reason for Adjustment', type: 'textarea', required: true }
+    ],
+    columns: [
+      { key: 'dnNumber', label: 'DN Code', type: 'mono' },
+      { key: 'reference', label: 'Original Ref', type: 'mono' },
+      { key: 'amount', label: 'Debited Value', type: 'currency', align: 'right' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ],
+    mockRows: []
+  },
+  [ROUTES.CALENDAR]: {
+    id: 'overview-calendar', route: ROUTES.CALENDAR, pageType: 'list',
+    title: 'Project Calendar', description: 'Corporate events and project milestones.',
+    breadcrumbs: ['Overview', 'Calendar'],
+    columns: [{ key: 'event', label: 'Event' }, { key: 'date', type: 'date', label: 'Date' }], mockRows: []
+  },
+  [ROUTES.MESSAGES]: {
+    id: 'overview-messages', route: ROUTES.MESSAGES, pageType: 'list',
+    title: 'Messages', description: 'Internal team communication channels.',
+    breadcrumbs: ['Overview', 'Messages'],
+    columns: [{ key: 'from', label: 'From' }, { key: 'subject', label: 'Subject' }], mockRows: []
+  },
 };

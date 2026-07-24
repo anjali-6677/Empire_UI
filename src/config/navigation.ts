@@ -5,6 +5,8 @@ export const ROUTES = {
   DASHBOARD: '/',
   MY_TASKS: '/overview/my-tasks',
   NOTIFICATIONS: '/overview/notifications',
+  CALENDAR: '/overview/calendar',
+  MESSAGES: '/overview/messages',
 
   // Projects
   PROJECTS: '/projects/list',
@@ -26,6 +28,11 @@ export const ROUTES = {
   INVENTORY: '/procurement/inventory',
 
   // Finance
+  ON_ACCOUNT_DASHBOARD: '/finance/on-account',
+  BUDGET_TRANSFERS: '/finance/budget-transfers',
+  ACCOUNTING_INVOICES: '/finance/accounting',
+  CREDIT_NOTES: '/finance/credit-notes',
+  DEBIT_NOTES: '/finance/debit-notes',
   INVOICES: '/finance/invoices',
   PAYMENT_REQUESTS: '/finance/payment-requests',
   PAYMENTS: '/finance/payments',
@@ -65,9 +72,11 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
     id: 'group-overview',
     label: 'Overview',
     items: [
-      { id: 'nav-dashboard', label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'LayoutDashboard' },
+      { id: 'nav-dashboard', label: 'Site Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
       { id: 'nav-tasks', label: 'My Tasks', path: ROUTES.MY_TASKS, icon: 'CheckSquare' },
-      { id: 'nav-notifications', label: 'Notifications', path: ROUTES.NOTIFICATIONS, icon: 'Bell' }
+      { id: 'nav-notifications', label: 'Notifications', path: ROUTES.NOTIFICATIONS, icon: 'Bell' },
+      { id: 'nav-calendar', label: 'Calendar', path: ROUTES.CALENDAR, icon: 'Calendar' },
+      { id: 'nav-messages', label: 'Messages', path: ROUTES.MESSAGES, icon: 'MessageSquare' }
     ]
   },
   {
@@ -100,9 +109,14 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
     id: 'group-finance',
     label: 'Finance',
     items: [
-      { id: 'nav-invoices', label: 'Invoices', path: ROUTES.INVOICES, icon: 'Receipt' },
+      { id: 'nav-invoices', label: 'Procurement Invoices', path: ROUTES.INVOICES, icon: 'Receipt' },
+      { id: 'nav-acc-invoices', label: 'Accounting Invoices', path: ROUTES.ACCOUNTING_INVOICES, icon: 'FileCheck' },
+      { id: 'nav-credit-notes', label: 'Credit Notes', path: ROUTES.CREDIT_NOTES, icon: 'ArrowDownCircle' },
+      { id: 'nav-debit-notes', label: 'Debit Notes', path: ROUTES.DEBIT_NOTES, icon: 'ArrowUpCircle' },
       { id: 'nav-payment-reqs', label: 'Payment Requests', path: ROUTES.PAYMENT_REQUESTS, icon: 'FileSpreadsheet' },
       { id: 'nav-payments', label: 'Payments', path: ROUTES.PAYMENTS, icon: 'DollarSign' },
+      { id: 'nav-on-account', label: 'On-Account', path: ROUTES.ON_ACCOUNT_DASHBOARD, icon: 'Wallet' },
+      { id: 'nav-budget-transfers', label: 'Budget Transfers', path: ROUTES.BUDGET_TRANSFERS, icon: 'ArrowRightLeft' },
       { id: 'nav-budgets', label: 'Project Budgets', path: ROUTES.PROJECT_BUDGETS, icon: 'TrendingUp' },
       { id: 'nav-bills', label: 'Utility Bills', path: ROUTES.UTILITY_BILLS, icon: 'Lightbulb' },
       { id: 'nav-salary', label: 'Salary', path: ROUTES.SALARY, icon: 'CreditCard' }

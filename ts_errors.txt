@@ -1,0 +1,5 @@
+src/components/GenericDetailsPage.tsx(266,9): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/components/GenericListPage.tsx(55,35): error TS2345: Argument of type 'string' is not assignable to parameter of type 'WorkflowCollectionId'.
+src/components/GenericListPage.tsx(123,15): error TS2345: Argument of type 'string' is not assignable to parameter of type 'WorkflowCollectionId'.
+src/components/GenericListPage.tsx(134,18): error TS2345: Argument of type 'string' is not assignable to parameter of type 'WorkflowCollectionId'.
+src/components/GenericListPage.tsx(139,29): error TS2345: Argument of type 'string' is not assignable to parameter of type 'WorkflowCollectionId'.

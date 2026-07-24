@@ -3,59 +3,218 @@ import { MODULE_SCHEMAS } from '../config/moduleSchemas';
 import { ROUTES } from '../config/navigation';
 
 export type WorkflowCollectionId =
-  | 'indents'
-  | 'rfqs'
-  | 'quotations'
-  | 'rateComparisons'
-  | 'purchaseOrders'
-  | 'orders'
-  | 'grns'
-  | 'invoices'
-  | 'paymentRequests'
-  | 'payments'
-  | 'budgetRevisions'
-  | 'clients'
-  | 'vendors'
-  | 'employees'
-  | 'items';
+  | 'indents' | 'rfqs' | 'quotations' | 'rateComparisons' | 'purchaseOrders'
+  | 'orders' | 'grns' | 'invoices' | 'paymentRequests' | 'payments'
+  | 'budgetRevisions' | 'clients' | 'vendors' | 'employees' | 'items'
+  | 'onAccountPayments' | 'onAccountTransfers' | 'budgetTransfers'
+  | 'utilityBills' | 'utilityAllocations' | 'salaryDisbursements' 
+  | 'salaryAllocations' | 'accountingInvoices' | 'creditNotes' 
+  | 'debitNotes' | 'workOrders' | 'tasks' | 'alerts' | 'messages' 
+  | 'calendarEvents' | 'brands' | 'locations' | 'pmcs' 
+  | 'architects' | 'measurementConversions';
 
-export interface WorkflowRecord {
+export interface BaseRecord {
   id: string;
   status?: string;
+  code?: string;
   referenceNo?: string;
-  [key: string]: any;
+  name?: string;
+  title?: string;
+  subject?: string;
+  indentNo?: string;
+  poNo?: string;
+  invoiceNo?: string;
+  vendorCode?: string;
+  clientCode?: string;
+  empCode?: string;
+  clientName?: string;
+  vendor?: string;
+  [key: string]: unknown;
 }
 
-export interface WorkflowState {
-  indents: WorkflowRecord[];
-  rfqs: WorkflowRecord[];
-  quotations: WorkflowRecord[];
-  rateComparisons: WorkflowRecord[];
-  purchaseOrders: WorkflowRecord[];
-  orders: WorkflowRecord[];
-  grns: WorkflowRecord[];
-  invoices: WorkflowRecord[];
-  paymentRequests: WorkflowRecord[];
-  payments: WorkflowRecord[];
-  budgetRevisions: WorkflowRecord[];
-  clients: WorkflowRecord[];
-  vendors: WorkflowRecord[];
-  employees: WorkflowRecord[];
-  items: WorkflowRecord[];
-  
-  // Mapping helpers for generic lists if needed, but we try to explicitly call by ID
-  getCollection: (id: WorkflowCollectionId | string) => WorkflowRecord[];
-  addRecord: (collection: WorkflowCollectionId | string, record: Partial<WorkflowRecord>) => void;
-  updateRecord: (collection: WorkflowCollectionId | string, id: string, record: Partial<WorkflowRecord>) => void;
-  deleteRecord: (collection: WorkflowCollectionId | string, id: string) => void;
-  duplicateRecord: (collection: WorkflowCollectionId | string, id: string) => void;
-  rejectRecord: (collection: WorkflowCollectionId | string, id: string, comment: string) => void;
+export interface ItemRow {
+  id: string;
+  item: string;
+  unit?: string;
+  qty?: number | string;
+  rate?: number | string;
+  amount?: number;
+  [key: string]: unknown;
+}
 
-  // Specific transition methods
+export interface IndentRecord extends BaseRecord {
+  indentNo?: string;
+  indentNumber?: string;
+  site?: string;
+  items?: ItemRow[];
+}
+
+export interface RFQRecord extends BaseRecord {
+  rfqNo?: string;
+  indentId?: string;
+  indentNumber?: string;
+  site?: string;
+  bidsRecd?: number;
+}
+
+export interface QuotationRecord extends BaseRecord {
+  rfqId?: string;
+  vendorId?: string;
+  vendorName?: string;
+  basicRate?: number;
+}
+
+export interface RateComparisonRecord extends BaseRecord {
+  rfqId?: string;
+  indentId?: string;
+  quotationIds?: string[];
+  selectedVendorId?: string;
+  selectedVendorName?: string;
+  site?: string;
+}
+
+export interface PurchaseOrderRecord extends BaseRecord {
+  poNo?: string;
+  poNumber?: string;
+  indentId?: string;
+  rfqId?: string;
+  selectedVendorId?: string;
+  vendor?: string;
+  site?: string;
+  amount?: number;
+}
+
+export interface OrderRecord extends BaseRecord {
+  orderNo?: string;
+  purchaseOrderId?: string;
+  poNumber?: string;
+  vendor?: string;
+  vendorId?: string;
+  site?: string;
+  amount?: number;
+}
+
+export interface GRNRecord extends BaseRecord {
+  grnNo?: string;
+  orderId?: string;
+  purchaseOrderId?: string;
+  vendor?: string;
+  vendorId?: string;
+  site?: string;
+}
+
+export interface InvoiceRecord extends BaseRecord {
+  invoiceNo?: string;
+  grnId?: string;
+  purchaseOrderId?: string;
+  vendorId?: string;
+  vendor?: string;
+  site?: string;
+  certifiedAmount?: number;
+  grossAmount?: number;
+  outstandingAmount?: number;
+}
+
+export interface PaymentRequestRecord extends BaseRecord {
+  requestNo?: string;
+  invoiceId?: string;
+  vendorId?: string;
+  vendor?: string;
+  site?: string;
+  amount?: number;
+}
+
+export interface PaymentRecord extends BaseRecord {
+  paymentReference?: string;
+  paymentRequestId?: string;
+  invoiceId?: string;
+  vendorId?: string;
+  vendor?: string;
+  amount?: number;
+}
+
+export interface OnAccountPaymentRecord extends BaseRecord { vendorId?: string; siteId?: string; balance?: number; }
+export interface OnAccountTransferRecord extends BaseRecord { 
+  transactionId?: string; onAccountPaymentId?: string; invoiceId?: string; 
+  sourceSiteId?: string; destinationSiteId?: string; vendorId?: string; 
+}
+export interface BudgetTransferRecord extends BaseRecord { 
+  transferId?: string; sourceSiteId?: string; destinationSiteId?: string; 
+  sourceCategory?: string; destinationCategory?: string; 
+}
+export interface UtilityBillRecord extends BaseRecord { billTotal?: number; }
+export interface UtilityAllocationRecord extends BaseRecord { utilityBillId?: string; siteId?: string; departmentId?: string; }
+export interface SalaryDisbursementRecord extends BaseRecord {}
+export interface SalaryAllocationRecord extends BaseRecord { salaryDisbursementId?: string; employeeId?: string; siteId?: string; }
+export interface AccountingInvoiceRecord extends BaseRecord {}
+export interface CreditNoteRecord extends BaseRecord { linkedInvoiceId?: string; vendorId?: string; clientId?: string; siteId?: string; }
+export interface DebitNoteRecord extends BaseRecord { linkedInvoiceId?: string; vendorId?: string; clientId?: string; siteId?: string; }
+export interface WorkOrderRecord extends BaseRecord {}
+export interface TaskRecord extends BaseRecord {}
+export interface AlertRecord extends BaseRecord {}
+export interface MessageRecord extends BaseRecord {}
+export interface CalendarEventRecord extends BaseRecord {}
+export interface BrandRecord extends BaseRecord {}
+export interface LocationRecord extends BaseRecord {}
+export interface PMCRecord extends BaseRecord {}
+export interface ArchitectRecord extends BaseRecord {}
+export interface MeasurementConversionRecord extends BaseRecord {}
+export interface BudgetRevisionRecord extends BaseRecord {}
+export interface ClientRecord extends BaseRecord {}
+export interface VendorRecord extends BaseRecord {}
+export interface EmployeeRecord extends BaseRecord {}
+export interface ItemMasterRecord extends BaseRecord {}
+
+export type WorkflowCollections = {
+  indents: IndentRecord[];
+  rfqs: RFQRecord[];
+  quotations: QuotationRecord[];
+  rateComparisons: RateComparisonRecord[];
+  purchaseOrders: PurchaseOrderRecord[];
+  orders: OrderRecord[];
+  grns: GRNRecord[];
+  invoices: InvoiceRecord[];
+  paymentRequests: PaymentRequestRecord[];
+  payments: PaymentRecord[];
+  budgetRevisions: BudgetRevisionRecord[];
+  clients: ClientRecord[];
+  vendors: VendorRecord[];
+  employees: EmployeeRecord[];
+  items: ItemMasterRecord[];
+  onAccountPayments: OnAccountPaymentRecord[];
+  onAccountTransfers: OnAccountTransferRecord[];
+  budgetTransfers: BudgetTransferRecord[];
+  utilityBills: UtilityBillRecord[];
+  utilityAllocations: UtilityAllocationRecord[];
+  salaryDisbursements: SalaryDisbursementRecord[];
+  salaryAllocations: SalaryAllocationRecord[];
+  accountingInvoices: AccountingInvoiceRecord[];
+  creditNotes: CreditNoteRecord[];
+  debitNotes: DebitNoteRecord[];
+  workOrders: WorkOrderRecord[];
+  tasks: TaskRecord[];
+  alerts: AlertRecord[];
+  messages: MessageRecord[];
+  calendarEvents: CalendarEventRecord[];
+  brands: BrandRecord[];
+  locations: LocationRecord[];
+  pmcs: PMCRecord[];
+  architects: ArchitectRecord[];
+  measurementConversions: MeasurementConversionRecord[];
+};
+
+export interface WorkflowState extends WorkflowCollections {
+  getCollection: (id: WorkflowCollectionId) => BaseRecord[];
+  addRecord: <T extends WorkflowCollectionId>(collection: T, record: Partial<WorkflowCollections[T][number]>) => void;
+  updateRecord: <T extends WorkflowCollectionId>(collection: T, id: string, record: Partial<WorkflowCollections[T][number]>) => void;
+  deleteRecord: (collection: WorkflowCollectionId, id: string) => void;
+  duplicateRecord: (collection: WorkflowCollectionId, id: string) => void;
+  rejectRecord: (collection: WorkflowCollectionId, id: string, comment: string) => void;
+
   submitIndentForApproval: (id: string) => void;
   approveIndent: (id: string) => void;
   createRfqFromIndent: (indentId: string) => void;
-  recordVendorQuotation: (rfqId: string, quotationData: any) => void;
+  recordVendorQuotation: (rfqId: string, quotationData: Partial<QuotationRecord>) => void;
   finalizeRateComparison: (rateId: string) => void;
   createPurchaseOrderFromComparison: (rateId: string, vendorId: string) => void;
   approvePurchaseOrder: (poId: string) => void;
@@ -65,14 +224,33 @@ export interface WorkflowState {
   certifyInvoice: (invoiceId: string) => void;
   createPaymentRequestFromInvoice: (invoiceId: string) => void;
   approvePaymentRequest: (reqId: string) => void;
-  recordPayment: (reqId: string, paymentData: any) => void;
-  requestBudgetRevision: (data: any) => void;
+  recordPayment: (reqId: string, paymentData: Partial<PaymentRecord>) => void;
+  
+  // Specific methods for future checkpoints (placeholders to satisfy types until Cpt B-E)
+  requestBudgetRevision: (data: Partial<BudgetRevisionRecord>) => void;
   processBudgetRevision: (revId: string, status: 'approved' | 'rejected') => void;
+  createOnAccountPaymentRequest: () => void;
+  approveOnAccountPayment: () => void;
+  transferOnAccountToInvoice: () => void;
+  transferOnAccountBetweenSites: () => void;
+  createBudgetTransfer: () => void;
+  processBudgetTransfer: () => void;
+  allocateUtilityBill: () => void;
+  completeUtilitySplit: () => void;
+  allocateSalary: () => void;
+  completeSalarySplit: () => void;
+  createAccountingInvoice: () => void;
+  createCreditNote: () => void;
+  createDebitNote: () => void;
+  createWorkOrder: () => void;
+  updateTaskStatus: () => void;
+  markAlertRead: () => void;
+  sendMessage: () => void;
 }
 
 const WorkflowContext = createContext<WorkflowState | undefined>(undefined);
 
-export const getCollectionIdFromRoute = (route: string): WorkflowCollectionId | string => {
+export const getCollectionIdFromRoute = (route: string): WorkflowCollectionId => {
   switch (route) {
     case ROUTES.INDENTS: return 'indents';
     case ROUTES.RFQS: return 'rfqs';
@@ -88,68 +266,86 @@ export const getCollectionIdFromRoute = (route: string): WorkflowCollectionId | 
     case ROUTES.VENDORS: return 'vendors';
     case ROUTES.EMPLOYEES: return 'employees';
     case ROUTES.ITEMS: return 'items';
-    default: return route;
+    case ROUTES.ON_ACCOUNT_DASHBOARD: return 'onAccountPayments';
+    case ROUTES.BUDGET_TRANSFERS: return 'budgetTransfers';
+    default: return 'indents'; // Safest fallback instead of throwing
   }
 };
 
 export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize from mock rows safely
-  const initCollection = (route: string): WorkflowRecord[] => {
-    return (MODULE_SCHEMAS[route]?.mockRows as WorkflowRecord[]) || [];
+  const initCollection = <T extends BaseRecord>(route: string): T[] => {
+    return (MODULE_SCHEMAS[route]?.mockRows as unknown as T[]) || [];
   };
 
-  const [collections, setCollections] = useState<Record<WorkflowCollectionId | string, WorkflowRecord[]>>({
-    indents: initCollection(ROUTES.INDENTS),
-    rfqs: initCollection(ROUTES.RFQS),
+  const [collections, setCollections] = useState<WorkflowCollections>({
+    indents: initCollection<IndentRecord>(ROUTES.INDENTS),
+    rfqs: initCollection<RFQRecord>(ROUTES.RFQS),
     quotations: [],
-    rateComparisons: initCollection(ROUTES.RATE_COMPARISON),
-    purchaseOrders: initCollection(ROUTES.PURCHASE_ORDERS),
-    orders: initCollection(ROUTES.ORDERS),
-    grns: initCollection(ROUTES.GRNS),
-    invoices: initCollection(ROUTES.INVOICES),
-    paymentRequests: initCollection(ROUTES.PAYMENT_REQUESTS),
-    payments: initCollection(ROUTES.PAYMENTS),
-    budgetRevisions: initCollection(ROUTES.PROJECT_BUDGETS),
-    clients: initCollection(ROUTES.CLIENTS),
-    vendors: initCollection(ROUTES.VENDORS),
-    employees: initCollection(ROUTES.EMPLOYEES),
-    items: initCollection(ROUTES.ITEMS),
+    rateComparisons: initCollection<RateComparisonRecord>(ROUTES.RATE_COMPARISON),
+    purchaseOrders: initCollection<PurchaseOrderRecord>(ROUTES.PURCHASE_ORDERS),
+    orders: initCollection<OrderRecord>(ROUTES.ORDERS),
+    grns: initCollection<GRNRecord>(ROUTES.GRNS),
+    invoices: initCollection<InvoiceRecord>(ROUTES.INVOICES),
+    paymentRequests: initCollection<PaymentRequestRecord>(ROUTES.PAYMENT_REQUESTS),
+    payments: initCollection<PaymentRecord>(ROUTES.PAYMENTS),
+    budgetRevisions: initCollection<BudgetRevisionRecord>(ROUTES.PROJECT_BUDGETS),
+    clients: initCollection<ClientRecord>(ROUTES.CLIENTS),
+    vendors: initCollection<VendorRecord>(ROUTES.VENDORS),
+    employees: initCollection<EmployeeRecord>(ROUTES.EMPLOYEES),
+    items: initCollection<ItemMasterRecord>(ROUTES.ITEMS),
+    onAccountPayments: initCollection<OnAccountPaymentRecord>(ROUTES.ON_ACCOUNT_DASHBOARD),
+    onAccountTransfers: [],
+    budgetTransfers: initCollection<BudgetTransferRecord>(ROUTES.BUDGET_TRANSFERS),
+    utilityBills: [],
+    utilityAllocations: [],
+    salaryDisbursements: [],
+    salaryAllocations: [],
+    accountingInvoices: [],
+    creditNotes: [],
+    debitNotes: [],
+    workOrders: [],
+    tasks: [],
+    alerts: [],
+    messages: [],
+    calendarEvents: [],
+    brands: [],
+    locations: [],
+    pmcs: [],
+    architects: [],
+    measurementConversions: []
   });
 
-  const getCollection = (id: WorkflowCollectionId | string) => collections[id] || [];
+  const getCollection = (id: WorkflowCollectionId) => collections[id] || [];
 
-  const addRecord = (collection: WorkflowCollectionId | string, record: Partial<WorkflowRecord>) => {
-    const newRecord = { ...record, id: record.id || `REC-${Date.now()}` } as WorkflowRecord;
+  const addRecord = <T extends WorkflowCollectionId>(collection: T, record: Partial<WorkflowCollections[T][number]>) => {
+    const newRecord = { ...record, id: record.id || `REC-${Date.now()}` } as WorkflowCollections[T][number];
     setCollections(prev => ({
       ...prev,
-      [collection]: [newRecord, ...(prev[collection] || [])]
+      [collection]: [newRecord, ...(prev[collection] as any[])] as any
     }));
   };
 
-  const updateRecord = (collection: WorkflowCollectionId | string, id: string, record: Partial<WorkflowRecord>) => {
+  const updateRecord = <T extends WorkflowCollectionId>(collection: T, id: string, record: Partial<WorkflowCollections[T][number]>) => {
     setCollections(prev => ({
       ...prev,
-      [collection]: (prev[collection] || []).map(r => r.id === id ? { ...r, ...record } : r)
+      [collection]: (prev[collection] as any[]).map(r => r.id === id ? { ...r, ...record } : r)
     }));
   };
 
-  const deleteRecord = (collection: WorkflowCollectionId | string, id: string) => {
-    // Usually deactivate, but generic delete support
+  const deleteRecord = (collection: WorkflowCollectionId, id: string) => {
     setCollections(prev => ({
       ...prev,
-      [collection]: (prev[collection] || []).filter(r => r.id !== id)
+      [collection]: (prev[collection] as any[]).filter(r => r.id !== id)
     }));
   };
 
-  const duplicateRecord = (collection: WorkflowCollectionId | string, id: string) => {
+  const duplicateRecord = (collection: WorkflowCollectionId, id: string) => {
     setCollections(prev => {
-      const records = prev[collection] || [];
+      const records = prev[collection] as any[];
       const source = records.find(r => r.id === id);
       if (!source) return prev;
       
       const newRecord = { ...source, id: `${source.id}-COPY-${Date.now()}` };
-      
-      // Cleanup typical statuses for duplicates
       if (newRecord.status) newRecord.status = 'draft';
       if (newRecord.referenceNo) newRecord.referenceNo += ' (Copy)';
       
@@ -160,30 +356,27 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
-  const rejectRecord = (collection: WorkflowCollectionId | string, id: string, comment: string) => {
+  const rejectRecord = (collection: WorkflowCollectionId, id: string, comment: string) => {
     updateRecord(collection, id, { 
       status: 'rejected',
-      rejectedBy: 'Current User', // Stubbed current user
+      rejectedBy: 'Current User', 
       rejectionDate: new Date().toISOString().split('T')[0],
       rejectionComment: comment
-    });
+    } as any);
   };
 
-  // ----------------------------------------------------
-  // WORKFLOW SPECIFIC TRANSITIONS
-  // ----------------------------------------------------
-
+  // --- TRANSITIONS (CHECKPOINT A) ---
   const submitIndentForApproval = (id: string) => updateRecord('indents', id, { status: 'pending_approval' });
   const approveIndent = (id: string) => updateRecord('indents', id, { status: 'approved' });
   
   const createRfqFromIndent = (indentId: string) => {
-    const indent = getCollection('indents').find(i => i.id === indentId);
+    const indent = collections.indents.find(i => i.id === indentId);
     if (!indent) return;
     
     updateRecord('indents', indentId, { status: 'converted' });
     addRecord('rfqs', {
       rfqNumber: `RFQ-GEN-${Date.now().toString().slice(-4)}`,
-      indentId: indentId,
+      indentId: indent.id,
       indentNumber: indent.indentNumber || indent.indentNo || indent.referenceNo,
       site: indent.site,
       title: indent.title || indent.subject || `RFQ for ${indent.indentNumber}`,
@@ -195,12 +388,12 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
-  const recordVendorQuotation = (rfqId: string, quotationData: any) => {
+  const recordVendorQuotation = (rfqId: string, quotationData: Partial<QuotationRecord>) => {
     addRecord('quotations', {
       rfqId,
       ...quotationData
     });
-    const rfq = getCollection('rfqs').find(r => r.id === rfqId);
+    const rfq = collections.rfqs.find(r => r.id === rfqId);
     if (!rfq) return;
     updateRecord('rfqs', rfqId, { 
       bidsRecd: (rfq.bidsRecd || 0) + 1,
@@ -213,7 +406,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const createPurchaseOrderFromComparison = (rateId: string, vendorId: string) => {
-    const rate = getCollection('rateComparisons').find(r => r.id === rateId);
+    const rate = collections.rateComparisons.find(r => r.id === rateId);
     if (!rate) return;
     
     updateRecord('rateComparisons', rateId, { status: 'converted' });
@@ -226,10 +419,10 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       poNumber: `PO-GEN-${Date.now().toString().slice(-4)}`,
       rfqId: rate.rfqId,
       indentId: rate.indentId,
-      selectedVendorId: vendorId || rate.vendorId || 'VND-001',
+      selectedVendorId: vendorId || rate.selectedVendorId,
       site: rate.site,
       date: new Date().toISOString().split('T')[0],
-      amount: rate.selectedAmount || rate.lowestValue || rate.finalAmount || 0,
+      amount: rate.selectedAmount as number || rate.lowestValue as number || rate.finalAmount as number || 0,
       status: 'draft'
     });
   };
@@ -237,11 +430,12 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const approvePurchaseOrder = (poId: string) => updateRecord('purchaseOrders', poId, { status: 'approved' });
   
   const createOrderFromPurchaseOrder = (poId: string) => {
-    const po = getCollection('purchaseOrders').find(p => p.id === poId);
+    const po = collections.purchaseOrders.find(p => p.id === poId);
     if (!po) return;
     updateRecord('purchaseOrders', poId, { status: 'partially_delivered' });
+    
     addRecord('orders', {
-      purchaseOrderId: poId,
+      purchaseOrderId: po.id,
       poNumber: po.poNumber,
       orderNumber: `ORD-${Date.now().toString().slice(-4)}`,
       vendor: po.vendor,
@@ -254,7 +448,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const createGrnFromOrder = (orderId: string) => {
-    const order = getCollection('orders').find(o => o.id === orderId);
+    const order = collections.orders.find(o => o.id === orderId);
     if (!order) return;
     updateRecord('orders', orderId, { status: 'partially_received' });
     if(order.purchaseOrderId) {
@@ -262,10 +456,11 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
     
     addRecord('grns', {
-      orderId: orderId,
+      orderId: order.id,
       purchaseOrderId: order.purchaseOrderId,
       grnNumber: `GRN-${Date.now().toString().slice(-4)}`,
       vendor: order.vendor,
+      vendorId: order.vendorId,
       site: order.site,
       date: new Date().toISOString().split('T')[0],
       status: 'created' 
@@ -273,15 +468,15 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const createInvoiceFromGrn = (grnId: string) => {
-    const grn = getCollection('grns').find(g => g.id === grnId);
+    const grn = collections.grns.find(g => g.id === grnId);
     if (!grn) return;
     
     updateRecord('grns', grnId, { status: 'completed' });
     
-    const po = getCollection('purchaseOrders').find(p => p.id === grn.purchaseOrderId);
+    const po = collections.purchaseOrders.find(p => p.id === grn.purchaseOrderId);
     
     addRecord('invoices', {
-      grnId: grnId,
+      grnId: grn.id,
       purchaseOrderId: grn.purchaseOrderId,
       invoiceNumber: `INV-VND-${Date.now().toString().slice(-4)}`,
       vendorId: po?.selectedVendorId || grn.vendorId,
@@ -297,12 +492,12 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const certifyInvoice = (invoiceId: string) => updateRecord('invoices', invoiceId, { status: 'certified' });
   
   const createPaymentRequestFromInvoice = (invoiceId: string) => {
-    const inv = getCollection('invoices').find(i => i.id === invoiceId);
+    const inv = collections.invoices.find(i => i.id === invoiceId);
     if (!inv) return;
     updateRecord('invoices', invoiceId, { status: 'payment_requested' });
     
     addRecord('paymentRequests', {
-      invoiceId: invoiceId,
+      invoiceId: inv.id,
       vendorId: inv.vendorId,
       requestNumber: `PREQ-${Date.now().toString().slice(-4)}`,
       vendor: inv.vendor,
@@ -315,8 +510,8 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const approvePaymentRequest = (reqId: string) => updateRecord('paymentRequests', reqId, { status: 'approved' });
   
-  const recordPayment = (reqId: string, paymentData: any) => {
-    const pReq = getCollection('paymentRequests').find(r => r.id === reqId);
+  const recordPayment = (reqId: string, paymentData: Partial<PaymentRecord>) => {
+    const pReq = collections.paymentRequests.find(r => r.id === reqId);
     if (!pReq) return;
     
     updateRecord('paymentRequests', reqId, { status: 'paid' });
@@ -325,49 +520,43 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
     
     addRecord('payments', {
-      paymentRequestId: reqId,
+      paymentRequestId: pReq.id,
       invoiceId: pReq.invoiceId,
       vendorId: pReq.vendorId,
       paymentReference: `PAY-${Date.now().toString().slice(-4)}`,
       vendor: pReq.vendor,
       amount: paymentData.amount || pReq.amount,
-      mode: paymentData.mode || 'Bank Transfer',
+      mode: (paymentData as any).mode || 'Bank Transfer',
       date: new Date().toISOString().split('T')[0],
       status: 'processed'
     });
   };
 
-  const requestBudgetRevision = (data: any) => {
-    addRecord('budgetRevisions', {
-      referenceNo: `BREV-${Date.now().toString().slice(-4)}`,
-      ...data,
-      date: new Date().toISOString().split('T')[0],
-      status: 'pending_approval'
-    });
-  };
-
-  const processBudgetRevision = (revId: string, status: 'approved' | 'rejected') => {
-    updateRecord('budgetRevisions', revId, { status });
-  };
+  // Note: Future Checkpoint specific methods go here
+  const requestBudgetRevision = (_data: Partial<BudgetRevisionRecord>) => {};
+  const processBudgetRevision = (_revId: string, _status: 'approved' | 'rejected') => {};
+  const createOnAccountPaymentRequest = () => {};
+  const approveOnAccountPayment = () => {};
+  const transferOnAccountToInvoice = () => {};
+  const transferOnAccountBetweenSites = () => {};
+  const createBudgetTransfer = () => {};
+  const processBudgetTransfer = () => {};
+  const allocateUtilityBill = () => {};
+  const completeUtilitySplit = () => {};
+  const allocateSalary = () => {};
+  const completeSalarySplit = () => {};
+  const createAccountingInvoice = () => {};
+  const createCreditNote = () => {};
+  const createDebitNote = () => {};
+  const createWorkOrder = () => {};
+  const updateTaskStatus = () => {};
+  const markAlertRead = () => {};
+  const sendMessage = () => {};
 
   return (
     <WorkflowContext.Provider
       value={{
-        indents: getCollection('indents'),
-        rfqs: getCollection('rfqs'),
-        quotations: getCollection('quotations'),
-        rateComparisons: getCollection('rateComparisons'),
-        purchaseOrders: getCollection('purchaseOrders'),
-        orders: getCollection('orders'),
-        grns: getCollection('grns'),
-        invoices: getCollection('invoices'),
-        paymentRequests: getCollection('paymentRequests'),
-        payments: getCollection('payments'),
-        budgetRevisions: getCollection('budgetRevisions'),
-        clients: getCollection('clients'),
-        vendors: getCollection('vendors'),
-        employees: getCollection('employees'),
-        items: getCollection('items'),
+        ...collections,
         getCollection,
         addRecord,
         updateRecord,
@@ -389,8 +578,26 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         createPaymentRequestFromInvoice,
         approvePaymentRequest,
         recordPayment,
+        
         requestBudgetRevision,
-        processBudgetRevision
+        processBudgetRevision,
+        createOnAccountPaymentRequest,
+        approveOnAccountPayment,
+        transferOnAccountToInvoice,
+        transferOnAccountBetweenSites,
+        createBudgetTransfer,
+        processBudgetTransfer,
+        allocateUtilityBill,
+        completeUtilitySplit,
+        allocateSalary,
+        completeSalarySplit,
+        createAccountingInvoice,
+        createCreditNote,
+        createDebitNote,
+        createWorkOrder,
+        updateTaskStatus,
+        markAlertRead,
+        sendMessage
       }}
     >
       {children}

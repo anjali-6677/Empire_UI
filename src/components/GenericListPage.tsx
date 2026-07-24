@@ -16,32 +16,13 @@ import {
 import { ModuleSchema } from '../config/moduleSchemas';
 import { StatusBadge } from './StatusBadge';
 import { safeFormatCurrency, safeFormatText } from '../utils/formatStatus';
-import { useWorkflow, WorkflowCollectionId } from '../context/WorkflowContext';
-import { ROUTES } from '../config/navigation';
+import { useWorkflow, getCollectionIdFromRoute } from '../context/WorkflowContext';
 
 interface GenericListPageProps {
   schema: ModuleSchema;
 }
 
-const getCollectionIdFromRoute = (route: string): WorkflowCollectionId | string => {
-  switch (route) {
-    case ROUTES.INDENTS: return 'indents';
-    case ROUTES.RFQS: return 'rfqs';
-    case ROUTES.RATE_COMPARISON: return 'rateComparisons';
-    case ROUTES.PURCHASE_ORDERS: return 'purchaseOrders';
-    case ROUTES.ORDERS: return 'orders';
-    case ROUTES.GRNS: return 'grns';
-    case ROUTES.INVOICES: return 'invoices';
-    case ROUTES.PAYMENT_REQUESTS: return 'paymentRequests';
-    case ROUTES.PAYMENTS: return 'payments';
-    case ROUTES.PROJECT_BUDGETS: return 'budgetRevisions';
-    case ROUTES.CLIENTS: return 'clients';
-    case ROUTES.VENDORS: return 'vendors';
-    case ROUTES.EMPLOYEES: return 'employees';
-    case ROUTES.ITEMS: return 'items';
-    default: return route;
-  }
-};
+
 
 export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
   const navigate = useNavigate();
@@ -143,10 +124,17 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
   const filteredData = React.useMemo(() => {
     return localRows.filter((item) => {
       const matchSearch = JSON.stringify(item).toLowerCase().includes(search.toLowerCase());
-      const matchTab = activeTab === 'all' || item.status === activeTab;
+      const matchTab = activeTab === 'all' || item.status === activeTab || item.tab === activeTab || item.category === activeTab;
       return matchSearch && matchTab;
     });
   }, [localRows, search, activeTab]);
+
+  const activeColumns: any[] = React.useMemo(() => {
+    if ((schema as any).tabColumns && (schema as any).tabColumns[activeTab]) {
+      return (schema as any).tabColumns[activeTab];
+    }
+    return schema.columns || [];
+  }, [schema.columns, (schema as any).tabColumns, activeTab]);
 
   return (
     <div className="flex flex-col gap-5 w-full font-sans text-xs pb-12 select-none relative">
@@ -246,7 +234,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
           <table className="w-full text-left text-xs divide-y divide-gray-150 min-w-[700px]">
             <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
               <tr>
-                {schema.columns?.map((col) => (
+                {activeColumns.map((col) => (
                   <th key={col.key} className={`p-3 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
                     {col.label}
                   </th>
@@ -257,14 +245,14 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={(schema.columns?.length || 0) + 1} className="p-12 text-center text-gray-400 italic">
+                  <td colSpan={activeColumns.length + 1} className="p-12 text-center text-gray-400 italic">
                     No matching records found for active search or tab selection.
                   </td>
                 </tr>
               ) : (
                 filteredData.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50/60 transition-colors">
-                    {schema.columns?.map((col) => {
+                    {activeColumns.map((col) => {
                       const val = row[col.key as keyof typeof row];
                       return (
                         <td key={col.key} className={`p-3 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
