@@ -23,7 +23,7 @@ import {
   Layers,
   X
 } from 'lucide-react';
-import { formatIndianCurrency } from '../utils/format';
+import { safeFormatCurrency } from '../utils/formatStatus';
 import { SiteSchema } from '../types';
 
 interface SectionWrapperProps {
@@ -116,15 +116,15 @@ export const SiteSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site }) =>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="p-3 border border-gray-150 rounded bg-white">
           <span className="text-[9px] uppercase font-bold text-gray-400 block">Approved Client Bill</span>
-          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{formatIndianCurrency(approvedClientBill)}</span>
+          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{safeFormatCurrency(approvedClientBill)}</span>
         </div>
         <div className="p-3 border border-gray-150 rounded bg-white">
           <span className="text-[9px] uppercase font-bold text-gray-400 block">Project Purchase</span>
-          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{formatIndianCurrency(projectPurchase)}</span>
+          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{safeFormatCurrency(projectPurchase)}</span>
         </div>
         <div className="p-3 border border-gray-150 rounded bg-white">
           <span className="text-[9px] uppercase font-bold text-gray-400 block">Profit Margin</span>
-          <span className="font-extrabold text-sm text-emerald-700 block mt-0.5">{formatIndianCurrency(profitMargin)}</span>
+          <span className="font-extrabold text-sm text-emerald-700 block mt-0.5">{safeFormatCurrency(profitMargin)}</span>
         </div>
         <div className="p-3 border border-gray-150 rounded bg-white">
           <span className="text-[9px] uppercase font-bold text-gray-400 block">Margin Percentage</span>
@@ -132,11 +132,11 @@ export const SiteSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site }) =>
         </div>
         <div className="p-3 border border-gray-150 rounded bg-white">
           <span className="text-[9px] uppercase font-bold text-gray-400 block">Approved Tender Val</span>
-          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{formatIndianCurrency(totalApprovedTender)}</span>
+          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{safeFormatCurrency(totalApprovedTender)}</span>
         </div>
         <div className="p-3 border border-gray-150 rounded bg-white">
           <span className="text-[9px] uppercase font-bold text-gray-400 block">Client Payments Recd</span>
-          <span className="font-extrabold text-sm text-emerald-800 block mt-0.5">{formatIndianCurrency(clientPaymentReceived)}</span>
+          <span className="font-extrabold text-sm text-emerald-800 block mt-0.5">{safeFormatCurrency(clientPaymentReceived)}</span>
         </div>
       </div>
 
@@ -150,19 +150,19 @@ export const SiteSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site }) =>
           <div className="grid grid-cols-2 gap-2 text-[11px]">
             <div className="flex justify-between py-1 border-b border-gray-100">
               <span className="text-gray-500">Client Bill Approved:</span>
-              <span className="font-bold text-gray-800">{formatIndianCurrency(clientBillApproved)}</span>
+              <span className="font-bold text-gray-800">{safeFormatCurrency(clientBillApproved)}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-gray-100">
               <span className="text-gray-500">Approved Budget:</span>
-              <span className="font-bold text-gray-800">{formatIndianCurrency(approvedBudgetVal)}</span>
+              <span className="font-bold text-gray-800">{safeFormatCurrency(approvedBudgetVal)}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-gray-100">
               <span className="text-gray-500">Paid to Vendors:</span>
-              <span className="font-bold text-gray-800">{formatIndianCurrency(vendorPaidTotal)}</span>
+              <span className="font-bold text-gray-800">{safeFormatCurrency(vendorPaidTotal)}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-gray-100">
               <span className="text-gray-500">Total Site Budget:</span>
-              <span className="font-extrabold text-brand-700">{formatIndianCurrency(site.budget)}</span>
+              <span className="font-extrabold text-brand-700">{safeFormatCurrency(site.budget)}</span>
             </div>
           </div>
         </div>
@@ -253,14 +253,14 @@ export const ClientTenderBillingSection: React.FC<{ site: SiteSchema }> = ({ sit
           <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
             <tr>
               <td className="p-2.5 font-bold text-gray-800">Main Tender</td>
-              <td className="p-2.5 text-right font-mono">{formatIndianCurrency(tenderVal)}</td>
-              <td className="p-2.5 text-right font-mono">{formatIndianCurrency(tenderApprovedVal)}</td>
+              <td className="p-2.5 text-right font-mono">{safeFormatCurrency(tenderVal)}</td>
+              <td className="p-2.5 text-right font-mono">{safeFormatCurrency(tenderApprovedVal)}</td>
               <td className="p-2.5 text-right font-bold text-emerald-700">94.7%</td>
             </tr>
             <tr>
               <td className="p-2.5 font-bold text-gray-800">Extra Item Tender</td>
-              <td className="p-2.5 text-right font-mono">{formatIndianCurrency(extraTenderVal)}</td>
-              <td className="p-2.5 text-right font-mono">{formatIndianCurrency(extraApprovedVal)}</td>
+              <td className="p-2.5 text-right font-mono">{safeFormatCurrency(extraTenderVal)}</td>
+              <td className="p-2.5 text-right font-mono">{safeFormatCurrency(extraApprovedVal)}</td>
               <td className="p-2.5 text-right font-bold text-emerald-700">83.3%</td>
             </tr>
           </tbody>
@@ -270,19 +270,19 @@ export const ClientTenderBillingSection: React.FC<{ site: SiteSchema }> = ({ sit
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           <div className="p-2 bg-gray-50 border rounded">
             <span className="text-[9px] uppercase font-bold text-gray-400 block">Submitted Bill</span>
-            <span className="font-bold text-gray-800 font-mono text-xs mt-0.5 block">{formatIndianCurrency(billSubmitted)}</span>
+            <span className="font-bold text-gray-800 font-mono text-xs mt-0.5 block">{safeFormatCurrency(billSubmitted)}</span>
           </div>
           <div className="p-2 bg-emerald-50/50 border border-emerald-150 rounded">
             <span className="text-[9px] uppercase font-bold text-emerald-700 block">Approved Bill</span>
-            <span className="font-bold text-emerald-900 font-mono text-xs mt-0.5 block">{formatIndianCurrency(billApproved)}</span>
+            <span className="font-bold text-emerald-900 font-mono text-xs mt-0.5 block">{safeFormatCurrency(billApproved)}</span>
           </div>
           <div className="p-2 bg-amber-50/50 border border-amber-150 rounded">
             <span className="text-[9px] uppercase font-bold text-amber-700 block">Held Bill Amount</span>
-            <span className="font-bold text-amber-900 font-mono text-xs mt-0.5 block">{formatIndianCurrency(billHeld)}</span>
+            <span className="font-bold text-amber-900 font-mono text-xs mt-0.5 block">{safeFormatCurrency(billHeld)}</span>
           </div>
           <div className="p-2 bg-gray-50 border rounded">
             <span className="text-[9px] uppercase font-bold text-gray-400 block">Unsubmitted Bill</span>
-            <span className="font-bold text-gray-800 font-mono text-xs mt-0.5 block">{formatIndianCurrency(billUnsubmitted)}</span>
+            <span className="font-bold text-gray-800 font-mono text-xs mt-0.5 block">{safeFormatCurrency(billUnsubmitted)}</span>
           </div>
         </div>
       </div>
@@ -299,8 +299,8 @@ export const ClientTenderBillingSection: React.FC<{ site: SiteSchema }> = ({ sit
             ]}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
               <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 9 }} tickFormatter={(val) => `₹${(val / 100000).toFixed(0)}L`} />
-              <Tooltip formatter={(val: number) => [formatIndianCurrency(val), 'Amount']} />
+              <YAxis tick={{ fontSize: 9 }} tickFormatter={(val) => `₹${Number(val / 100000 || 0).toFixed(0)}L`} />
+              <Tooltip formatter={(val: number) => [safeFormatCurrency(val), 'Amount']} />
               <Legend wrapperStyle={{ fontSize: '10px' }} />
               <Bar dataKey="Submitted" fill="#94a3b8" radius={[2, 2, 0, 0]} />
               <Bar dataKey="Approved" fill="#ab9570" radius={[2, 2, 0, 0]} />
@@ -325,7 +325,7 @@ export const VendorBillSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site
   const totalBill = data.reduce((s, d) => s + d.bill, 0);
   const totalPaid = data.reduce((s, d) => s + d.paid, 0);
   const totalPending = data.reduce((s, d) => s + d.pending, 0);
-  const totalPaidPct = `${((totalPaid / totalBill) * 100).toFixed(1)}%`;
+  const totalPaidPct = totalBill ? `${((totalPaid / totalBill) * 100).toFixed(1)}%` : '0%';
 
   return (
     <div className="space-y-4 font-sans">
@@ -344,9 +344,9 @@ export const VendorBillSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site
             {data.map((row, idx) => (
               <tr key={idx} className="hover:bg-gray-50/50">
                 <td className="p-3 font-bold text-gray-800">{row.cat}</td>
-                <td className="p-3 text-right font-mono">{formatIndianCurrency(row.bill)}</td>
-                <td className="p-3 text-right font-mono text-emerald-700">{formatIndianCurrency(row.paid)}</td>
-                <td className="p-3 text-right font-mono text-rose-700">{formatIndianCurrency(row.pending)}</td>
+                <td className="p-3 text-right font-mono">{safeFormatCurrency(row.bill)}</td>
+                <td className="p-3 text-right font-mono text-emerald-700">{safeFormatCurrency(row.paid)}</td>
+                <td className="p-3 text-right font-mono text-rose-700">{safeFormatCurrency(row.pending)}</td>
                 <td className="p-3 text-right font-bold text-gray-900">{row.paidPct}</td>
               </tr>
             ))}
@@ -354,9 +354,9 @@ export const VendorBillSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site
           <tfoot className="bg-gray-50 font-bold border-t border-gray-200 text-gray-900">
             <tr>
               <td className="p-3 uppercase text-[10px]">Total Vendor Exposure</td>
-              <td className="p-3 text-right font-mono">{formatIndianCurrency(totalBill)}</td>
-              <td className="p-3 text-right font-mono text-emerald-800">{formatIndianCurrency(totalPaid)}</td>
-              <td className="p-3 text-right font-mono text-rose-800">{formatIndianCurrency(totalPending)}</td>
+              <td className="p-3 text-right font-mono">{safeFormatCurrency(totalBill)}</td>
+              <td className="p-3 text-right font-mono text-emerald-800">{safeFormatCurrency(totalPaid)}</td>
+              <td className="p-3 text-right font-mono text-rose-800">{safeFormatCurrency(totalPending)}</td>
               <td className="p-3 text-right text-brand-700">{totalPaidPct}</td>
             </tr>
           </tfoot>
@@ -597,9 +597,9 @@ export const ProcurementIntelligenceSection: React.FC = () => {
               <tr><th className="p-2">Material</th><th className="p-2 text-right">Total Invoice Value</th></tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-              <tr><td className="p-2 font-semibold">Italian Marble Flooring</td><td className="p-2 text-right font-mono font-bold text-gray-900">{formatIndianCurrency(4800000)}</td></tr>
-              <tr><td className="p-2 font-semibold">VRV Air Conditioning Units</td><td className="p-2 text-right font-mono font-bold text-gray-900">{formatIndianCurrency(3600000)}</td></tr>
-              <tr><td className="p-2 font-semibold">Acoustic Fabric Wall Panels</td><td className="p-2 text-right font-mono font-bold text-gray-900">{formatIndianCurrency(1800000)}</td></tr>
+              <tr><td className="p-2 font-semibold">Italian Marble Flooring</td><td className="p-2 text-right font-mono font-bold text-gray-900">{safeFormatCurrency(4800000)}</td></tr>
+              <tr><td className="p-2 font-semibold">VRV Air Conditioning Units</td><td className="p-2 text-right font-mono font-bold text-gray-900">{safeFormatCurrency(3600000)}</td></tr>
+              <tr><td className="p-2 font-semibold">Acoustic Fabric Wall Panels</td><td className="p-2 text-right font-mono font-bold text-gray-900">{safeFormatCurrency(1800000)}</td></tr>
             </tbody>
           </table>
         </div>
@@ -828,9 +828,9 @@ export const VendorExposureSection: React.FC = () => {
             <tr><th className="p-2">Vendor Name</th><th className="p-2 text-right">Amount Pending</th></tr>
           </thead>
           <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-            <tr><td className="p-2 font-semibold">Asian Paints Ltd</td><td className="p-2 text-right font-mono font-bold text-rose-700">{formatIndianCurrency(1850000)}</td></tr>
-            <tr><td className="p-2 font-semibold">Century Plyboards India</td><td className="p-2 text-right font-mono font-bold text-rose-700">{formatIndianCurrency(1420000)}</td></tr>
-            <tr><td className="p-2 font-semibold">Schneider Electric Ltd</td><td className="p-2 text-right font-mono font-bold text-rose-700">{formatIndianCurrency(980000)}</td></tr>
+            <tr><td className="p-2 font-semibold">Asian Paints Ltd</td><td className="p-2 text-right font-mono font-bold text-rose-700">{safeFormatCurrency(1850000)}</td></tr>
+            <tr><td className="p-2 font-semibold">Century Plyboards India</td><td className="p-2 text-right font-mono font-bold text-rose-700">{safeFormatCurrency(1420000)}</td></tr>
+            <tr><td className="p-2 font-semibold">Schneider Electric Ltd</td><td className="p-2 text-right font-mono font-bold text-rose-700">{safeFormatCurrency(980000)}</td></tr>
           </tbody>
         </table>
       </div>
@@ -842,9 +842,9 @@ export const VendorExposureSection: React.FC = () => {
             <tr><th className="p-2">Vendor Name</th><th className="p-2 text-right">Amount Paid</th></tr>
           </thead>
           <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-            <tr><td className="p-2 font-semibold">Greenlam Industries</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{formatIndianCurrency(4200000)}</td></tr>
-            <tr><td className="p-2 font-semibold">Saint-Gobain India</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{formatIndianCurrency(3800000)}</td></tr>
-            <tr><td className="p-2 font-semibold">Havells India Ltd</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{formatIndianCurrency(2900000)}</td></tr>
+            <tr><td className="p-2 font-semibold">Greenlam Industries</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{safeFormatCurrency(4200000)}</td></tr>
+            <tr><td className="p-2 font-semibold">Saint-Gobain India</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{safeFormatCurrency(3800000)}</td></tr>
+            <tr><td className="p-2 font-semibold">Havells India Ltd</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{safeFormatCurrency(2900000)}</td></tr>
           </tbody>
         </table>
       </div>
@@ -871,8 +871,8 @@ export const FlowReportsSection: React.FC = () => {
           <AreaChart data={flowData}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
             <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 9 }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
-            <Tooltip formatter={(val: number) => [formatIndianCurrency(val), 'Amount']} />
+            <YAxis tick={{ fontSize: 9 }} tickFormatter={(v) => `₹${Number(v / 100000 || 0).toFixed(0)}L`} />
+            <Tooltip formatter={(val: number) => [safeFormatCurrency(val), 'Amount']} />
             <Legend wrapperStyle={{ fontSize: '10px' }} />
             <Area type="monotone" dataKey="Inflow" stroke="#10b981" fill="#d1fae5" />
             <Area type="monotone" dataKey="Outflow" stroke="#ef4444" fill="#fee2e2" />

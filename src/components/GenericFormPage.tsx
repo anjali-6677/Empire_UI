@@ -8,7 +8,8 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { ModuleSchema } from '../config/moduleSchemas';
-import { formatIndianCurrency } from '../utils/format';
+import { safeFormatCurrency } from '../utils/formatStatus';
+import { useWorkflow, getCollectionIdFromRoute } from '../context/WorkflowContext';
 
 interface GenericFormPageProps {
   schema: ModuleSchema;
@@ -17,6 +18,8 @@ interface GenericFormPageProps {
 export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
   const navigate = useNavigate();
   const [toast, setToast] = React.useState<string | null>(null);
+  const { addRecord } = useWorkflow();
+  const collectionId = getCollectionIdFromRoute(schema.route);
 
   // Form field values state
   const [formValues, setFormValues] = React.useState<Record<string, any>>({});
@@ -52,7 +55,21 @@ export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    triggerToast('Form submitted successfully');
+    const newRecord = {
+      ...formValues,
+      status: 'pending_approval' // default form entry status
+    };
+    addRecord(collectionId, newRecord);
+    triggerToast('Record submitted successfully');
+  };
+
+  const handleSaveDraft = () => {
+    const newRecord = {
+      ...formValues,
+      status: 'draft'
+    };
+    addRecord(collectionId, newRecord);
+    triggerToast('Saved draft successfully');
   };
 
   return (
@@ -171,7 +188,7 @@ export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
                           <td className="p-2.5 text-center">{row.unit}</td>
                           <td className="p-2.5 text-right font-mono">{row.qty}</td>
                           <td className="p-2.5 text-right font-mono">{row.rate}</td>
-                          <td className="p-2.5 text-right font-mono font-bold text-gray-900">{formatIndianCurrency(row.amount)}</td>
+                          <td className="p-2.5 text-right font-mono font-bold text-gray-900">{safeFormatCurrency(row.amount)}</td>
                           <td className="p-2.5 text-center">
                             <button type="button" onClick={() => removeItemRow(row.id)} className="p-1 text-gray-400 hover:text-rose-600 cursor-pointer">
                               <Trash2 className="h-3.5 w-3.5" />
@@ -191,7 +208,7 @@ export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-wrap items-center justify-between gap-4 font-sans text-xs">
           <div>
             <span className="font-bold text-gray-500 block uppercase text-[9px]">Calculated Summary Value:</span>
-            <span className="text-lg font-extrabold text-brand-700">{formatIndianCurrency(187500)}</span>
+            <span className="text-lg font-extrabold text-brand-700">{safeFormatCurrency(187500)}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -204,7 +221,7 @@ export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
             </button>
             <button
               type="button"
-              onClick={() => triggerToast('Saved draft successfully')}
+              onClick={handleSaveDraft}
               className="px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50 rounded font-bold text-gray-800 cursor-pointer"
             >
               Save Draft

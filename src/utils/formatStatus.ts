@@ -77,18 +77,22 @@ export function formatStatusLabel(status: string | null | undefined): string {
 }
 
 /**
+ * Safely parses any value to a number.
+ */
+export const toSafeNumber = (value: unknown): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+/**
  * Safely formats numeric currency values without ever producing NaN or ₹NaN.
  */
 export function safeFormatCurrency(val: unknown): string {
   if (val === null || val === undefined || val === '') {
-    return 'Not Available';
-  }
-
-  const num = typeof val === 'number' ? val : Number(val);
-  if (!Number.isFinite(num)) {
     return '₹0';
   }
 
+  const num = toSafeNumber(val);
   return formatIndianCurrency(num);
 }
 
@@ -99,7 +103,7 @@ export function safeFormatText(val: unknown, fallback: string = 'Not Available')
   if (val === null || val === undefined || val === '' || val === '--' || val === 'null' || val === 'undefined') {
     return fallback;
   }
-  return String(val);
+  return String(val).trim() === '' ? fallback : String(val);
 }
 
 /**

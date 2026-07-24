@@ -16,10 +16,32 @@ import {
 import { ModuleSchema } from '../config/moduleSchemas';
 import { StatusBadge } from './StatusBadge';
 import { safeFormatCurrency, safeFormatText } from '../utils/formatStatus';
+import { useWorkflow, WorkflowCollectionId } from '../context/WorkflowContext';
+import { ROUTES } from '../config/navigation';
 
 interface GenericListPageProps {
   schema: ModuleSchema;
 }
+
+const getCollectionIdFromRoute = (route: string): WorkflowCollectionId | string => {
+  switch (route) {
+    case ROUTES.INDENTS: return 'indents';
+    case ROUTES.RFQS: return 'rfqs';
+    case ROUTES.RATE_COMPARISON: return 'rateComparisons';
+    case ROUTES.PURCHASE_ORDERS: return 'purchaseOrders';
+    case ROUTES.ORDERS: return 'orders';
+    case ROUTES.GRNS: return 'grns';
+    case ROUTES.INVOICES: return 'invoices';
+    case ROUTES.PAYMENT_REQUESTS: return 'paymentRequests';
+    case ROUTES.PAYMENTS: return 'payments';
+    case ROUTES.PROJECT_BUDGETS: return 'budgetRevisions';
+    case ROUTES.CLIENTS: return 'clients';
+    case ROUTES.VENDORS: return 'vendors';
+    case ROUTES.EMPLOYEES: return 'employees';
+    case ROUTES.ITEMS: return 'items';
+    default: return route;
+  }
+};
 
 export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
   const navigate = useNavigate();
@@ -28,7 +50,9 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
   const [toast, setToast] = React.useState<string | null>(null);
 
   // Local mutable dataset state
-  const [localRows, setLocalRows] = React.useState<Record<string, any>[]>([]);
+  const { getCollection, addRecord, updateRecord, duplicateRecord: duplicateWorkflowRecord } = useWorkflow();
+  const collectionId = getCollectionIdFromRoute(schema.route);
+  const localRows = getCollection(collectionId);
 
   // Create Modal state
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -39,18 +63,6 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   };
-
-  // Initialize dataset
-  React.useEffect(() => {
-    if (schema.mockRows && schema.mockRows.length > 0) {
-      setLocalRows(schema.mockRows);
-    } else {
-      setLocalRows([
-        { id: '1', code: 'REC-2026-001', name: 'Sample Ledger Record #1', site: 'Nexus Tech Park', requestDate: '2026-07-20', grossAmount: 450000, status: 'active' },
-        { id: '2', code: 'REC-2026-002', name: 'Sample Ledger Record #2', site: 'Grand Hyatt Goa', requestDate: '2026-07-22', grossAmount: 1200000, status: 'active' }
-      ]);
-    }
-  }, [schema]);
 
   // Escape key handler for modal
   React.useEffect(() => {
@@ -103,12 +115,12 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
     if (!isFormValid) return;
 
     const newRecord: Record<string, any> = {
-      id: `rec-${Date.now()}`,
+      id: `REC-${Date.now()}`,
       ...modalFormData,
-      status: modalFormData.status || 'active'
+      status: modalFormData.status || 'draft'
     };
 
-    setLocalRows((prev) => [newRecord, ...prev]);
+    addRecord(collectionId, newRecord);
     setIsModalOpen(false);
     triggerButtonRef.current?.focus();
     triggerToast(`New record successfully registered`);
@@ -116,28 +128,15 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
 
   // Row Action Handlers
   const handleToggleRowStatus = (rowId: string) => {
-    setLocalRows((prev) =>
-      prev.map((r) => {
-        if (r.id === rowId) {
-          const newStatus = r.status === 'active' || r.status === 'empanelled' ? 'inactive' : 'active';
-          triggerToast(`Record status updated to ${newStatus}`);
-          return { ...r, status: newStatus };
-        }
-        return r;
-      })
-    );
+    const r = localRows.find((rx) => rx.id === rowId);
+    if (!r) return;
+    const newStatus = r.status === 'active' || r.status === 'empanelled' ? 'inactive' : 'active';
+    updateRecord(collectionId, rowId, { status: newStatus });
+    triggerToast(`Record status updated to ${newStatus}`);
   };
 
   const handleDuplicateRow = (row: Record<string, any>) => {
-    const dup = {
-      ...row,
-      id: `dup-${Date.now()}`,
-      code: `${row.code || 'REC'}-COPY`,
-      indentNo: row.indentNo ? `${row.indentNo}-COPY` : undefined,
-      poNo: row.poNo ? `${row.poNo}-COPY` : undefined,
-      invoiceNo: row.invoiceNo ? `${row.invoiceNo}-COPY` : undefined
-    };
-    setLocalRows((prev) => [dup, ...prev]);
+    duplicateWorkflowRecord(collectionId, row.id);
     triggerToast('Record duplicated successfully');
   };
 

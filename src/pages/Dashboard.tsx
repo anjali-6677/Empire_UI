@@ -35,7 +35,7 @@ import {
   mockProjects, 
   mockMonthlyFinancials 
 } from '../data/mockData';
-import { formatIndianCurrency } from '../utils/format';
+import { safeFormatCurrency } from '../utils/formatStatus';
 import { ColumnDef } from '@tanstack/react-table';
 import { ProjectHealthSchema } from '../types';
 import { ROUTES } from '../config/navigation';
@@ -100,7 +100,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
     statusClass = 'text-rose-700 bg-rose-50 border-rose-100';
   } else if (changeType === 'neutral') {
     if (isPOItem && change) {
-      statusText = `• Value: ${formatIndianCurrency(change)}`;
+      statusText = `• Value: ${safeFormatCurrency(change)}`;
       statusClass = 'text-brand-700 bg-brand-50 border-brand-100';
     } else {
       statusText = change ? `• Within forecast (+${change}%)` : '';
@@ -110,7 +110,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
 
   // Formatting value display
   const valueDisplay = label.toLowerCase().includes('value') || label.toLowerCase().includes('payments')
-    ? formatIndianCurrency(value)
+    ? safeFormatCurrency(value)
     : label.toLowerCase().includes('budget')
     ? `${value}%`
     : value.toString();
@@ -223,10 +223,10 @@ export const Dashboard: React.FC = () => {
       cell: ({ row }) => (
         <div>
           <span className="font-bold text-gray-800 block text-[11px]">
-            {formatIndianCurrency(row.original.budgetSpent)}
+            {safeFormatCurrency(row.original.budgetSpent)}
           </span>
           <span className="text-[9.5px] text-gray-400 block font-semibold">
-            of {formatIndianCurrency(row.original.budgetTotal)}
+            of {safeFormatCurrency(row.original.budgetTotal)}
           </span>
         </div>
       )
@@ -448,8 +448,8 @@ export const Dashboard: React.FC = () => {
                 <AreaChart data={mockMonthlyFinancials}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={{ stroke: '#cbd5e1' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={{ stroke: '#cbd5e1' }} tickFormatter={(val) => `₹${(val / 100000).toFixed(0)}L`} />
-                  <Tooltip formatter={(val: number) => [formatIndianCurrency(val), 'Amount']} />
+                  <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={{ stroke: '#cbd5e1' }} tickFormatter={(val) => `₹${Number(val / 100000 || 0).toFixed(0)}L`} />
+                  <Tooltip formatter={(val: number) => [safeFormatCurrency(val), 'Amount']} />
                   <Legend wrapperStyle={{ fontSize: '10.5px' }} />
                   <Area type="monotone" dataKey="billing" name="Billing" stroke="#ab9570" fill="#ab9570" fillOpacity={0.15} strokeWidth={2} />
                   <Area type="monotone" dataKey="payments" name="Payments Recd" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.15} strokeWidth={2} />
@@ -469,8 +469,8 @@ export const Dashboard: React.FC = () => {
                 <ComposedChart data={mockMonthlyFinancials}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={{ stroke: '#cbd5e1' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={{ stroke: '#cbd5e1' }} tickFormatter={(val) => `₹${(val / 100000).toFixed(0)}L`} />
-                  <Tooltip formatter={(val: number) => [formatIndianCurrency(val), 'Amount']} />
+                  <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={{ stroke: '#cbd5e1' }} tickFormatter={(val) => `₹${Number(val / 100000 || 0).toFixed(0)}L`} />
+                  <Tooltip formatter={(val: number) => [safeFormatCurrency(val), 'Amount']} />
                   <Legend wrapperStyle={{ fontSize: '10.5px' }} />
                   <Bar dataKey="budget" name="Approved Budget" fill="#e2e8f0" radius={[2, 2, 0, 0]} />
                   <Line type="monotone" dataKey="actual" name="Actual Cost" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
