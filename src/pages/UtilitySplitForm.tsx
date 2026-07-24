@@ -32,12 +32,26 @@ export const UtilitySplitForm: React.FC = () => {
 
   const valid = provider && billNo && billTotal > 0 && Math.abs(remaining) < 0.01 && rows.every(r => r.siteId && r.value > 0);
 
+  const handleQuickFill = () => {
+    setProvider('Bangalore Electricity Supply Co (BESCOM)');
+    setBillNo('UTIL-2026-088');
+    setBillTotal(150000);
+    if (sites.length >= 3) {
+      setRows([
+        { id: 'r1', siteId: sites[0].id, type: 'amount', value: 60000 },
+        { id: 'r2', siteId: sites[1].id, type: 'percentage', value: 40 },
+        { id: 'r3', siteId: sites[2].id, type: 'amount', value: 30000 }
+      ]);
+    }
+    setError('');
+  };
+
   const handleSave = () => {
     if (!valid) {
       if (Math.abs(remaining) > 0.01) {
-        setError('Allocated total must exactly equal Bill Total.');
+        setError(`Allocated total (${safeFormatCurrency(allocatedTotal)}) must exactly equal Bill Total (${safeFormatCurrency(billTotal)}). Remaining: ${safeFormatCurrency(remaining)}`);
       } else {
-        setError('Please fill all required fields and ensure no negative values exist.');
+        setError('Please select a target site for each row and ensure values are greater than zero.');
       }
       return;
     }
@@ -56,12 +70,21 @@ export const UtilitySplitForm: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12 font-sans select-none">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 border rounded hover:bg-gray-50"><ArrowLeft className="h-4 w-4" /></button>
-        <div>
-          <h1 className="text-xl font-extrabold text-gray-900">Utility Bill Splitting & Allocation</h1>
-          <p className="text-xs text-gray-500 font-medium">Distribute centralized utility costs across multiple operational sites.</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="p-2 border rounded hover:bg-gray-50"><ArrowLeft className="h-4 w-4" /></button>
+          <div>
+            <h1 className="text-xl font-extrabold text-gray-900">Utility Bill Splitting & Allocation</h1>
+            <p className="text-xs text-gray-500 font-medium">Distribute centralized utility costs across multiple operational sites.</p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={handleQuickFill}
+          className="px-3 py-1.5 bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 rounded text-xs font-bold transition-colors cursor-pointer"
+        >
+          ⚡ Load Guided Test Data
+        </button>
       </div>
 
       <div className="bg-white border rounded-lg p-6 shadow-sm space-y-6">
@@ -84,7 +107,7 @@ export const UtilitySplitForm: React.FC = () => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-sm text-gray-900">Site Allocations</h3>
-            <button onClick={() => setRows([...rows, {id: `r${Date.now()}`, siteId:'', type:'amount', value:0}])} className="flex items-center gap-1 text-[10px] font-bold uppercase text-brand-600 hover:text-brand-800">
+            <button onClick={() => setRows([...rows, {id: `r${Date.now()}`, siteId:'', type:'amount', value:0}])} className="flex items-center gap-1 text-[10px] font-bold uppercase text-brand-600 hover:text-brand-800 cursor-pointer">
                <Plus className="h-3 w-3" /> Add Site Row
             </button>
           </div>
@@ -128,7 +151,7 @@ export const UtilitySplitForm: React.FC = () => {
                      </div>
                    </td>
                    <td className="py-3 text-right">
-                     <button onClick={() => setRows(rows.filter(r => r.id !== row.id))} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded" disabled={rows.length === 1}>
+                     <button onClick={() => setRows(rows.filter(r => r.id !== row.id))} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded cursor-pointer" disabled={rows.length === 1}>
                        <Trash2 className="h-4 w-4" />
                      </button>
                    </td>
@@ -154,10 +177,10 @@ export const UtilitySplitForm: React.FC = () => {
 
       <div className="flex items-center justify-between pt-2">
          <div className="text-rose-600 text-[10px] font-bold flex items-center gap-1 max-w-sm">
-           {error && <><AlertCircle className="h-3 w-3" /> {error}</>}
+           {error && <><AlertCircle className="h-3.5 w-3.5 shrink-0" /> {error}</>}
          </div>
-         <button onClick={handleSave} className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-6 py-2 rounded shadow-sm font-bold uppercase text-xs tracking-wider transition-colors">
-            <Save className="h-4 w-4" /> Complete Complete Split Allocation
+         <button onClick={handleSave} className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-6 py-2 rounded shadow-sm font-bold uppercase text-xs tracking-wider transition-colors cursor-pointer">
+            <Save className="h-4 w-4" /> Complete Split Allocation
          </button>
       </div>
     </div>

@@ -32,7 +32,15 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
   const [search, setSearch] = React.useState('');
   const [selectedSite, setSelectedSite] = React.useState('');
   const [fromDate, setFromDate] = React.useState('2026-01-01');
-  const [toDate, setToDate] = React.useState('2026-07-24');
+  const [toDate, setToDate] = React.useState('2026-12-31');
+
+  // Reset filters when changing active report tabs or schemas
+  React.useEffect(() => {
+    setSearch('');
+    setSelectedSite('');
+    setFromDate('2026-01-01');
+    setToDate('2026-12-31');
+  }, [schema.id]);
 
   const triggerToast = (msg: string) => {
     setToast(msg);
@@ -43,14 +51,86 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
     return schema.mockRows || [];
   }, [schema.mockRows]);
 
-  // Filtered Rows
+  // Filtered Rows by Search, Site, and Date Range
   const filteredRows = React.useMemo(() => {
     return rawRows.filter((r) => {
       const matchSearch = JSON.stringify(r).toLowerCase().includes(search.toLowerCase());
-      const matchSite = !selectedSite || (r.site && r.site.includes(selectedSite));
-      return matchSearch && matchSite;
+      const matchSite = !selectedSite || (r.site && String(r.site).toLowerCase().includes(selectedSite.toLowerCase()));
+      
+      // Date filter check if row has date field
+      const rowDate = r.poDate || r.date || r.invoiceDate || r.paymentDate || r.loginDate || r.lastContactDate;
+      let matchDate = true;
+      if (rowDate && typeof rowDate === 'string') {
+        if (fromDate && rowDate < fromDate) matchDate = false;
+        if (toDate && rowDate > toDate) matchDate = false;
+      }
+      return matchSearch && matchSite && matchDate;
     });
-  }, [rawRows, search, selectedSite]);
+  }, [rawRows, search, selectedSite, fromDate, toDate]);
+
+  // Dynamic Chart Configuration based on active report tab
+  const renderAnalyticsChart = () => {
+    if (filteredRows.length === 0) {
+      return (
+        <div className="h-[200px] w-full flex items-center justify-center text-gray-400 text-xs italic bg-gray-50/50 rounded border border-dashed border-gray-200">
+          No data available for chart rendering under current filters.
+        </div>
+      );
+    }
+
+    const firstRow = filteredRows[0];
+    const xKey = firstRow.site ? 'site' : firstRow.vendor ? 'vendor' : firstRow.item ? 'item' : firstRow.month ? 'month' : firstRow.user ? 'user' : 'id';
+
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={filteredRows}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+          <XAxis dataKey={xKey} tick={{ fontSize: 9 }} />
+          <YAxis tick={{ fontSize: 9 }} tickFormatter={(val) => typeof val === 'number' && val > 100000 ? `₹${(val / 100000).toFixed(0)}L` : String(val)} />
+          <Tooltip formatter={(val: any) => [typeof val === 'number' ? safeFormatCurrency(val) : val, 'Value']} />
+          <Legend wrapperStyle={{ fontSize: '10px' }} />
+          
+          {firstRow.orderedValue !== undefined ? (
+            <>
+              <Bar dataKey="orderedValue" name="Ordered Value" fill="#ab9570" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="receivedValue" name="Received Outlay" fill="#10b981" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="pendingValue" name="Pending Balance" fill="#f43f5e" radius={[2, 2, 0, 0]} />
+            </>
+          ) : firstRow.appBudget !== undefined ? (
+            <>
+              <Bar dataKey="appBudget" name="Approved Budget" fill="#ab9570" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="actualSpend" name="Actual Outlay" fill="#1e293b" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="available" name="Available Balance" fill="#10b981" radius={[2, 2, 0, 0]} />
+            </>
+          ) : firstRow.totalBilled !== undefined ? (
+            <>
+              <Bar dataKey="totalCertified" name="Certified Bills" fill="#ab9570" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="totalPaid" name="Settled Payments" fill="#10b981" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="outstanding" name="Outstanding Balance" fill="#f43f5e" radius={[2, 2, 0, 0]} />
+            </>
+          ) : firstRow.clientReceipts !== undefined ? (
+            <>
+              <Bar dataKey="clientReceipts" name="Client Inflows" fill="#10b981" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="vendorPayments" name="Vendor Outflows" fill="#f43f5e" radius={[2, 2, 0, 0]} />
+            </>
+          ) : (
+            <Bar
+              dataKey={
+                firstRow.purchaseValue !== undefined ? 'purchaseValue' :
+                firstRow.finalAmount !== undefined ? 'finalAmount' :
+                firstRow.grossAmount !== undefined ? 'grossAmount' :
+                firstRow.paidAmount !== undefined ? 'paidAmount' :
+                firstRow.contractValue !== undefined ? 'contractValue' : 'id'
+              }
+              name="Report Metric Value"
+              fill="#ab9570"
+              radius={[2, 2, 0, 0]}
+            />
+          )}
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  };
 
   // CSV Export Functionality
   const handleExportCSV = () => {
@@ -127,7 +207,12 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
         <div className="flex items-center gap-2 shrink-0 no-print">
           <button
             onClick={handleExportCSV}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded font-bold cursor-pointer"
+            disabled={filteredRows.length === 0}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 border rounded font-bold transition-colors ${
+              filteredRows.length === 0
+                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 cursor-pointer'
+            }`}
           >
             <FileSpreadsheet className="h-3.5 w-3.5" /> Export CSV
           </button>
@@ -159,6 +244,8 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
             <option value="Nexus Tech Park">Nexus Tech Park</option>
             <option value="Grand Hyatt">Grand Hyatt Goa</option>
             <option value="Imperial Heights">Imperial Heights</option>
+            <option value="Phoenix Marketcity">Phoenix Marketcity</option>
+            <option value="Sobha City">Sobha City Luxury Villa</option>
           </select>
         </div>
         <div>
@@ -212,29 +299,7 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
       <div className="p-4 bg-white border border-gray-150 rounded-lg shadow-sm space-y-2 no-print">
         <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Report Analytics Visualization</h4>
         <div className="h-[220px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={filteredRows}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-              <XAxis dataKey={schema.id.includes('finance') ? 'vendor' : schema.id.includes('admin') ? 'module' : 'site'} tick={{ fontSize: 9 }} />
-              <YAxis tick={{ fontSize: 9 }} tickFormatter={(val) => typeof val === 'number' && val > 100000 ? `₹${(val / 100000).toFixed(0)}L` : String(val)} />
-              <Tooltip formatter={(val: any) => [typeof val === 'number' ? safeFormatCurrency(val) : val, 'Value']} />
-              <Legend wrapperStyle={{ fontSize: '10px' }} />
-              {schema.id.includes('budget') ? (
-                <>
-                  <Bar dataKey="approvedBudget" name="Approved Budget" fill="#ab9570" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="actualOutlay" name="Actual Outlay" fill="#1e293b" radius={[2, 2, 0, 0]} />
-                </>
-              ) : schema.id.includes('finance') ? (
-                <>
-                  <Bar dataKey="certifiedAmount" name="Certified Bill" fill="#ab9570" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="paidAmount" name="Disbursed Payment" fill="#10b981" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="dueAmount" name="Outstanding Due" fill="#f43f5e" radius={[2, 2, 0, 0]} />
-                </>
-              ) : (
-                <Bar dataKey={filteredRows[0]?.totalSpend ? 'totalSpend' : filteredRows[0]?.finalAmount ? 'finalAmount' : 'id'} name="Report Value" fill="#ab9570" radius={[2, 2, 0, 0]} />
-              )}
-            </BarChart>
-          </ResponsiveContainer>
+          {renderAnalyticsChart()}
         </div>
       </div>
 

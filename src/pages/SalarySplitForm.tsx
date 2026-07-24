@@ -42,12 +42,26 @@ export const SalarySplitForm: React.FC = () => {
                 Math.abs(remainingPct) < 0.01 && 
                 rows.every(r => r.siteId && r.value > 0);
 
+  const handleQuickFill = () => {
+    setEmployee('Rajesh Kumar (Project Director)');
+    setBatchNo('SAL-2026-07');
+    setNetSalary(250000);
+    if (sites.length >= 3) {
+      setRows([
+        { id: 'r1', siteId: sites[0].id, type: 'percentage', value: 50 },
+        { id: 'r2', siteId: sites[1].id, type: 'percentage', value: 30 },
+        { id: 'r3', siteId: sites[2].id, type: 'percentage', value: 20 }
+      ]);
+    }
+    setError('');
+  };
+
   const handleSave = () => {
     if (!valid) {
       if (Math.abs(remainingPct) > 0.01) {
-        setError('Allocation MUST equal exactly 100% of the Net Salary.');
+        setError(`Allocation total (${allocatedPercent.toFixed(1)}%) MUST equal exactly 100% of the Net Salary. Remaining: ${remainingPct.toFixed(1)}%`);
       } else {
-        setError('Please fill all required fields correctly. No negative values.');
+        setError('Please select an active project site for each row and ensure values are greater than zero.');
       }
       return;
     }
@@ -64,12 +78,21 @@ export const SalarySplitForm: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12 font-sans select-none">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 border rounded hover:bg-gray-50"><ArrowLeft className="h-4 w-4" /></button>
-        <div>
-          <h1 className="text-xl font-extrabold text-gray-900">Salary Disbursal & Project Split</h1>
-          <p className="text-xs text-gray-500 font-medium">Allocate employee net salary across deployed project sites tightly enforcing 100% distribution.</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="p-2 border rounded hover:bg-gray-50"><ArrowLeft className="h-4 w-4" /></button>
+          <div>
+            <h1 className="text-xl font-extrabold text-gray-900">Salary Disbursal & Project Split</h1>
+            <p className="text-xs text-gray-500 font-medium">Allocate employee net salary across deployed project sites tightly enforcing 100% distribution.</p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={handleQuickFill}
+          className="px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 rounded text-xs font-bold transition-colors cursor-pointer"
+        >
+          ⚡ Load Guided Test Data
+        </button>
       </div>
 
       <div className="bg-white border rounded-lg p-6 shadow-sm space-y-6">
@@ -92,7 +115,7 @@ export const SalarySplitForm: React.FC = () => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-sm text-gray-900">Project Site Splits</h3>
-            <button onClick={() => setRows([...rows, {id: `r${Date.now()}`, siteId:'', type:'percentage', value:0}])} className="flex items-center gap-1 text-[10px] font-bold uppercase text-brand-600 hover:text-brand-800">
+            <button onClick={() => setRows([...rows, {id: `r${Date.now()}`, siteId:'', type:'percentage', value:0}])} className="flex items-center gap-1 text-[10px] font-bold uppercase text-brand-600 hover:text-brand-800 cursor-pointer">
                <Plus className="h-3 w-3" /> Add Split Row
             </button>
           </div>
@@ -131,7 +154,7 @@ export const SalarySplitForm: React.FC = () => {
                      </div>
                    </td>
                    <td className="py-3 text-right">
-                     <button onClick={() => setRows(rows.filter(r => r.id !== row.id))} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded" disabled={rows.length === 1}>
+                     <button onClick={() => setRows(rows.filter(r => r.id !== row.id))} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded cursor-pointer" disabled={rows.length === 1}>
                        <Trash2 className="h-4 w-4" />
                      </button>
                    </td>
@@ -157,9 +180,9 @@ export const SalarySplitForm: React.FC = () => {
 
       <div className="flex items-center justify-between pt-2">
          <div className="text-rose-600 text-[10px] font-bold flex items-center gap-1 max-w-sm leading-tight">
-           {error && <><AlertCircle className="h-3 w-3 shrink-0" /> {error}</>}
+           {error && <><AlertCircle className="h-3.5 w-3.5 shrink-0" /> {error}</>}
          </div>
-         <button onClick={handleSave} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded shadow-sm font-bold uppercase text-xs tracking-wider transition-colors shrink-0">
+         <button onClick={handleSave} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded shadow-sm font-bold uppercase text-xs tracking-wider transition-colors shrink-0 cursor-pointer">
             <Save className="h-4 w-4" /> Commit Salary Split
          </button>
       </div>

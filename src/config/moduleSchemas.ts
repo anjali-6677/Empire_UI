@@ -992,140 +992,557 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
   // ==========================================
   [ROUTES.PURCHASE_REPORTS]: {
     id: 'reports-purchase', route: ROUTES.PURCHASE_REPORTS, pageType: 'report',
-    title: 'Purchase Analytics module', description: 'Comprehensive procurement intelligence.', breadcrumbs: ['Reports', 'Purchase Reports'],
+    title: 'Purchase Analytics & Procurement Intelligence', description: 'Comprehensive purchase analysis, item consumption, vendor comparisons, and material movement tracking.', breadcrumbs: ['Reports', 'Purchase Reports'],
     tabs: [
-      { id: 'purchase-analysis', label: 'Purchase Analysis', title: 'Purchase Analysis', description: 'Global spend trajectories across material brackets.',
-        columns: [{key: 'site', label: 'Site'}, {key: 'poCount', label: 'PO Volume'}, {key: 'totalSpend', label: 'Spends', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Total Purchase Outlay', value: 168000000, isCurrency: true}, {id: 's2', label: 'Material Savings', value: '8.4%'}],
-        mockRows: [{id: 'pa1', site: 'Nexus Tech Park', poCount: '12 POs', totalSpend: 46200000}, {id: 'pa2', site: 'Grand Hyatt', poCount: '8 POs', totalSpend: 11400000}]
+      { id: 'purchase-analysis', label: 'Purchase Analysis', title: 'Purchase Analysis', description: 'PO ordering status, received values, and pending delivery balances per site.',
+        columns: [
+          { key: 'poNumber', label: 'PO Number', type: 'mono' },
+          { key: 'vendor', label: 'Vendor Name', type: 'text' },
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'poDate', label: 'PO Date', type: 'date' },
+          { key: 'orderedValue', label: 'Ordered Value', type: 'currency', align: 'right' },
+          { key: 'receivedValue', label: 'Received Value', type: 'currency', align: 'right' },
+          { key: 'pendingValue', label: 'Pending Value', type: 'currency', align: 'right' },
+          { key: 'deliveryStatus', label: 'Delivery Status', type: 'badge' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total Ordered Value', value: 168000000, isCurrency: true },
+          { id: 's2', label: 'Received Material Outlay', value: 124000000, isCurrency: true },
+          { id: 's3', label: 'Pending Open Deliveries', value: 44000000, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'pa-1', poNumber: 'PO-2026-088', vendor: 'Asian Paints Ltd', site: 'Nexus Tech Park', poDate: '2026-07-02', orderedValue: 12500000, receivedValue: 12500000, pendingValue: 0, deliveryStatus: 'completed' },
+          { id: 'pa-2', poNumber: 'PO-2026-092', vendor: 'Century Plyboards India Ltd', site: 'Grand Hyatt Goa', poDate: '2026-07-05', orderedValue: 28400000, receivedValue: 20000000, pendingValue: 8400000, deliveryStatus: 'partially_received' },
+          { id: 'pa-3', poNumber: 'PO-2026-095', vendor: 'Saint-Gobain India Pvt Ltd', site: 'Imperial Heights', poDate: '2026-07-10', orderedValue: 18500000, receivedValue: 15000000, pendingValue: 3500000, deliveryStatus: 'partially_received' },
+          { id: 'pa-4', poNumber: 'PO-2026-099', vendor: 'Greenlam Industries Ltd', site: 'Phoenix Marketcity', poDate: '2026-07-14', orderedValue: 9800000, receivedValue: 9800000, pendingValue: 0, deliveryStatus: 'completed' },
+          { id: 'pa-5', poNumber: 'PO-2026-104', vendor: 'Pidilite Industries Ltd', site: 'Sobha City Luxury Villa', poDate: '2026-07-18', orderedValue: 14200000, receivedValue: 8200000, pendingValue: 6000000, deliveryStatus: 'pending' }
+        ]
       },
-      { id: 'item-analysis', label: 'Item Analysis', title: 'Item wise Analysis', description: 'Material line-item consumption matrix.',
-        columns: [{key: 'item', label: 'Item'}, {key: 'qty', label: 'Consumed Qty'}, {key: 'rate', label: 'Avg Rate', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Top Item Spends', value: 8500000, isCurrency: true}],
-        mockRows: [{id: 'ia1', item: 'TMT Steel Fe500', qty: '450 MT', rate: 52000}, {id: 'ia2', item: 'OPC 43 Cement', qty: '1200 Bags', rate: 340}]
+      { id: 'item-analysis', label: 'Item Analysis', title: 'Item-wise Analysis', description: 'Item consumption rates, ordered versus consumed stock levels, and purchase values.',
+        columns: [
+          { key: 'itemCode', label: 'Item Code', type: 'mono' },
+          { key: 'item', label: 'Material Description', type: 'text' },
+          { key: 'category', label: 'Category', type: 'text' },
+          { key: 'orderedQty', label: 'Ordered Qty', type: 'text', align: 'center' },
+          { key: 'receivedQty', label: 'Received Qty', type: 'text', align: 'center' },
+          { key: 'consumedQty', label: 'Consumed Qty', type: 'text', align: 'center' },
+          { key: 'availableQty', label: 'Available Stock', type: 'text', align: 'center' },
+          { key: 'unit', label: 'Unit', type: 'text' },
+          { key: 'purchaseValue', label: 'Purchase Value', type: 'currency', align: 'right' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total Material Consumption', value: 48500000, isCurrency: true },
+          { id: 's2', label: 'Active Stock Holdings', value: 18200000, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'ia-1', itemCode: 'PLY-BWR-19', item: 'BWR Grade Commercial Plywood 19mm', category: 'Woodwork & Joinery', orderedQty: '1,200', receivedQty: '1,200', consumedQty: '950', availableQty: '250', unit: 'Sheets', purchaseValue: 4200000 },
+          { id: 'ia-2', itemCode: 'STL-FE500-12', item: 'TMT Steel Reinforcement Fe500 12mm', category: 'Civil & Structural', orderedQty: '450', receivedQty: '400', consumedQty: '380', availableQty: '20', unit: 'MT', purchaseValue: 23400000 },
+          { id: 'ia-3', itemCode: 'GLS-TGH-12', item: 'Toughened Structural Glass 12mm', category: 'Glass & Glazing', orderedQty: '850', receivedQty: '750', consumedQty: '600', availableQty: '150', unit: 'Sq Mtr', purchaseValue: 9800000 },
+          { id: 'ia-4', itemCode: 'PNT-ROY-WHT', item: 'Royal Emulsion White Interior Paint', category: 'Paints & Finishes', orderedQty: '600', receivedQty: '600', consumedQty: '480', availableQty: '120', unit: 'Liters', purchaseValue: 3600000 },
+          { id: 'ia-5', itemCode: 'CEM-OPC-53', item: 'OPC 53 Grade Structural Cement', category: 'Civil & Structural', orderedQty: '2,500', receivedQty: '2,500', consumedQty: '2,100', availableQty: '400', unit: 'Bags', purchaseValue: 7500000 }
+        ]
       },
-      { id: 'vendor-vs-item', label: 'Vendor Versus Item', title: 'Vendor Versus Item', description: 'Sourcing rates correlation mapped to suppliers.',
-        columns: [{key: 'vendor', label: 'Vendor'}, {key: 'item', label: 'Dominant Item'}, {key: 'supplyVal', label: 'Supply Value', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Max Active Vendor', value: 'Century Ply', color: 'text-brand-700'}],
-        mockRows: [{id: 'vvi1', vendor: 'Century Ply', item: 'Marine Plywood', supplyVal: 3500000}]
+      { id: 'vendor-vs-item', label: 'Vendor Versus Item', title: 'Vendor Versus Item Sourcing Rates', description: 'Supplier pricing comparison, rate discounts, tax rates, and final billing amounts.',
+        columns: [
+          { key: 'vendor', label: 'Vendor Name', type: 'text' },
+          { key: 'item', label: 'Supplied Material Item', type: 'text' },
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'quantity', label: 'Quantity', type: 'text', align: 'center' },
+          { key: 'basicRate', label: 'Basic Rate', type: 'currency', align: 'right' },
+          { key: 'discount', label: 'Discount (%)', type: 'text', align: 'center' },
+          { key: 'tax', label: 'GST Tax (%)', type: 'text', align: 'center' },
+          { key: 'finalRate', label: 'Final Unit Rate', type: 'currency', align: 'right' },
+          { key: 'finalAmount', label: 'Final Amount', type: 'currency', align: 'right' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Average Discount Savings', value: '7.8%' },
+          { id: 's2', label: 'Total Sourced Value', value: 38200000, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'vvi-1', vendor: 'Century Plyboards India Ltd', item: 'Marine Plywood 19mm', site: 'Nexus Tech Park', quantity: '800 Sheets', basicRate: 3200, discount: '8.0%', tax: '18%', finalRate: 3474, finalAmount: 2779200 },
+          { id: 'vvi-2', vendor: 'Asian Paints Ltd', item: 'Royal Exterior Emulsion Paint', site: 'Grand Hyatt Goa', quantity: '450 Drums', basicRate: 8500, discount: '10.0%', tax: '18%', finalRate: 9027, finalAmount: 4062150 },
+          { id: 'vvi-3', vendor: 'Saint-Gobain India Pvt Ltd', item: 'Acoustic Glass Panelling', site: 'Imperial Heights', quantity: '650 Sq Mtr', basicRate: 11200, discount: '5.0%', tax: '18%', finalRate: 12555, finalAmount: 8160750 },
+          { id: 'vvi-4', vendor: 'Greenlam Industries Ltd', item: 'HPL Exterior Wall Cladding', site: 'Phoenix Marketcity', quantity: '1,200 Sq Ft', basicRate: 480, discount: '6.0%', tax: '18%', finalRate: 532, finalAmount: 638400 },
+          { id: 'vvi-5', vendor: 'Pidilite Industries Ltd', item: 'Fevicol SH Waterproof Adhesive', site: 'Sobha City Luxury Villa', quantity: '120 Tins', basicRate: 14500, discount: '12.0%', tax: '18%', finalRate: 15057, finalAmount: 1806840 }
+        ]
       },
-      { id: 'transfer-log', label: 'Transfer Log', title: 'Material Transfer Log', description: 'Inter-site structural transfers.',
-        columns: [{key: 'txId', label: 'TX ID'}, {key: 'from', label: 'Source'}, {key: 'to', label: 'Dest'}],
-        summaryCards: [{id: 's1', label: 'Active Transfers', value: 45}],
-        mockRows: [{id: 'tl1', txId: 'TRX-101', from: 'Nexus Park', to: 'Sobha Villa'}]
+      { id: 'transfer-log', label: 'Transfer Log', title: 'Inter-Site Material Transfer Log', description: 'Logistics tracking for stock transferred between active construction yards and sites.',
+        columns: [
+          { key: 'transferRef', label: 'Transfer Ref', type: 'mono' },
+          { key: 'date', label: 'Transfer Date', type: 'date' },
+          { key: 'item', label: 'Transferred Material Item', type: 'text' },
+          { key: 'sourceSite', label: 'Source Yard / Site', type: 'text' },
+          { key: 'destinationSite', label: 'Destination Site', type: 'text' },
+          { key: 'quantity', label: 'Quantity', type: 'text', align: 'center' },
+          { key: 'unit', label: 'Unit', type: 'text' },
+          { key: 'status', label: 'Transfer Status', type: 'badge' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Completed Transfers', value: 42 },
+          { id: 's2', label: 'In-Transit Shipments', value: 3 }
+        ],
+        mockRows: [
+          { id: 'tl-1', transferRef: 'TRX-2026-012', date: '2026-07-08', item: 'BWR Commercial Plywood 19mm', sourceSite: 'Peenya Central Warehouse', destinationSite: 'Nexus Tech Park', quantity: '300', unit: 'Sheets', status: 'delivered' },
+          { id: 'tl-2', transferRef: 'TRX-2026-015', date: '2026-07-12', item: 'TMT Steel Fe500 12mm', sourceSite: 'Whitefield Site Yard', destinationSite: 'Grand Hyatt Goa', quantity: '45', unit: 'MT', status: 'delivered' },
+          { id: 'tl-3', transferRef: 'TRX-2026-018', date: '2026-07-15', item: 'Toughened Glass 12mm', sourceSite: 'Peenya Central Warehouse', destinationSite: 'Imperial Heights', quantity: '200', unit: 'Sq Mtr', status: 'in_transit' },
+          { id: 'tl-4', transferRef: 'TRX-2026-021', date: '2026-07-19', item: 'Royal Emulsion White Paint', sourceSite: 'Bhiwandi Regional Godown', destinationSite: 'Phoenix Marketcity', quantity: '150', unit: 'Liters', status: 'delivered' },
+          { id: 'tl-5', transferRef: 'TRX-2026-024', date: '2026-07-22', item: 'OPC 53 Cement Bags', sourceSite: 'Peenya Central Warehouse', destinationSite: 'Sobha City Luxury Villa', quantity: '500', unit: 'Bags', status: 'scheduled' }
+        ]
       },
-      { id: 'consumption-log', label: 'Consumption Log', title: 'Consumption Log', description: 'Inventory burn tracking.',
-        columns: [{key: 'date', label: 'Date', type:'date'}, {key: 'site', label: 'Site'}, {key: 'value', label: 'Value', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Weekly Burn Rates', value: 1200500, isCurrency: true}],
-        mockRows: [{id: 'cl1', date: '2026-07-20', site: 'Nexus Park', value: 145000}]
+      { id: 'consumption-log', label: 'Consumption Log', title: 'Site Material Consumption & Burn Tracking', description: 'Stock depletion rates, opening balances, daily usage, and closing inventory.',
+        columns: [
+          { key: 'consumptionRef', label: 'Log Ref', type: 'mono' },
+          { key: 'date', label: 'Log Date', type: 'date' },
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'item', label: 'Material Description', type: 'text' },
+          { key: 'openingQty', label: 'Opening Qty', type: 'text', align: 'center' },
+          { key: 'consumedQty', label: 'Consumed Qty', type: 'text', align: 'center' },
+          { key: 'closingQty', label: 'Closing Qty', type: 'text', align: 'center' },
+          { key: 'usedFor', label: 'Execution Milestone / Area', type: 'text' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Daily Average Burn Value', value: 1450000, isCurrency: true },
+          { id: 's2', label: 'Efficiency Index', value: '98.2%' }
+        ],
+        mockRows: [
+          { id: 'cl-1', consumptionRef: 'CON-2026-101', date: '2026-07-12', site: 'Nexus Tech Park', item: 'BWR Grade Plywood 19mm', openingQty: '550', consumedQty: '120', closingQty: '430', usedFor: 'Executive Boardroom Panelling' },
+          { id: 'cl-2', consumptionRef: 'CON-2026-104', date: '2026-07-15', site: 'Grand Hyatt Goa', item: 'TMT Steel Fe500 12mm', openingQty: '180', consumedQty: '35', closingQty: '145', usedFor: 'Banquet Hall Column Foundation' },
+          { id: 'cl-3', consumptionRef: 'CON-2026-108', date: '2026-07-18', site: 'Imperial Heights', item: 'Toughened Glass 12mm', openingQty: '320', consumedQty: '75', closingQty: '245', usedFor: 'Facade Glazing Level 14' },
+          { id: 'cl-4', consumptionRef: 'CON-2026-112', date: '2026-07-20', site: 'Phoenix Marketcity', item: 'Royal Interior Paint White', openingQty: '240', consumedQty: '80', closingQty: '160', usedFor: 'Anchor Store Primer Layer' },
+          { id: 'cl-5', consumptionRef: 'CON-2026-115', date: '2026-07-23', site: 'Sobha City Luxury Villa', item: 'OPC 53 Structural Cement', openingQty: '800', consumedQty: '150', closingQty: '650', usedFor: 'Compound Wall Plastering' }
+        ]
       }
     ]
   },
   [ROUTES.BUDGET_REPORTS]: {
     id: 'reports-budget', route: ROUTES.BUDGET_REPORTS, pageType: 'report',
-    title: 'Budget Analytics module', description: 'Variance and outlay metrics.', breadcrumbs: ['Reports', 'Budget Reports'],
+    title: 'Budget Analytics & Cost Variance Intelligence', description: 'Capex budgets, vendor allocation limits, category splits, and savings analysis.', breadcrumbs: ['Reports', 'Budget Reports'],
     tabs: [
-      { id: 'all-project', label: 'All Project Budget', title: 'All Project Budget', description: 'Aggregated Capex caps.',
-        columns: [{key: 'site', label: 'Site'}, {key: 'budget', label: 'Allocated Budget', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Total Portfolio Budget', value: 187000000, isCurrency: true}],
-        mockRows: [{id: 'b1', site: 'Nexus Park', budget: 50000000}]
+      { id: 'all-project', label: 'All Project Budget', title: 'All Project Budget Portfolio', description: 'Approved limits, committed contracts, actual spend, and available balances across all active sites.',
+        columns: [
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'appBudget', label: 'Approved Budget', type: 'currency', align: 'right' },
+          { key: 'revisedBudget', label: 'Revised Budget', type: 'currency', align: 'right' },
+          { key: 'committed', label: 'Committed Amount', type: 'currency', align: 'right' },
+          { key: 'actualSpend', label: 'Actual Outlay', type: 'currency', align: 'right' },
+          { key: 'available', label: 'Available Balance', type: 'currency', align: 'right' },
+          { key: 'utilization', label: 'Utilization (%)', type: 'text', align: 'center' },
+          { key: 'status', label: 'Budget Health', type: 'badge' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total Approved Portfolio', value: 248000000, isCurrency: true },
+          { id: 's2', label: 'Total Actual Outlay', value: 145000000, isCurrency: true },
+          { id: 's3', label: 'Available Portfolio Balance', value: 103000000, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'apb-1', site: 'Nexus Tech Park', appBudget: 50000000, revisedBudget: 52000000, committed: 35000000, actualSpend: 22000000, available: 30000000, utilization: '42.3%', status: 'healthy' },
+          { id: 'apb-2', site: 'Grand Hyatt Goa', appBudget: 120000000, revisedBudget: 120000000, committed: 85000000, actualSpend: 68000000, available: 52000000, utilization: '56.7%', status: 'healthy' },
+          { id: 'apb-3', site: 'Imperial Heights', appBudget: 65000000, revisedBudget: 65000000, committed: 48000000, actualSpend: 36000000, available: 29000000, utilization: '55.4%', status: 'healthy' },
+          { id: 'apb-4', site: 'Phoenix Marketcity', appBudget: 18000000, revisedBudget: 18000000, committed: 17200000, actualSpend: 15000000, available: 3000000, utilization: '83.3%', status: 'near_limit' },
+          { id: 'apb-5', site: 'Sobha City Luxury Villa', appBudget: 42000000, revisedBudget: 42000000, committed: 31000000, actualSpend: 24000000, available: 18000000, utilization: '57.1%', status: 'healthy' }
+        ]
       },
-      { id: 'vendor-budget', label: 'Vendor Budget', title: 'Vendor Budget', description: 'Committed caps split per supplier.',
-        columns: [{key: 'vendor', label: 'Vendor'}, {key: 'limit', label: 'Threshold', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Vendor Exposure Limit', value: 25000000, isCurrency: true}],
-        mockRows: [{id: 'vb1', vendor: 'Asian Paints', limit: 8000000}]
+      { id: 'vendor-budget', label: 'Vendor Budget', title: 'Vendor Budget Allocation & Commitment Thresholds', description: 'Vendor cap limits, PO commitments, invoice billing, and remaining allocation caps.',
+        columns: [
+          { key: 'vendor', label: 'Vendor Supplier', type: 'text' },
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'appAllocation', label: 'Approved Allocation', type: 'currency', align: 'right' },
+          { key: 'poCommitment', label: 'PO Commitment', type: 'currency', align: 'right' },
+          { key: 'invoiceAmount', label: 'Invoice Amount', type: 'currency', align: 'right' },
+          { key: 'paidAmount', label: 'Paid Amount', type: 'currency', align: 'right' },
+          { key: 'remainingAlloc', label: 'Remaining Cap', type: 'currency', align: 'right' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total Vendor Allocations', value: 85000000, isCurrency: true },
+          { id: 's2', label: 'Total Vendor Disbursements', value: 48000000, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'vb-1', vendor: 'Century Plyboards India Ltd', site: 'Nexus Tech Park', appAllocation: 25000000, poCommitment: 21000000, invoiceAmount: 16500000, paidAmount: 14000000, remainingAlloc: 8500000 },
+          { id: 'vb-2', vendor: 'Asian Paints Ltd', site: 'Grand Hyatt Goa', appAllocation: 18000000, poCommitment: 15400000, invoiceAmount: 12800000, paidAmount: 11000000, remainingAlloc: 5200000 },
+          { id: 'vb-3', vendor: 'Saint-Gobain India Pvt Ltd', site: 'Imperial Heights', appAllocation: 22000000, poCommitment: 18500000, invoiceAmount: 14200000, paidAmount: 12500000, remainingAlloc: 7800000 },
+          { id: 'vb-4', vendor: 'Greenlam Industries Ltd', site: 'Phoenix Marketcity', appAllocation: 12000000, poCommitment: 9800000, invoiceAmount: 8400000, paidAmount: 7200000, remainingAlloc: 3600000 },
+          { id: 'vb-5', vendor: 'Pidilite Industries Ltd', site: 'Sobha City Luxury Villa', appAllocation: 8000000, poCommitment: 6500000, invoiceAmount: 5200000, paidAmount: 4800000, remainingAlloc: 2800000 }
+        ]
       },
-      { id: 'project-budget', label: 'Project Budget', title: 'Project Specific Budget', description: 'Phase-wise cost bounds.',
-        columns: [{key: 'phase', label: 'Phase'}, {key: 'cost', label: 'Calculated Cost', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Phase 1 Estimates', value: 15400000, isCurrency: true}],
-        mockRows: [{id: 'pb1', phase: 'Design & Foundation', cost: 12000000}]
+      { id: 'project-budget', label: 'Project Budget', title: 'Project Specific Category Budget Controls', description: 'Phase-wise cost bounds, transfers in/out, committed spend, and remaining balance.',
+        columns: [
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'category', label: 'Budget Category', type: 'text' },
+          { key: 'appAmount', label: 'Approved Amount', type: 'currency', align: 'right' },
+          { key: 'transferredIn', label: 'Transferred In', type: 'currency', align: 'right' },
+          { key: 'transferredOut', label: 'Transferred Out', type: 'currency', align: 'right' },
+          { key: 'committed', label: 'Committed Amount', type: 'currency', align: 'right' },
+          { key: 'actualSpend', label: 'Actual Spend', type: 'currency', align: 'right' },
+          { key: 'available', label: 'Available Balance', type: 'currency', align: 'right' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Category Outlay Total', value: 114000000, isCurrency: true },
+          { id: 's2', label: 'Inter-Budget Transfers Net', value: 0, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'pb-1', site: 'Nexus Tech Park', category: 'Raw Materials & Joinery', appAmount: 30000000, transferredIn: 2500000, transferredOut: 0, committed: 24000000, actualSpend: 18000000, available: 14500000 },
+          { id: 'pb-2', site: 'Grand Hyatt Goa', category: 'Subcontractor Labour', appAmount: 45000000, transferredIn: 0, transferredOut: 2000000, committed: 38000000, actualSpend: 31000000, available: 12000000 },
+          { id: 'pb-3', site: 'Imperial Heights', category: 'MEP & Facade Fitting', appAmount: 25000000, transferredIn: 1500000, transferredOut: 0, committed: 19500000, actualSpend: 15000000, available: 11500000 },
+          { id: 'pb-4', site: 'Phoenix Marketcity', category: 'Site Utilities & Genset', appAmount: 8000000, transferredIn: 0, transferredOut: 1000000, committed: 6500000, actualSpend: 5400000, available: 1600000 },
+          { id: 'pb-5', site: 'Sobha City Luxury Villa', category: 'Interior Finishes & Paint', appAmount: 18000000, transferredIn: 500000, transferredOut: 0, committed: 14000000, actualSpend: 11000000, available: 7500000 }
+        ]
       },
-      { id: 'budget-summary', label: 'Budget Summary', title: 'Budget Summary', description: 'Fast aggregation summaries.',
-        columns: [{key: 'metric', label: 'Metric'}, {key: 'value', label: 'Total', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Unallocated Buffer', value: 5000000, isCurrency: true}],
-        mockRows: [{id: 'bs1', metric: 'Capex Reserves', value: 1500000}]
+      { id: 'budget-summary', label: 'Budget Summary', title: 'Budget Summary & Expenditure Breakdown', description: 'Comprehensive site budget distribution across Material, Labour, Utility, Salary, and Overheads.',
+        columns: [
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'materialBudget', label: 'Material Budget', type: 'currency', align: 'right' },
+          { key: 'labourBudget', label: 'Labour Budget', type: 'currency', align: 'right' },
+          { key: 'utilityBudget', label: 'Utility Budget', type: 'currency', align: 'right' },
+          { key: 'salaryBudget', label: 'Salary Budget', type: 'currency', align: 'right' },
+          { key: 'overheadBudget', label: 'Overhead Budget', type: 'currency', align: 'right' },
+          { key: 'totalApproved', label: 'Total Approved', type: 'currency', align: 'right' },
+          { key: 'totalConsumed', label: 'Total Consumed', type: 'currency', align: 'right' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total Material Capex', value: 125000000, isCurrency: true },
+          { id: 's2', label: 'Total Operational Outlay', value: 92000000, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'bs-1', site: 'Nexus Tech Park', materialBudget: 28000000, labourBudget: 12000000, utilityBudget: 3500000, salaryBudget: 4500000, overheadBudget: 2000000, totalApproved: 50000000, totalConsumed: 32000000 },
+          { id: 'bs-2', site: 'Grand Hyatt Goa', materialBudget: 68000000, labourBudget: 32000000, utilityBudget: 8500000, salaryBudget: 7500000, overheadBudget: 4000000, totalApproved: 120000000, totalConsumed: 78000000 },
+          { id: 'bs-3', site: 'Imperial Heights', materialBudget: 36000000, labourBudget: 18000000, utilityBudget: 4500000, salaryBudget: 5500000, overheadBudget: 3000000, totalApproved: 65000000, totalConsumed: 41000000 },
+          { id: 'bs-4', site: 'Phoenix Marketcity', materialBudget: 9500000, labourBudget: 4800000, utilityBudget: 1500000, salaryBudget: 1400000, overheadBudget: 800000, totalApproved: 18000000, totalConsumed: 13200000 },
+          { id: 'bs-5', site: 'Sobha City Luxury Villa', materialBudget: 22000000, labourBudget: 11000000, utilityBudget: 3000000, salaryBudget: 4000000, overheadBudget: 2000000, totalApproved: 42000000, totalConsumed: 26000000 }
+        ]
       },
-      { id: 'savings-analysis', label: 'Savings Analysis', title: 'Savings Analysis', description: 'Negotiation gains and reductions.',
-        columns: [{key: 'site', label: 'Site'}, {key: 'savings', label: 'Net Savings', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Target Savings Hit', value: '11.5%'}],
-        mockRows: [{id: 'sa1', site: 'Nexus Tech Park', savings: 2400000}]
+      { id: 'savings-analysis', label: 'Savings Analysis', title: 'Procurement Negotiations & Cost Savings Analysis', description: 'Tracking estimated procurement targets against finalized vendor quotes and actual purchase amounts.',
+        columns: [
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'itemCategory', label: 'Item / Material Category', type: 'text' },
+          { key: 'estimatedAmt', label: 'Estimated Budget', type: 'currency', align: 'right' },
+          { key: 'finalizedAmt', label: 'Finalized Quote', type: 'currency', align: 'right' },
+          { key: 'actualPurchase', label: 'Actual Purchase', type: 'currency', align: 'right' },
+          { key: 'savingAmount', label: 'Saving Amount', type: 'currency', align: 'right' },
+          { key: 'savingPct', label: 'Saving Percentage', type: 'text', align: 'center' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total Cost Savings Achieved', value: 14800000, isCurrency: true },
+          { id: 's2', label: 'Average Savings Yield', value: '11.4%' }
+        ],
+        mockRows: [
+          { id: 'sa-1', site: 'Nexus Tech Park', itemCategory: 'Marine Plywood & Joinery', estimatedAmt: 28000000, finalizedAmt: 25400000, actualPurchase: 24800000, savingAmount: 3200000, savingPct: '11.4%' },
+          { id: 'sa-2', site: 'Grand Hyatt Goa', itemCategory: 'Structural Steel Fe500', estimatedAmt: 45000000, finalizedAmt: 41000000, actualPurchase: 39500000, savingAmount: 5500000, savingPct: '12.2%' },
+          { id: 'sa-3', site: 'Imperial Heights', itemCategory: 'Acoustic Facade Glazing', estimatedAmt: 22000000, finalizedAmt: 19800000, actualPurchase: 19400000, savingAmount: 2600000, savingPct: '11.8%' },
+          { id: 'sa-4', site: 'Phoenix Marketcity', itemCategory: 'HPL Wall Cladding', estimatedAmt: 8500000, finalizedAmt: 7800000, actualPurchase: 7600000, savingAmount: 900000, savingPct: '10.6%' },
+          { id: 'sa-5', site: 'Sobha City Luxury Villa', itemCategory: 'Premium Interior Paints', estimatedAmt: 14000000, finalizedAmt: 11800000, actualPurchase: 11400000, savingAmount: 2600000, savingPct: '18.6%' }
+        ]
       }
     ]
   },
   [ROUTES.FINANCE_REPORTS]: {
     id: 'reports-finance', route: ROUTES.FINANCE_REPORTS, pageType: 'report',
-    title: 'Finance Analytics module', description: 'Reconciliation reports and ledgers.', breadcrumbs: ['Reports', 'Finance Reports'],
+    title: 'Finance Analytics & Treasury Reconciliation', description: 'Bill payment summaries, net payables, invoice analysis, fund flows, vendor liabilities, and T-account ledgers.', breadcrumbs: ['Reports', 'Finance Reports'],
     tabs: [
-      { id: 'bill-payment', label: 'Bill Payment Summary', title: 'Bill Payment Summary', description: 'Consolidation of payments made against raised bills.',
-        columns: [{key: 'vendor', label: 'Supplier'}, {key: 'billed', label: 'Totals', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Total Certified Inv', value: 31000000, isCurrency: true}],
-        mockRows: [{id: 'fr1', vendor: 'Asian Paints', billed: 5200000}]
+      { id: 'bill-payment', label: 'Bill Payment Summary', title: 'Bill Payment Summary & Disbursement Ledger', description: 'Consolidated tracking of certified vendor bills versus total payments disbursed.',
+        columns: [
+          { key: 'vendor', label: 'Vendor Supplier', type: 'text' },
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'totalBilled', label: 'Total Invoiced', type: 'currency', align: 'right' },
+          { key: 'totalCertified', label: 'Total Certified', type: 'currency', align: 'right' },
+          { key: 'totalPaid', label: 'Total Disbursed', type: 'currency', align: 'right' },
+          { key: 'outstanding', label: 'Outstanding Balance', type: 'currency', align: 'right' },
+          { key: 'overdue', label: 'Overdue Amount', type: 'currency', align: 'right' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total Certified Bills', value: 92400000, isCurrency: true },
+          { id: 's2', label: 'Total Payments Settled', value: 76500000, isCurrency: true },
+          { id: 's3', label: 'Total Creditor Outstandings', value: 15900000, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'bp-1', vendor: 'Century Plyboards India Ltd', site: 'Nexus Tech Park', totalBilled: 22500000, totalCertified: 21000000, totalPaid: 18500000, outstanding: 2500000, overdue: 0 },
+          { id: 'bp-2', vendor: 'Asian Paints Ltd', site: 'Grand Hyatt Goa', totalBilled: 16800000, totalCertified: 15400000, totalPaid: 13200000, outstanding: 2200000, overdue: 500000 },
+          { id: 'bp-3', vendor: 'Saint-Gobain India Pvt Ltd', site: 'Imperial Heights', totalBilled: 28900000, totalCertified: 26500000, totalPaid: 21000000, outstanding: 5500000, overdue: 1200000 },
+          { id: 'bp-4', vendor: 'Greenlam Industries Ltd', site: 'Phoenix Marketcity', totalBilled: 11400000, totalCertified: 10800000, totalPaid: 9500000, outstanding: 1300000, overdue: 0 },
+          { id: 'bp-5', vendor: 'Pidilite Industries Ltd', site: 'Sobha City Luxury Villa', totalBilled: 19200000, totalCertified: 18700000, totalPaid: 14300000, outstanding: 4400000, overdue: 800000 }
+        ]
       },
-      { id: 'net-amount', label: 'Net Amount', title: 'Net Amount Payable', description: 'Pending net balances.',
-        columns: [{key: 'vendor', label: 'Supplier'}, {key: 'net', label: 'Net Payable', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Total Payables', value: 4500000, isCurrency: true}],
-        mockRows: [{id: 'na1', vendor: 'Century Ply', net: 1200000}]
+      { id: 'net-amount', label: 'Net Amount', title: 'Net Financial Position & Liquidity Overview', description: 'Net balance statement mapping Client Billings, Receipts, Vendor Liabilities, and Utility/Salary Outlays.',
+        columns: [
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'clientBilling', label: 'Client Billing', type: 'currency', align: 'right' },
+          { key: 'clientReceipts', label: 'Client Receipts', type: 'currency', align: 'right' },
+          { key: 'vendorInvoices', label: 'Vendor Bills', type: 'currency', align: 'right' },
+          { key: 'vendorPayments', label: 'Vendor Disbursals', type: 'currency', align: 'right' },
+          { key: 'utilitySalary', label: 'Utilities & Salaries', type: 'currency', align: 'right' },
+          { key: 'netPosition', label: 'Net Liquidity Position', type: 'currency', align: 'right' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total Client Receipts', value: 148000000, isCurrency: true },
+          { id: 's2', label: 'Total Operating Expenses', value: 108500000, isCurrency: true },
+          { id: 's3', label: 'Net Cash Reserve', value: 39500000, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'na-1', site: 'Nexus Tech Park', clientBilling: 45000000, clientReceipts: 38000000, vendorInvoices: 22000000, vendorPayments: 18500000, utilitySalary: 3800000, netPosition: 15700000 },
+          { id: 'na-2', site: 'Grand Hyatt Goa', clientBilling: 95000000, clientReceipts: 82000000, vendorInvoices: 52000000, vendorPayments: 45000000, utilitySalary: 8200000, netPosition: 28800000 },
+          { id: 'na-3', site: 'Imperial Heights', clientBilling: 58000000, clientReceipts: 46000000, vendorInvoices: 34000000, vendorPayments: 28000000, utilitySalary: 5100000, netPosition: 12900000 },
+          { id: 'na-4', site: 'Phoenix Marketcity', clientBilling: 16000000, clientReceipts: 14500000, vendorInvoices: 10500000, vendorPayments: 9500000, utilitySalary: 1800000, netPosition: 3200000 },
+          { id: 'na-5', site: 'Sobha City Luxury Villa', clientBilling: 38000000, clientReceipts: 31000000, vendorInvoices: 21000000, vendorPayments: 17500000, utilitySalary: 3500000, netPosition: 10000000 }
+        ]
       },
-      { id: 'invoice-analysis', label: 'Invoice Analysis', title: 'Invoice Analysis', description: 'Deep-dive invoice mapping.',
-        columns: [{key: 'invNo', label: 'Invoice No', type:'mono'}, {key: 'val', label: 'Value', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Active Invoices', value: 114}],
-        mockRows: [{id: 'in1', invNo: 'INV-1090', val: 56000}]
+      { id: 'invoice-analysis', label: 'Invoice Analysis', title: 'Vendor Invoice Verification & Audit Trail', description: 'Detailed breakdown of active invoices, GST amounts, certified values, and audit status.',
+        columns: [
+          { key: 'invoiceNo', label: 'Invoice No', type: 'mono' },
+          { key: 'vendor', label: 'Vendor Supplier', type: 'text' },
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'invoiceDate', label: 'Invoice Date', type: 'date' },
+          { key: 'dueDate', label: 'Due Date', type: 'date' },
+          { key: 'grossAmount', label: 'Gross Amount', type: 'currency', align: 'right' },
+          { key: 'certifiedAmount', label: 'Certified Amount', type: 'currency', align: 'right' },
+          { key: 'paidAmount', label: 'Paid Amount', type: 'currency', align: 'right' },
+          { key: 'outstandingAmount', label: 'Outstanding', type: 'currency', align: 'right' },
+          { key: 'status', label: 'Approval Status', type: 'badge' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Invoices In Verification', value: 24 },
+          { id: 's2', label: 'Total Invoiced Liabilities', value: 38500000, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'ia-1', invoiceNo: 'INV-2026-401', vendor: 'Century Plyboards India Ltd', site: 'Nexus Tech Park', invoiceDate: '2026-07-04', dueDate: '2026-08-04', grossAmount: 4800000, certifiedAmount: 4800000, paidAmount: 4800000, outstandingAmount: 0, status: 'approved' },
+          { id: 'ia-2', invoiceNo: 'INV-2026-408', vendor: 'Asian Paints Ltd', site: 'Grand Hyatt Goa', invoiceDate: '2026-07-08', dueDate: '2026-08-08', grossAmount: 6200000, certifiedAmount: 5900000, paidAmount: 4000000, outstandingAmount: 1900000, status: 'approved' },
+          { id: 'ia-3', invoiceNo: 'INV-2026-415', vendor: 'Saint-Gobain India Pvt Ltd', site: 'Imperial Heights', invoiceDate: '2026-07-12', dueDate: '2026-08-12', grossAmount: 9500000, certifiedAmount: 9500000, paidAmount: 6000000, outstandingAmount: 3500000, status: 'partially_paid' },
+          { id: 'ia-4', invoiceNo: 'INV-2026-422', vendor: 'Greenlam Industries Ltd', site: 'Phoenix Marketcity', invoiceDate: '2026-07-16', dueDate: '2026-08-16', grossAmount: 2400000, certifiedAmount: 2400000, paidAmount: 2400000, outstandingAmount: 0, status: 'approved' },
+          { id: 'ia-5', invoiceNo: 'INV-2026-429', vendor: 'Pidilite Industries Ltd', site: 'Sobha City Luxury Villa', invoiceDate: '2026-07-20', dueDate: '2026-08-20', grossAmount: 3800000, certifiedAmount: 3500000, paidAmount: 0, outstandingAmount: 3500000, status: 'pending' }
+        ]
       },
-      { id: 'payment-analysis', label: 'Payment Analysis', title: 'Payment Analysis', description: 'Cashflow extraction.',
-        columns: [{key: 'ref', label: 'Payment Ref'}, {key: 'amt', label: 'Amount', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Settled Disbursals', value: 12400500, isCurrency:true}],
-        mockRows: [{id: 'pa1', ref: 'PAY-4099', amt: 500000}]
+      { id: 'payment-analysis', label: 'Payment Analysis', title: 'Disbursal Payment Method & Banking Analysis', description: 'Banking transaction channels, requested amounts, approved disbursals, and settlement speed.',
+        columns: [
+          { key: 'paymentRef', label: 'Payment Ref', type: 'mono' },
+          { key: 'vendor', label: 'Payee / Vendor', type: 'text' },
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'paymentDate', label: 'Payment Date', type: 'date' },
+          { key: 'paymentMode', label: 'Payment Mode', type: 'text' },
+          { key: 'requestedAmount', label: 'Requested Amt', type: 'currency', align: 'right' },
+          { key: 'approvedAmount', label: 'Approved Amt', type: 'currency', align: 'right' },
+          { key: 'paidAmount', label: 'Paid Disbursal', type: 'currency', align: 'right' },
+          { key: 'status', label: 'Payment Status', type: 'badge' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total Disbursed Cashflow', value: 68400000, isCurrency: true },
+          { id: 's2', label: 'Bank NEFT/RTGS Ratio', value: '94.5%' }
+        ],
+        mockRows: [
+          { id: 'pa-1', paymentRef: 'PAY-2026-801', vendor: 'Century Plyboards India Ltd', site: 'Nexus Tech Park', paymentDate: '2026-07-06', paymentMode: 'HDFC Bank RTGS', requestedAmount: 4800000, approvedAmount: 4800000, paidAmount: 4800000, status: 'completed' },
+          { id: 'pa-2', paymentRef: 'PAY-2026-805', vendor: 'Asian Paints Ltd', site: 'Grand Hyatt Goa', paymentDate: '2026-07-10', paymentMode: 'ICICI Bank NEFT', requestedAmount: 4000000, approvedAmount: 4000000, paidAmount: 4000000, status: 'completed' },
+          { id: 'pa-3', paymentRef: 'PAY-2026-810', vendor: 'Saint-Gobain India Pvt Ltd', site: 'Imperial Heights', paymentDate: '2026-07-15', paymentMode: 'HDFC Bank RTGS', requestedAmount: 6000000, approvedAmount: 6000000, paidAmount: 6000000, status: 'completed' },
+          { id: 'pa-4', paymentRef: 'PAY-2026-814', vendor: 'Greenlam Industries Ltd', site: 'Phoenix Marketcity', paymentDate: '2026-07-18', paymentMode: 'SBI Corporate Transfer', requestedAmount: 2400000, approvedAmount: 2400000, paidAmount: 2400000, status: 'completed' },
+          { id: 'pa-5', paymentRef: 'PAY-2026-820', vendor: 'Pidilite Industries Ltd', site: 'Sobha City Luxury Villa', paymentDate: '2026-07-22', paymentMode: 'HDFC Bank Cheque', requestedAmount: 3500000, approvedAmount: 3500000, paidAmount: 0, status: 'pending' }
+        ]
       },
-      { id: 'fund-flow', label: 'Fund Flow', title: 'Fund Flow statement', description: 'Inbound and Outbound liquidity tracing.',
-        columns: [{key: 'type', label: 'Direction'}, {key: 'amount', label: 'Amount', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Operating Liquidity', value: 800000, isCurrency:true}],
-        mockRows: [{id: 'ff1', type: 'Outbound Vendor Payment', amount: 35000}]
+      { id: 'fund-flow', label: 'Fund Flow', title: 'Corporate Treasury & Monthly Fund Flow Statement', description: 'Month-on-month capital inflows, operational outflows, utility expenses, and net treasury reserves.',
+        columns: [
+          { key: 'month', label: 'Billing Period', type: 'text' },
+          { key: 'openingBalance', label: 'Opening Treasury', type: 'currency', align: 'right' },
+          { key: 'clientReceipts', label: 'Client Inflows', type: 'currency', align: 'right' },
+          { key: 'vendorPayments', label: 'Vendor Outflows', type: 'currency', align: 'right' },
+          { key: 'utilityPayments', label: 'Utility Outlays', type: 'currency', align: 'right' },
+          { key: 'salaryPayments', label: 'Salary Outlays', type: 'currency', align: 'right' },
+          { key: 'transfers', label: 'Inter-Site Transfers', type: 'currency', align: 'right' },
+          { key: 'closingBalance', label: 'Closing Reserves', type: 'currency', align: 'right' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Net Monthly Surplus', value: 18500000, isCurrency: true },
+          { id: 's2', label: 'Treasury Reserve Cover', value: '4.2 Months' }
+        ],
+        mockRows: [
+          { id: 'ff-1', month: 'March 2026', openingBalance: 12000000, clientReceipts: 35000000, vendorPayments: 22000000, utilityPayments: 1800000, salaryPayments: 2500000, transfers: 500000, closingBalance: 20200000 },
+          { id: 'ff-2', month: 'April 2026', openingBalance: 20200000, clientReceipts: 42000000, vendorPayments: 28000000, utilityPayments: 2100000, salaryPayments: 2800000, transfers: 0, closingBalance: 29300000 },
+          { id: 'ff-3', month: 'May 2026', openingBalance: 29300000, clientReceipts: 38000000, vendorPayments: 25000000, utilityPayments: 1900000, salaryPayments: 2600000, transfers: -800000, closingBalance: 37000000 },
+          { id: 'ff-4', month: 'June 2026', openingBalance: 37000000, clientReceipts: 48000000, vendorPayments: 31000000, utilityPayments: 2400000, salaryPayments: 3100000, transfers: 0, closingBalance: 48500000 },
+          { id: 'ff-5', month: 'July 2026', openingBalance: 48500000, clientReceipts: 52000000, vendorPayments: 34000000, utilityPayments: 2600000, salaryPayments: 3400000, transfers: 1200000, closingBalance: 61700000 }
+        ]
       },
-      { id: 'vendor-liab', label: 'Vendor Liability', title: 'Vendor Liability', description: 'Creditor exposures.',
-        columns: [{key: 'vendor', label: 'Vendor'}, {key: 'debt', label: 'Debt', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Short term debt', value: 1100000, isCurrency:true}],
-        mockRows: [{id: 'vl1', vendor: 'Schneider India', debt: 800000}]
+      { id: 'vendor-liab', label: 'Vendor Liability', title: 'Vendor Creditor Liability Exposure Ledger', description: 'Vendor account balances, certified bill totals, retention money held, and aging outstanding debt.',
+        columns: [
+          { key: 'vendor', label: 'Vendor Supplier', type: 'text' },
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'certifiedAmount', label: 'Certified Billing', type: 'currency', align: 'right' },
+          { key: 'paidAmount', label: 'Total Disbursed', type: 'currency', align: 'right' },
+          { key: 'retentionHeld', label: 'Retention (5%)', type: 'currency', align: 'right' },
+          { key: 'outstandingAmount', label: 'Net Outstanding', type: 'currency', align: 'right' },
+          { key: 'overdueAmount', label: 'Overdue >30 Days', type: 'currency', align: 'right' },
+          { key: 'liabilityStatus', label: 'Exposure Risk', type: 'badge' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total Retention Fund Held', value: 8400000, isCurrency: true },
+          { id: 's2', label: 'Critical Debt Exposure', value: 2500000, isCurrency: true }
+        ],
+        mockRows: [
+          { id: 'vl-1', vendor: 'Century Plyboards India Ltd', site: 'Nexus Tech Park', certifiedAmount: 21000000, paidAmount: 18500000, retentionHeld: 1050000, outstandingAmount: 2500000, overdueAmount: 0, liabilityStatus: 'healthy' },
+          { id: 'vl-2', vendor: 'Asian Paints Ltd', site: 'Grand Hyatt Goa', certifiedAmount: 15400000, paidAmount: 13200000, retentionHeld: 770000, outstandingAmount: 2200000, overdueAmount: 500000, liabilityStatus: 'healthy' },
+          { id: 'vl-3', vendor: 'Saint-Gobain India Pvt Ltd', site: 'Imperial Heights', certifiedAmount: 26500000, paidAmount: 21000000, retentionHeld: 1325000, outstandingAmount: 5500000, overdueAmount: 1200000, liabilityStatus: 'near_limit' },
+          { id: 'vl-4', vendor: 'Greenlam Industries Ltd', site: 'Phoenix Marketcity', certifiedAmount: 10800000, paidAmount: 9500000, retentionHeld: 540000, outstandingAmount: 1300000, overdueAmount: 0, liabilityStatus: 'healthy' },
+          { id: 'vl-5', vendor: 'Pidilite Industries Ltd', site: 'Sobha City Luxury Villa', certifiedAmount: 18700000, paidAmount: 14300000, retentionHeld: 935000, outstandingAmount: 4400000, overdueAmount: 800000, liabilityStatus: 'healthy' }
+        ]
       },
-      { id: 'account-close', label: 'Vendor Account Closure', title: 'Account Closure', description: 'Final settlement proofs.',
-        columns: [{key: 'vendor', label: 'Finished Account'}, {key: 'date', label: 'Closed On'}],
-        summaryCards: [{id: 's1', label: 'Closed Accounts', value: 12}],
-        mockRows: [{id: 'ac1', vendor: 'Bosch Ltd', date: '2026-05-12'}]
+      { id: 'account-close', label: 'Vendor Account Closure', title: 'Vendor Account Closure & Final Reconciliation', description: 'Final contract reconciliation, debit/credit notes offset, retention release, and account closure certificates.',
+        columns: [
+          { key: 'vendor', label: 'Vendor Supplier', type: 'text' },
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'contractValue', label: 'Total PO Value', type: 'currency', align: 'right' },
+          { key: 'totalBilled', label: 'Final Billing', type: 'currency', align: 'right' },
+          { key: 'debitNotes', label: 'Debit Notes', type: 'currency', align: 'right' },
+          { key: 'creditNotes', label: 'Credit Notes', type: 'currency', align: 'right' },
+          { key: 'finalBalance', label: 'Final Settlement', type: 'currency', align: 'right' },
+          { key: 'closureStatus', label: 'Closure Status', type: 'badge' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Reconciled Accounts', value: 18 },
+          { id: 's2', label: 'Pending Final Releases', value: 4 }
+        ],
+        mockRows: [
+          { id: 'ac-1', vendor: 'Bosch Power Tools Ltd', site: 'Nexus Tech Park', contractValue: 4500000, totalBilled: 4500000, debitNotes: 50000, creditNotes: 0, finalBalance: 0, closureStatus: 'completed' },
+          { id: 'ac-2', vendor: 'Schneider Electric India', site: 'Grand Hyatt Goa', contractValue: 12800000, totalBilled: 12500000, debitNotes: 150000, creditNotes: 0, finalBalance: 0, closureStatus: 'completed' },
+          { id: 'ac-3', vendor: 'Kirloskar Brothers Ltd', site: 'Imperial Heights', contractValue: 6200000, totalBilled: 6200000, debitNotes: 0, creditNotes: 100000, finalBalance: 100000, closureStatus: 'pending' },
+          { id: 'ac-4', vendor: 'Havells India Ltd', site: 'Phoenix Marketcity', contractValue: 8500000, totalBilled: 8500000, debitNotes: 200000, creditNotes: 0, finalBalance: 0, closureStatus: 'completed' },
+          { id: 'ac-5', vendor: 'Godrej & Boyce Mfg Ltd', site: 'Sobha City Luxury Villa', contractValue: 3400000, totalBilled: 3400000, debitNotes: 0, creditNotes: 0, finalBalance: 0, closureStatus: 'completed' }
+        ]
       },
-      { id: 'vendor-ledger', label: 'Vendor Ledger', title: 'Vendor Ledger', description: 'Full T-Accounts per vendor.',
-        columns: [{key: 'tran', label: 'Transaction'}, {key: 'val', label: 'Value', type: 'currency'}],
-        summaryCards: [{id: 's1', label: 'Active Ledgers', value: 4}],
-        mockRows: [{id: 'vl1', tran: 'Initial Opening Balance', val: 5000}]
+      { id: 'vendor-ledger', label: 'Vendor Ledger', title: 'Vendor General Ledger T-Account Transactions', description: 'Itemized debit/credit entries, opening balances, payment vouchers, and running account balances.',
+        columns: [
+          { key: 'date', label: 'Transaction Date', type: 'date' },
+          { key: 'vendor', label: 'Vendor Name', type: 'text' },
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'transactionRef', label: 'Voucher Ref', type: 'mono' },
+          { key: 'transactionType', label: 'Entry Description', type: 'text' },
+          { key: 'debit', label: 'Debit (Paid)', type: 'currency', align: 'right' },
+          { key: 'credit', label: 'Credit (Billed)', type: 'currency', align: 'right' },
+          { key: 'runningBalance', label: 'Running Balance', type: 'currency', align: 'right' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Ledger Audit Balance', value: 15900000, isCurrency: true },
+          { id: 's2', label: 'Voucher Integrity Index', value: '100%' }
+        ],
+        mockRows: [
+          { id: 'vl-1', date: '2026-07-02', vendor: 'Century Plyboards India Ltd', site: 'Nexus Tech Park', transactionRef: 'VCH-2026-01', transactionType: 'Opening Balance Carried Forward', debit: 0, credit: 1500000, runningBalance: 1500000 },
+          { id: 'vl-2', date: '2026-07-04', vendor: 'Century Plyboards India Ltd', site: 'Nexus Tech Park', transactionRef: 'INV-2026-401', transactionType: 'Vendor Bill Certified - Marine Plywood', debit: 0, credit: 4800000, runningBalance: 6300000 },
+          { id: 'vl-3', date: '2026-07-06', vendor: 'Century Plyboards India Ltd', site: 'Nexus Tech Park', transactionRef: 'PAY-2026-801', transactionType: 'Bank Disbursal - HDFC RTGS', debit: 4800000, credit: 0, runningBalance: 1500000 },
+          { id: 'vl-4', date: '2026-07-14', vendor: 'Century Plyboards India Ltd', site: 'Nexus Tech Park', transactionRef: 'INV-2026-440', transactionType: 'Vendor Bill Certified - HPL Laminates', debit: 0, credit: 2000000, runningBalance: 3500000 },
+          { id: 'vl-5', date: '2026-07-18', vendor: 'Century Plyboards India Ltd', site: 'Nexus Tech Park', transactionRef: 'PAY-2026-830', transactionType: 'Bank Disbursal - HDFC RTGS', debit: 1000000, credit: 0, runningBalance: 2500000 }
+        ]
       }
     ]
   },
   [ROUTES.ADMIN_REPORTS]: {
     id: 'reports-admin', route: ROUTES.ADMIN_REPORTS, pageType: 'report',
-    title: 'Admin Analytics', description: 'Compliance logs.', breadcrumbs: ['Reports', 'Admin Reports'],
+    title: 'Administration Analytics & Audit Logs', description: 'System user authentication, activity mutation logs, corporate contact diary, project physical progress, and site resource density.', breadcrumbs: ['Reports', 'Admin Reports'],
     tabs: [
-      { id: 'login-time', label: 'User Login Time', title: 'User Login Time', description: 'Authentication timestamp audit.',
-        columns: [{key: 'user', label: 'User'}, {key: 'ip', label: 'IP Address', type: 'mono'}],
-        summaryCards: [{id: 's1', label: 'Active Sessions', value: 15}],
-        mockRows: [{id: 'ul1', user: 'Rajesh Kumar', ip: '119.0.0.1'}]
+      { id: 'login-time', label: 'User Login Time', title: 'User Session Authentication Log', description: 'User login timestamps, logout times, active session duration, IP addresses, and login security status.',
+        columns: [
+          { key: 'user', label: 'User Account', type: 'text' },
+          { key: 'loginDate', label: 'Login Date', type: 'date' },
+          { key: 'loginTime', label: 'Login Time', type: 'text' },
+          { key: 'logoutTime', label: 'Logout Time', type: 'text' },
+          { key: 'duration', label: 'Session Duration', type: 'text', align: 'center' },
+          { key: 'ipAddress', label: 'IP Address', type: 'mono' },
+          { key: 'device', label: 'Device / Browser', type: 'text' },
+          { key: 'status', label: 'Auth Result', type: 'badge' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Active Concurrent Sessions', value: 18 },
+          { id: 's2', label: 'Failed Login Attempts', value: 0 }
+        ],
+        mockRows: [
+          { id: 'lt-1', user: 'Rajesh Kumar (Project Director)', loginDate: '2026-07-24', loginTime: '08:45 AM', logoutTime: 'Active Session', duration: '5h 15m', ipAddress: '119.82.102.45', device: 'Chrome / Windows 11', status: 'completed' },
+          { id: 'lt-2', user: 'Priya Sharma (Senior Billing Engineer)', loginDate: '2026-07-24', loginTime: '09:00 AM', logoutTime: 'Active Session', duration: '5h 00m', ipAddress: '119.82.102.48', device: 'Chrome / Windows 11', status: 'completed' },
+          { id: 'lt-3', user: 'Amitabh Sen (Procurement Head)', loginDate: '2026-07-24', loginTime: '09:15 AM', logoutTime: '12:30 PM', duration: '3h 15m', ipAddress: '103.22.14.88', device: 'Safari / macOS', status: 'completed' },
+          { id: 'lt-4', user: 'Vikramaditya Nair (Site Engineer)', loginDate: '2026-07-24', loginTime: '09:30 AM', logoutTime: 'Active Session', duration: '4h 30m', ipAddress: '119.82.102.50', device: 'Firefox / Android', status: 'completed' },
+          { id: 'lt-5', user: 'Sneha Kulkarni (Finance Manager)', loginDate: '2026-07-24', loginTime: '10:00 AM', logoutTime: 'Active Session', duration: '4h 00m', ipAddress: '103.22.14.92', device: 'Edge / Windows 11', status: 'completed' }
+        ]
       },
-      { id: 'activity-history', label: 'User Activity History', title: 'User Activity History', description: 'Data mutation events.',
-        columns: [{key: 'log', label: 'Log ID'}, {key: 'action', label: 'Action'}],
-        summaryCards: [{id: 's1', label: 'DB Writes', value: 540}],
-        mockRows: [{id: 'ua1', log: 'LOG-45', action: 'Created RFQ-099'}]
+      { id: 'activity-history', label: 'User Activity History', title: 'System Mutation Audit Trail', description: 'Chronological tracking of system data insertions, approvals, modifications, and master record creations.',
+        columns: [
+          { key: 'logRef', label: 'Log ID', type: 'mono' },
+          { key: 'timestamp', label: 'Timestamp', type: 'text' },
+          { key: 'user', label: 'User Name', type: 'text' },
+          { key: 'module', label: 'ERP Module', type: 'text' },
+          { key: 'action', label: 'Action Performed', type: 'text' },
+          { key: 'record', label: 'Affected Record', type: 'text' },
+          { key: 'result', label: 'Status Result', type: 'badge' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Total DB Writes Today', value: 142 },
+          { id: 's2', label: 'Audit Integrity Status', value: 'Verified' }
+        ],
+        mockRows: [
+          { id: 'ah-1', logRef: 'LOG-2026-901', timestamp: '2026-07-24 09:12', user: 'Rajesh Kumar', module: 'Masters / Brands', action: 'Created New Master Record', record: 'BRD-102 (Asian Paints Dampproof)', result: 'completed' },
+          { id: 'ah-2', logRef: 'LOG-2026-905', timestamp: '2026-07-24 10:05', user: 'Priya Sharma', module: 'Procurement / RFQ', action: 'Finalized Vendor Quotation', record: 'RFQ-2026-092', result: 'completed' },
+          { id: 'ah-3', logRef: 'LOG-2026-910', timestamp: '2026-07-24 10:40', user: 'Sneha Kulkarni', module: 'Finance / Disbursal', action: 'Approved Payment Voucher', record: 'PAY-2026-805', result: 'completed' },
+          { id: 'ah-4', logRef: 'LOG-2026-915', timestamp: '2026-07-24 11:15', user: 'Vikramaditya Nair', module: 'Finance / Utility Split', action: 'Generated Utility Bill Allocation', record: 'UTIL-2026-088', result: 'completed' },
+          { id: 'ah-5', logRef: 'LOG-2026-920', timestamp: '2026-07-24 12:00', user: 'Amitabh Sen', module: 'Procurement / PO', action: 'Issued Purchase Order', record: 'PO-2026-104', result: 'completed' }
+        ]
       },
-      { id: 'contacts-diary', label: 'Contacts Diary', title: 'Contacts Diary', description: 'Centralized CRM address book.',
-        columns: [{key: 'name', label: 'Contact Name'}, {key: 'phone', label: 'Direct Line'}],
-        summaryCards: [{id: 's1', label: 'Stored Contacts', value: 145}],
-        mockRows: [{id: 'cd1', name: 'John Supplier', phone: '+919988776655'}]
+      { id: 'contacts-diary', label: 'Contacts Diary', title: 'Centralized CRM & Stakeholder Address Book', description: 'Direct contact directory for Clients, Vendors, Consultants, PMCs, Architects, and Internal Executives.',
+        columns: [
+          { key: 'name', label: 'Contact Person', type: 'text' },
+          { key: 'organization', label: 'Organization / Company', type: 'text' },
+          { key: 'category', label: 'Stakeholder Role', type: 'text' },
+          { key: 'phone', label: 'Direct Phone', type: 'text' },
+          { key: 'email', label: 'Email Address', type: 'text' },
+          { key: 'relatedSite', label: 'Assigned Site', type: 'text' },
+          { key: 'lastContactDate', label: 'Last Contact', type: 'date' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Registered Contacts', value: 165 },
+          { id: 's2', label: 'Key Stakeholders', value: 28 }
+        ],
+        mockRows: [
+          { id: 'cd-1', name: 'Rohan Mehta', organization: 'Nexus Realty Developers Group', category: 'Client Representative', phone: '+91 98200 12345', email: 'rohan.m@nexusrealty.in', relatedSite: 'Nexus Tech Park', lastContactDate: '2026-07-22' },
+          { id: 'cd-2', name: 'Sanjay Singhania', organization: 'Century Plyboards India Ltd', category: 'Vendor Regional Head', phone: '+91 98300 67890', email: 'sanjay.s@centuryply.com', relatedSite: 'Grand Hyatt Goa', lastContactDate: '2026-07-20' },
+          { id: 'cd-3', name: 'Arch. Sunita Deshmukh', organization: 'Deshmukh & Associates Architects', category: 'Principal Architect', phone: '+91 98190 44332', email: 'sunita@deshmukharch.com', relatedSite: 'Imperial Heights', lastContactDate: '2026-07-21' },
+          { id: 'cd-4', name: 'Capt. Rakesh Verma', organization: 'CBRE Project Management', category: 'PMC Director', phone: '+91 98450 11223', email: 'rakesh.verma@cbre.in', relatedSite: 'Phoenix Marketcity', lastContactDate: '2026-07-19' },
+          { id: 'cd-5', name: 'Dr. Alok Nath', organization: 'Structural Safety Consultants', category: 'Structural Engineer', phone: '+91 98110 55667', email: 'alok@structconsult.org', relatedSite: 'Sobha City Luxury Villa', lastContactDate: '2026-07-23' }
+        ]
       },
-      { id: 'project-progress', label: 'Project Progress', title: 'Project Progress', description: 'Administrative snapshot of progress variants.',
-        columns: [{key: 'site', label: 'Site'}, {key: 'prog', label: 'S-Curve'}],
-        summaryCards: [{id: 's1', label: 'Delayed Sites', value: 2, color: 'text-rose-600'}],
-        mockRows: [{id: 'pp1', site: 'Nexus Tech Park', prog: '65%'}]
+      { id: 'project-progress', label: 'Project Progress', title: 'Site Physical Execution S-Curve & Milestones', description: 'Integrated progress tracking mapping Time Elapsed, Physical Execution, Billing Progress, and Budget Utilization.',
+        columns: [
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'projectManager', label: 'Site In-Charge', type: 'text' },
+          { key: 'timeProgress', label: 'Time Elapsed (%)', type: 'text', align: 'center' },
+          { key: 'physicalProgress', label: 'Physical Progress (%)', type: 'text', align: 'center' },
+          { key: 'billingProgress', label: 'Billing Progress (%)', type: 'text', align: 'center' },
+          { key: 'paymentProgress', label: 'Payment Recd (%)', type: 'text', align: 'center' },
+          { key: 'budgetUtilization', label: 'Budget Used (%)', type: 'text', align: 'center' },
+          { key: 'status', label: 'Execution Health', type: 'badge' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'On-Schedule Sites Ratio', value: '80%' },
+          { id: 's2', label: 'Average Execution Pace', value: '64.5%' }
+        ],
+        mockRows: [
+          { id: 'pp-1', site: 'Nexus Tech Park', projectManager: 'Vikramaditya Nair', timeProgress: '70%', physicalProgress: '68%', billingProgress: '65%', paymentProgress: '62%', budgetUtilization: '64%', status: 'healthy' },
+          { id: 'pp-2', site: 'Grand Hyatt Goa', projectManager: 'Rajesh Kumar', timeProgress: '55%', physicalProgress: '58%', billingProgress: '54%', paymentProgress: '50%', budgetUtilization: '56%', status: 'healthy' },
+          { id: 'pp-3', site: 'Imperial Heights', projectManager: 'Amitabh Sen', timeProgress: '60%', physicalProgress: '55%', billingProgress: '52%', paymentProgress: '48%', budgetUtilization: '55%', status: 'healthy' },
+          { id: 'pp-4', site: 'Phoenix Marketcity', projectManager: 'Priya Sharma', timeProgress: '85%', physicalProgress: '82%', billingProgress: '80%', paymentProgress: '78%', budgetUtilization: '83%', status: 'near_limit' },
+          { id: 'pp-5', site: 'Sobha City Luxury Villa', projectManager: 'Sneha Kulkarni', timeProgress: '65%', physicalProgress: '60%', billingProgress: '58%', paymentProgress: '55%', budgetUtilization: '57%', status: 'healthy' }
+        ]
       },
-      { id: 'site-analysis', label: 'Site Analysis', title: 'Site Analysis', description: 'Resource mapping density per site.',
-        columns: [{key: 'site', label: 'Site'}, {key: 'headcount', label: 'Assigned Roster'}],
-        summaryCards: [{id: 's1', label: 'Global Density', value: '45 FTE'}],
-        mockRows: [{id: 'sa1', site: 'Nexus Tech Park', headcount: '23 FTE'}]
+      { id: 'site-analysis', label: 'Site Analysis', title: 'Site Profitability & Resource Allocation Density', description: 'Financial comparison per site including Contract Value, Client Receipts, Vendor Outlay, and Estimated Profit Margin.',
+        columns: [
+          { key: 'site', label: 'Project Site', type: 'text' },
+          { key: 'contractValue', label: 'Contract Value', type: 'currency', align: 'right' },
+          { key: 'clientReceipts', label: 'Client Receipts', type: 'currency', align: 'right' },
+          { key: 'vendorOutlay', label: 'Vendor Outlay', type: 'currency', align: 'right' },
+          { key: 'utilitySalary', label: 'Utilities & Salaries', type: 'currency', align: 'right' },
+          { key: 'grossMargin', label: 'Gross Margin', type: 'currency', align: 'right' },
+          { key: 'marginPct', label: 'Margin Yield (%)', type: 'text', align: 'center' },
+          { key: 'headcount', label: 'Site Roster', type: 'text', align: 'center' }
+        ],
+        summaryCards: [
+          { id: 's1', label: 'Average Gross Margin', value: '24.2%' },
+          { id: 's2', label: 'Total Site Manpower Roster', value: '142 FTE' }
+        ],
+        mockRows: [
+          { id: 'sa-1', site: 'Nexus Tech Park', contractValue: 65000000, clientReceipts: 38000000, vendorOutlay: 22000000, utilitySalary: 3800000, grossMargin: 12200000, marginPct: '32.1%', headcount: '32 FTE' },
+          { id: 'sa-2', site: 'Grand Hyatt Goa', contractValue: 145000000, clientReceipts: 82000000, vendorOutlay: 52000000, utilitySalary: 8200000, grossMargin: 21800000, marginPct: '26.5%', headcount: '48 FTE' },
+          { id: 'sa-3', site: 'Imperial Heights', contractValue: 80000000, clientReceipts: 46000000, vendorOutlay: 34000000, utilitySalary: 5100000, grossMargin: 6900000, marginPct: '15.0%', headcount: '28 FTE' },
+          { id: 'sa-4', site: 'Phoenix Marketcity', contractValue: 22000000, clientReceipts: 14500000, vendorOutlay: 10500000, utilitySalary: 1800000, grossMargin: 2200000, marginPct: '15.1%', headcount: '14 FTE' },
+          { id: 'sa-5', site: 'Sobha City Luxury Villa', contractValue: 52000000, clientReceipts: 31000000, vendorOutlay: 21000000, utilitySalary: 3500000, grossMargin: 6500000, marginPct: '20.9%', headcount: '20 FTE' }
+        ]
       }
     ]
   },
