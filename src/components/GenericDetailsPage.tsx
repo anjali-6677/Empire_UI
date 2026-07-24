@@ -96,7 +96,8 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
   }
 
   const recordCode = String(activeRecord.code || activeRecord.referenceNo || activeRecord.indentNo || activeRecord.poNo || activeRecord.invoiceNo || activeRecord.vendorCode || activeRecord.clientCode || activeRecord.empCode || id?.toUpperCase() || 'REC-GEN');
-  const recordTitle = String(activeRecord.name || activeRecord.clientName || activeRecord.vendor || activeRecord.title || activeRecord.subject || `${schema.title} Record`);
+  const fallbackTitle = schema.title.endsWith('Details') ? schema.title : `${schema.title.replace(/\s+(List|Registry|Management|Overview|Dashboard)$/i, '')} Details`;
+  const recordTitle = String(activeRecord.name || activeRecord.clientName || activeRecord.vendor || activeRecord.title || activeRecord.subject || fallbackTitle);
   const recordStatus = activeRecord.status || 'draft';
 
   return (

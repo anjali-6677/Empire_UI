@@ -119,19 +119,32 @@ export const PortfolioOverviewSection: React.FC<{ children: React.ReactNode }> =
         </div>
         <div className="h-[270px] w-full pt-1">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={PORTFOLIO_FINANCIAL_COMPARISON} margin={{ top: 10, right: 10, left: 0, bottom: 25 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} 
-                interval={0} 
-                angle={-15} 
-                textAnchor="end" 
-              />
-              <YAxis 
-                tick={{ fontSize: 9, fill: '#6b7280' }} 
-                tickFormatter={(val) => formatIndianCurrencyAbbrev(val)} 
-              />
+            <BarChart 
+              layout={window.innerWidth < 640 ? "vertical" : "horizontal"} 
+              data={PORTFOLIO_FINANCIAL_COMPARISON} 
+              margin={{ top: 10, right: 15, left: window.innerWidth < 640 ? 10 : 0, bottom: 25 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={window.innerWidth < 640} horizontal={window.innerWidth >= 640} stroke="#e5e7eb" />
+              {window.innerWidth < 640 ? (
+                <>
+                  <XAxis type="number" tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(val) => formatIndianCurrencyAbbrev(val)} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: '#374151', fontWeight: 600 }} width={75} />
+                </>
+              ) : (
+                <>
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} 
+                    interval={0} 
+                    angle={-15} 
+                    textAnchor="end" 
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 9, fill: '#6b7280' }} 
+                    tickFormatter={(val) => formatIndianCurrencyAbbrev(val)} 
+                  />
+                </>
+              )}
               <Tooltip 
                 formatter={(val: number) => [safeFormatCurrency(val), '']} 
                 labelFormatter={(label, items) => {
@@ -141,9 +154,9 @@ export const PortfolioOverviewSection: React.FC<{ children: React.ReactNode }> =
                 contentStyle={{ fontSize: '11px', borderRadius: '6px', backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}
               />
               <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '8px' }} />
-              <Bar dataKey="approvedBudget" name="Approved Budget" fill="#ab9570" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="actualOutlay" name="Actual Outlay" fill="#3b82f6" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="clientBilling" name="Client Billing" fill="#10b981" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="approvedBudget" name="Approved Budget" fill="#ab9570" radius={window.innerWidth < 640 ? [0, 3, 3, 0] : [3, 3, 0, 0]} />
+              <Bar dataKey="actualOutlay" name="Actual Outlay" fill="#3b82f6" radius={window.innerWidth < 640 ? [0, 3, 3, 0] : [3, 3, 0, 0]} />
+              <Bar dataKey="clientBilling" name="Client Billing" fill="#10b981" radius={window.innerWidth < 640 ? [0, 3, 3, 0] : [3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

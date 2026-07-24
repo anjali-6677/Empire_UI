@@ -291,51 +291,88 @@ export const MyTasksPage: React.FC = () => {
                         </button>
                         {t.status !== 'completed' && (
                           <>
-                            {t.status !== 'in_progress' && (
-                              <button
-                                onClick={() => {
-                                  updateTaskStatus(t.id, 'in_progress');
-                                  triggerToast(`Started task ${t.taskCode}`);
-                                }}
-                                title="Start Task"
-                                aria-label="Start Task"
-                                className="p-1 hover:bg-blue-50 text-blue-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500"
-                              >
-                                <Play className="h-4 w-4" />
-                              </button>
+                            {(t.status === 'open' || t.status === 'overdue' || t.status === 'upcoming') && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    updateTaskStatus(t.id, 'in_progress');
+                                    triggerToast(`Started task ${t.taskCode}`);
+                                  }}
+                                  title="Start Task"
+                                  aria-label="Start Task"
+                                  className="p-1 hover:bg-blue-50 text-blue-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500"
+                                >
+                                  <Play className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    updateTaskStatus(t.id, 'pending_acceptance');
+                                    triggerToast(`Submitted ${t.taskCode} for completion acceptance`);
+                                  }}
+                                  title="Complete Task"
+                                  aria-label="Complete Task"
+                                  className="p-1 hover:bg-purple-50 text-purple-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-purple-500"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => setReassignModalTask(t)}
+                                  title="Reassign Task"
+                                  aria-label="Reassign Task"
+                                  className="p-1 hover:bg-amber-50 text-amber-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-amber-500"
+                                >
+                                  <UserCheck className="h-4 w-4" />
+                                </button>
+                              </>
                             )}
-                            <button
-                              onClick={() => {
-                                updateTaskStatus(t.id, 'pending_acceptance');
-                                triggerToast(`Submitted ${t.taskCode} for completion acceptance`);
-                              }}
-                              title="Complete Task"
-                              aria-label="Complete Task"
-                              className="p-1 hover:bg-purple-50 text-purple-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-purple-500"
-                            >
-                              <Check className="h-4 w-4" />
-                            </button>
+
+                            {t.status === 'in_progress' && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    updateTaskStatus(t.id, 'pending_acceptance');
+                                    triggerToast(`Submitted ${t.taskCode} for completion acceptance`);
+                                  }}
+                                  title="Complete Task"
+                                  aria-label="Complete Task"
+                                  className="p-1 hover:bg-purple-50 text-purple-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-purple-500"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => setReassignModalTask(t)}
+                                  title="Reassign Task"
+                                  aria-label="Reassign Task"
+                                  className="p-1 hover:bg-amber-50 text-amber-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-amber-500"
+                                >
+                                  <UserCheck className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
+
                             {t.status === 'pending_acceptance' && (
-                              <button
-                                onClick={() => {
-                                  updateTaskStatus(t.id, 'completed');
-                                  triggerToast(`Accepted completion for ${t.taskCode}`);
-                                }}
-                                title="Accept Completion"
-                                aria-label="Accept Completion"
-                                className="p-1 hover:bg-emerald-50 text-emerald-700 rounded cursor-pointer font-bold transition-colors focus:ring-1 focus:ring-emerald-500"
-                              >
-                                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => {
+                                    updateTaskStatus(t.id, 'completed');
+                                    triggerToast(`Accepted completion for ${t.taskCode}`);
+                                  }}
+                                  title="Accept Completion"
+                                  aria-label="Accept Completion"
+                                  className="p-1 hover:bg-emerald-50 text-emerald-700 rounded cursor-pointer font-bold transition-colors focus:ring-1 focus:ring-emerald-500"
+                                >
+                                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                </button>
+                                <button
+                                  onClick={() => setReassignModalTask(t)}
+                                  title="Reassign Task"
+                                  aria-label="Reassign Task"
+                                  className="p-1 hover:bg-amber-50 text-amber-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-amber-500"
+                                >
+                                  <UserCheck className="h-4 w-4" />
+                                </button>
+                              </>
                             )}
-                            <button
-                              onClick={() => setReassignModalTask(t)}
-                              title="Reassign Task"
-                              aria-label="Reassign Task"
-                              className="p-1 hover:bg-amber-50 text-amber-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-amber-500"
-                            >
-                              <UserCheck className="h-4 w-4" />
-                            </button>
                           </>
                         )}
                       </div>
