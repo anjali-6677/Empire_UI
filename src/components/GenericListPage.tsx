@@ -1,0 +1,420 @@
+import * as React from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { 
+  Plus, 
+  Search, 
+  MoreVertical, 
+  Home, 
+  ChevronRight, 
+  CheckCircle2, 
+  Eye, 
+  Copy,
+  Power,
+  X
+} from 'lucide-react';
+import { ModuleSchema } from '../config/moduleSchemas';
+import { StatusBadge } from './StatusBadge';
+import { safeFormatCurrency, safeFormatText } from '../utils/formatStatus';
+
+interface GenericListPageProps {
+  schema: ModuleSchema;
+}
+
+export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
+  const navigate = useNavigate();
+  const [search, setSearch] = React.useState('');
+  const [activeTab, setActiveTab] = React.useState('all');
+  const [toast, setToast] = React.useState<string | null>(null);
+
+  // Local mutable dataset state
+  const [localRows, setLocalRows] = React.useState<Record<string, any>[]>([]);
+
+  // Create Modal state
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [modalFormData, setModalFormData] = React.useState<Record<string, any>>({});
+  const triggerButtonRef = React.useRef<HTMLButtonElement | null>(null);
+
+  const triggerToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  // Initialize dataset
+  React.useEffect(() => {
+    if (schema.mockRows && schema.mockRows.length > 0) {
+      setLocalRows(schema.mockRows);
+    } else {
+      setLocalRows([
+        { id: '1', code: 'REC-2026-001', name: 'Sample Ledger Record #1', site: 'Nexus Tech Park', requestDate: '2026-07-20', grossAmount: 450000, status: 'active' },
+        { id: '2', code: 'REC-2026-002', name: 'Sample Ledger Record #2', site: 'Grand Hyatt Goa', requestDate: '2026-07-22', grossAmount: 1200000, status: 'active' }
+      ]);
+    }
+  }, [schema]);
+
+  // Escape key handler for modal
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        setIsModalOpen(false);
+        triggerButtonRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen]);
+
+  // Open modal
+  const handleOpenCreateModal = () => {
+    if (schema.primaryAction?.route) {
+      navigate(schema.primaryAction.route);
+      return;
+    }
+    const initialData: Record<string, any> = {};
+    if (schema.createFields) {
+      schema.createFields.forEach((f) => {
+        if (f.defaultValue !== undefined) {
+          initialData[f.name] = f.defaultValue;
+        }
+      });
+    }
+    setModalFormData(initialData);
+    setIsModalOpen(true);
+  };
+
+  // Form input change
+  const handleFormChange = (name: string, val: any) => {
+    setModalFormData((prev) => ({ ...prev, [name]: val }));
+  };
+
+  // Validate form
+  const isFormValid = React.useMemo(() => {
+    if (!schema.createFields) return true;
+    return schema.createFields.every((f) => {
+      if (!f.required) return true;
+      const val = modalFormData[f.name];
+      return val !== undefined && val !== null && String(val).trim() !== '';
+    });
+  }, [schema.createFields, modalFormData]);
+
+  // Handle Save
+  const handleSaveRecord = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFormValid) return;
+
+    const newRecord: Record<string, any> = {
+      id: `rec-${Date.now()}`,
+      ...modalFormData,
+      status: modalFormData.status || 'active'
+    };
+
+    setLocalRows((prev) => [newRecord, ...prev]);
+    setIsModalOpen(false);
+    triggerButtonRef.current?.focus();
+    triggerToast(`New record successfully registered`);
+  };
+
+  // Row Action Handlers
+  const handleToggleRowStatus = (rowId: string) => {
+    setLocalRows((prev) =>
+      prev.map((r) => {
+        if (r.id === rowId) {
+          const newStatus = r.status === 'active' || r.status === 'empanelled' ? 'inactive' : 'active';
+          triggerToast(`Record status updated to ${newStatus}`);
+          return { ...r, status: newStatus };
+        }
+        return r;
+      })
+    );
+  };
+
+  const handleDuplicateRow = (row: Record<string, any>) => {
+    const dup = {
+      ...row,
+      id: `dup-${Date.now()}`,
+      code: `${row.code || 'REC'}-COPY`,
+      indentNo: row.indentNo ? `${row.indentNo}-COPY` : undefined,
+      poNo: row.poNo ? `${row.poNo}-COPY` : undefined,
+      invoiceNo: row.invoiceNo ? `${row.invoiceNo}-COPY` : undefined
+    };
+    setLocalRows((prev) => [dup, ...prev]);
+    triggerToast('Record duplicated successfully');
+  };
+
+  const filteredData = React.useMemo(() => {
+    return localRows.filter((item) => {
+      const matchSearch = JSON.stringify(item).toLowerCase().includes(search.toLowerCase());
+      const matchTab = activeTab === 'all' || item.status === activeTab;
+      return matchSearch && matchTab;
+    });
+  }, [localRows, search, activeTab]);
+
+  return (
+    <div className="flex flex-col gap-5 w-full font-sans text-xs pb-12 select-none relative">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-[1100] bg-brand-650 border border-brand-700 text-white px-4 py-2 rounded shadow-lg font-bold text-xs flex items-center gap-2 animate-slide-in">
+          <CheckCircle2 className="h-4 w-4 text-brand-200" />
+          {toast}
+        </div>
+      )}
+
+      {/* Breadcrumbs */}
+      <nav className="flex items-center gap-1.5 text-[10px] font-bold tracking-tight text-gray-400 uppercase">
+        <Link to="/" className="hover:text-brand-600 transition-colors flex items-center justify-center p-0.5 rounded">
+          <Home className="h-3.5 w-3.5" />
+        </Link>
+        {schema.breadcrumbs.map((crumb, idx) => (
+          <React.Fragment key={idx}>
+            <ChevronRight className="h-3 w-3 text-gray-300" />
+            <span className={idx === schema.breadcrumbs.length - 1 ? 'text-gray-650 font-bold' : 'cursor-pointer'}>{crumb}</span>
+          </React.Fragment>
+        ))}
+      </nav>
+
+      {/* Header & Primary Action */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-150 pb-4">
+        <div className="space-y-0.5">
+          <h1 className="text-lg md:text-xl font-extrabold text-gray-900 tracking-tight">{schema.title}</h1>
+          {schema.description && <p className="text-[10.5px] text-gray-400 font-medium">{schema.description}</p>}
+        </div>
+
+        {schema.primaryAction && (
+          <button
+            ref={triggerButtonRef}
+            onClick={handleOpenCreateModal}
+            className="inline-flex items-center gap-1 px-3.5 py-2 text-[10.5px] font-bold rounded shadow-sm transition-all bg-brand-500 hover:bg-brand-600 text-white cursor-pointer shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            {schema.primaryAction.label}
+          </button>
+        )}
+      </div>
+
+      {/* Summary Cards */}
+      {schema.summaryCards && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {schema.summaryCards.map((card, idx) => {
+            const cardValue = idx === 0 && schema.createFields ? localRows.length : card.value;
+            return (
+              <div key={card.id} className="p-3.5 border border-gray-150 rounded bg-white shadow-sm space-y-1">
+                <span className="text-[9.5px] uppercase font-bold text-gray-400 block">{card.label}</span>
+                <span className={`font-extrabold text-base block ${card.color || 'text-gray-900'}`}>
+                  {card.isCurrency ? safeFormatCurrency(cardValue) : cardValue}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Status Tabs */}
+      {schema.tabs && (
+        <div className="flex items-center gap-1 border-b border-gray-200 overflow-x-auto scrollbar-none pb-0.5">
+          {schema.tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3 py-1.5 text-[11px] font-bold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
+                activeTab === tab.id
+                  ? 'border-brand-600 text-brand-700 bg-brand-50/40 rounded-t'
+                  : 'border-transparent text-gray-400 hover:text-gray-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Search Bar */}
+      <div className="flex items-center gap-2 bg-white p-2 border border-gray-150 rounded-lg shadow-sm">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Filter listed table rows by keyword or reference code..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-brand-500 font-sans"
+          />
+        </div>
+      </div>
+
+      {/* Data Table */}
+      <div className="bg-white border border-gray-150 rounded-lg shadow-sm overflow-hidden">
+        <div className="overflow-x-auto min-w-full">
+          <table className="w-full text-left text-xs divide-y divide-gray-150 min-w-[700px]">
+            <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
+              <tr>
+                {schema.columns?.map((col) => (
+                  <th key={col.key} className={`p-3 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
+                    {col.label}
+                  </th>
+                ))}
+                <th className="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+              {filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan={(schema.columns?.length || 0) + 1} className="p-12 text-center text-gray-400 italic">
+                    No matching records found for active search or tab selection.
+                  </td>
+                </tr>
+              ) : (
+                filteredData.map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50/60 transition-colors">
+                    {schema.columns?.map((col) => {
+                      const val = row[col.key as keyof typeof row];
+                      return (
+                        <td key={col.key} className={`p-3 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
+                          {col.type === 'currency' ? (
+                            <span className="font-mono font-bold text-gray-900">{safeFormatCurrency(val)}</span>
+                          ) : col.type === 'badge' ? (
+                            <StatusBadge status={String(val || 'active')} />
+                          ) : col.type === 'mono' ? (
+                            <span className="font-mono font-bold text-brand-700 bg-brand-50 border border-brand-150 px-1.5 py-0.5 rounded">{safeFormatText(val)}</span>
+                          ) : col.type === 'date' ? (
+                            <span className="font-mono text-gray-600">{safeFormatText(val)}</span>
+                          ) : (
+                            <span>{safeFormatText(val)}</span>
+                          )}
+                        </td>
+                      );
+                    })}
+
+                    <td className="p-3 text-right">
+                      <DropdownMenu.Root>
+                        <DropdownMenu.Trigger asChild>
+                          <button className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer focus:outline-none">
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Portal>
+                          <DropdownMenu.Content 
+                            className="bg-white border border-gray-150 rounded shadow-lg z-[1000] p-1 font-sans text-xs min-w-[150px] space-y-0.5 animate-scale-in"
+                            sideOffset={4}
+                            align="end"
+                          >
+                            <DropdownMenu.Item 
+                              onClick={() => navigate(`${schema.route}/${row.id || '1'}`)}
+                              className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                            >
+                              <Eye className="h-3.5 w-3.5 text-gray-400" /> View Details
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item 
+                              onClick={() => handleDuplicateRow(row)}
+                              className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                            >
+                              <Copy className="h-3.5 w-3.5 text-gray-400" /> Duplicate
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item 
+                              onClick={() => handleToggleRowStatus(row.id)}
+                              className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                            >
+                              <Power className="h-3.5 w-3.5 text-gray-400" />
+                              {row.status === 'active' || row.status === 'empanelled' ? 'Deactivate' : 'Activate'}
+                            </DropdownMenu.Item>
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Portal>
+                      </DropdownMenu.Root>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Schema-Driven Modal Form for Master Create Actions */}
+      {isModalOpen && schema.createFields && (
+        <div className="fixed inset-0 z-[1200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white border border-gray-150 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-gray-150 flex items-center justify-between bg-gray-50">
+              <div>
+                <h3 className="font-extrabold text-sm text-gray-900 tracking-tight">{schema.primaryAction?.label || 'Create New Record'}</h3>
+                <p className="text-[10.5px] text-gray-400 font-medium">Enter required details to save into local master ledger.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  triggerButtonRef.current?.focus();
+                }}
+                className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-200 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRecord} className="p-5 overflow-y-auto space-y-4 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {schema.createFields.map((field) => (
+                  <div key={field.name} className={field.colSpan === 2 ? 'col-span-1 sm:col-span-2' : ''}>
+                    <label className="block text-gray-700 font-bold mb-1 uppercase text-[9px] tracking-wider">
+                      {field.label} {field.required && <span className="text-rose-500">*</span>}
+                    </label>
+
+                    {field.type === 'select' ? (
+                      <select
+                        value={modalFormData[field.name] || ''}
+                        onChange={(e) => handleFormChange(field.name, e.target.value)}
+                        className="w-full border border-gray-250 rounded p-2 focus:outline-none focus:border-brand-500 bg-white font-medium text-xs text-gray-800"
+                        required={field.required}
+                      >
+                        <option value="">Select option...</option>
+                        {field.options?.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    ) : field.type === 'textarea' ? (
+                      <textarea
+                        rows={2}
+                        value={modalFormData[field.name] || ''}
+                        onChange={(e) => handleFormChange(field.name, e.target.value)}
+                        placeholder={field.placeholder}
+                        className="w-full border border-gray-250 rounded p-2 focus:outline-none focus:border-brand-500 bg-white font-medium text-xs text-gray-800"
+                        required={field.required}
+                      />
+                    ) : (
+                      <input
+                        type={field.type}
+                        value={modalFormData[field.name] || ''}
+                        onChange={(e) => handleFormChange(field.name, e.target.value)}
+                        placeholder={field.placeholder}
+                        className="w-full border border-gray-250 rounded p-2 focus:outline-none focus:border-brand-500 bg-white font-medium text-xs text-gray-800"
+                        required={field.required}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-4 border-t border-gray-150 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    triggerButtonRef.current?.focus();
+                  }}
+                  className="px-4 py-2 border border-gray-250 rounded font-bold text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!isFormValid}
+                  className="px-5 py-2 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-bold shadow-sm cursor-pointer"
+                >
+                  Save Record
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

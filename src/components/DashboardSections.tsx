@@ -1,0 +1,961 @@
+import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from 'recharts';
+import { 
+  ChevronDown,
+  ChevronUp,
+  Bell,
+  Check,
+  Truck,
+  ShieldAlert,
+  CheckSquare,
+  Layers,
+  X
+} from 'lucide-react';
+import { formatIndianCurrency } from '../utils/format';
+import { SiteSchema } from '../types';
+
+interface SectionWrapperProps {
+  id: string;
+  title: string;
+  description?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}
+
+export const SectionWrapper: React.FC<SectionWrapperProps> = ({
+  id,
+  title,
+  description,
+  defaultOpen = true,
+  children
+}) => {
+  const [isOpen, setIsOpen] = React.useState(defaultOpen);
+
+  return (
+    <section 
+      id={id} 
+      className="bg-white border border-gray-150 rounded-lg shadow-sm font-sans scroll-mt-20 overflow-hidden"
+    >
+      <div 
+        className="flex items-center justify-between p-4 border-b border-gray-150 bg-gray-50/50 cursor-pointer select-none"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div>
+          <h2 className="text-sm font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+            {title}
+          </h2>
+          {description && <p className="text-[10.5px] text-gray-400 font-medium leading-tight mt-0.5">{description}</p>}
+        </div>
+        <button
+          type="button"
+          className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors focus:outline-none"
+          aria-expanded={isOpen}
+          aria-label={`Toggle section ${title}`}
+        >
+          {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+      </div>
+
+      {isOpen && <div className="p-4 sm:p-5 space-y-4">{children}</div>}
+    </section>
+  );
+};
+
+// ==========================================
+// Section 2: Selected Site Snapshot
+// ==========================================
+export const SiteSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site }) => {
+  const approvedClientBill = Math.round(site.budget * 0.42);
+  const projectPurchase = Math.round(site.budget * 0.35);
+  const profitMargin = Math.round(site.budget * 0.22);
+  const profitMarginPct = 22.0;
+  const totalApprovedTender = Math.round(site.budget * 0.95);
+  const clientBillApproved = Math.round(site.budget * 0.38);
+  const clientPaymentReceived = Math.round(site.budget * 0.32);
+  const approvedBudgetVal = site.approvedValue || site.budget;
+  const vendorPaidTotal = Math.round(site.budget * 0.28);
+
+  return (
+    <div className="space-y-4 font-sans">
+      {/* Site Metadata Header Pill */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-xs font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-1 rounded">
+            {site.code}
+          </span>
+          <div>
+            <h3 className="font-extrabold text-sm text-gray-900 leading-tight">{site.name}</h3>
+            <span className="text-[10px] text-gray-400 font-semibold">{site.category} • Client: {site.client} • {site.city}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 text-[11px]">
+          <div>
+            <span className="text-gray-400 block text-[9px] uppercase font-bold">Project Manager</span>
+            <span className="font-bold text-gray-800">{site.manager}</span>
+          </div>
+          <div>
+            <span className="text-gray-400 block text-[9px] uppercase font-bold">Workflow Status</span>
+            <span className="font-bold uppercase text-[10px] text-brand-700">{site.workflowStatus.replace('_', ' ')}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Primary Financial Snapshot Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="p-3 border border-gray-150 rounded bg-white">
+          <span className="text-[9px] uppercase font-bold text-gray-400 block">Approved Client Bill</span>
+          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{formatIndianCurrency(approvedClientBill)}</span>
+        </div>
+        <div className="p-3 border border-gray-150 rounded bg-white">
+          <span className="text-[9px] uppercase font-bold text-gray-400 block">Project Purchase</span>
+          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{formatIndianCurrency(projectPurchase)}</span>
+        </div>
+        <div className="p-3 border border-gray-150 rounded bg-white">
+          <span className="text-[9px] uppercase font-bold text-gray-400 block">Profit Margin</span>
+          <span className="font-extrabold text-sm text-emerald-700 block mt-0.5">{formatIndianCurrency(profitMargin)}</span>
+        </div>
+        <div className="p-3 border border-gray-150 rounded bg-white">
+          <span className="text-[9px] uppercase font-bold text-gray-400 block">Margin Percentage</span>
+          <span className="font-extrabold text-sm text-emerald-700 block mt-0.5">{profitMarginPct}%</span>
+        </div>
+        <div className="p-3 border border-gray-150 rounded bg-white">
+          <span className="text-[9px] uppercase font-bold text-gray-400 block">Approved Tender Val</span>
+          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{formatIndianCurrency(totalApprovedTender)}</span>
+        </div>
+        <div className="p-3 border border-gray-150 rounded bg-white">
+          <span className="text-[9px] uppercase font-bold text-gray-400 block">Client Payments Recd</span>
+          <span className="font-extrabold text-sm text-emerald-800 block mt-0.5">{formatIndianCurrency(clientPaymentReceived)}</span>
+        </div>
+      </div>
+
+      {/* Secondary Financial & Dates Summary Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Financial Breakdown */}
+        <div className="p-3.5 border border-gray-150 rounded bg-gray-50/40 space-y-2 text-xs">
+          <h4 className="font-bold text-gray-700 uppercase text-[9.5px] tracking-wider border-b pb-1.5 border-gray-200">
+            Financial Ledger Summary
+          </h4>
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="flex justify-between py-1 border-b border-gray-100">
+              <span className="text-gray-500">Client Bill Approved:</span>
+              <span className="font-bold text-gray-800">{formatIndianCurrency(clientBillApproved)}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-gray-100">
+              <span className="text-gray-500">Approved Budget:</span>
+              <span className="font-bold text-gray-800">{formatIndianCurrency(approvedBudgetVal)}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-gray-100">
+              <span className="text-gray-500">Paid to Vendors:</span>
+              <span className="font-bold text-gray-800">{formatIndianCurrency(vendorPaidTotal)}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-gray-100">
+              <span className="text-gray-500">Total Site Budget:</span>
+              <span className="font-extrabold text-brand-700">{formatIndianCurrency(site.budget)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Start & Due Date Summary */}
+        <div className="p-3.5 border border-gray-150 rounded bg-gray-50/40 space-y-2 text-xs">
+          <h4 className="font-bold text-gray-700 uppercase text-[9.5px] tracking-wider border-b pb-1.5 border-gray-200">
+            Timeline & Schedule Summary
+          </h4>
+          <div className="grid grid-cols-2 gap-3 text-[11px]">
+            <div className="p-2 bg-white rounded border border-gray-200">
+              <span className="text-[9px] uppercase font-bold text-gray-400 block">Start Date Summary</span>
+              <div className="font-mono font-bold text-gray-800 mt-0.5">{site.startDate}</div>
+              <span className="text-[9.5px] text-gray-500 block mt-1">Completed Days: <strong className="text-gray-800">142 Days</strong></span>
+            </div>
+            <div className="p-2 bg-white rounded border border-gray-200">
+              <span className="text-[9px] uppercase font-bold text-gray-400 block">Due Date Summary</span>
+              <div className="font-mono font-bold text-gray-800 mt-0.5">{site.targetCompletion}</div>
+              <span className="text-[9.5px] text-gray-500 block mt-1">Total: <strong className="text-gray-800">270 Days</strong> | Remaining: <strong className="text-amber-700">128 Days</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// Section 3: Site Progress Matrix
+// ==========================================
+export const SiteProgressMatrixSection: React.FC<{ site: SiteSchema }> = ({ site }) => {
+  const indicators = [
+    { label: 'Time Progress', pct: Math.round((142 / 270) * 100), color: 'bg-blue-500' },
+    { label: 'Site Execution Progress', pct: site.progress || 45, color: 'bg-brand-500' },
+    { label: 'Bill Progress', pct: 42, color: 'bg-amber-500' },
+    { label: 'Client Payment Progress', pct: 32, color: 'bg-emerald-500' },
+    { label: 'Vendor Bill Progress', pct: 38, color: 'bg-indigo-500' },
+    { label: 'Vendor Payment Progress', pct: 28, color: 'bg-purple-500' },
+    { label: 'Budget Consumption', pct: 44, color: 'bg-rose-500' },
+    { label: 'Gross Profit', pct: 22, color: 'bg-teal-500' }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-sans">
+      {indicators.map((ind, idx) => (
+        <div key={idx} className="p-3.5 border border-gray-150 rounded bg-white space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-gray-700 text-[11px]">{ind.label}</span>
+            <span className="font-extrabold text-gray-900 text-xs">{ind.pct}%</span>
+          </div>
+          <div className="w-full bg-gray-150 h-2 rounded-full overflow-hidden">
+            <div className={`h-full ${ind.color} rounded-full transition-all duration-300`} style={{ width: `${ind.pct}%` }}></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ==========================================
+// Section 4: Client Tender and Billing Snapshot
+// ==========================================
+export const ClientTenderBillingSection: React.FC<{ site: SiteSchema }> = ({ site }) => {
+  const tenderVal = Math.round(site.budget * 0.95);
+  const tenderApprovedVal = Math.round(site.budget * 0.90);
+  const extraTenderVal = Math.round(site.budget * 0.12);
+  const extraApprovedVal = Math.round(site.budget * 0.10);
+
+  const billSubmitted = Math.round(site.budget * 0.45);
+  const billApproved = Math.round(site.budget * 0.40);
+  const billHeld = Math.round(site.budget * 0.03);
+  const billUnsubmitted = Math.round(site.budget * 0.52);
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 font-sans">
+      {/* Table grid */}
+      <div className="space-y-3">
+        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Tender & Extra Item Summary</h4>
+        <table className="w-full text-left text-xs border border-gray-150 rounded divide-y divide-gray-100">
+          <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
+            <tr>
+              <th className="p-2.5">Category</th>
+              <th className="p-2.5 text-right">Submitted</th>
+              <th className="p-2.5 text-right">Approved</th>
+              <th className="p-2.5 text-right">Approval %</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+            <tr>
+              <td className="p-2.5 font-bold text-gray-800">Main Tender</td>
+              <td className="p-2.5 text-right font-mono">{formatIndianCurrency(tenderVal)}</td>
+              <td className="p-2.5 text-right font-mono">{formatIndianCurrency(tenderApprovedVal)}</td>
+              <td className="p-2.5 text-right font-bold text-emerald-700">94.7%</td>
+            </tr>
+            <tr>
+              <td className="p-2.5 font-bold text-gray-800">Extra Item Tender</td>
+              <td className="p-2.5 text-right font-mono">{formatIndianCurrency(extraTenderVal)}</td>
+              <td className="p-2.5 text-right font-mono">{formatIndianCurrency(extraApprovedVal)}</td>
+              <td className="p-2.5 text-right font-bold text-emerald-700">83.3%</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider pt-2">Client Bill Status Breakdown</h4>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div className="p-2 bg-gray-50 border rounded">
+            <span className="text-[9px] uppercase font-bold text-gray-400 block">Submitted Bill</span>
+            <span className="font-bold text-gray-800 font-mono text-xs mt-0.5 block">{formatIndianCurrency(billSubmitted)}</span>
+          </div>
+          <div className="p-2 bg-emerald-50/50 border border-emerald-150 rounded">
+            <span className="text-[9px] uppercase font-bold text-emerald-700 block">Approved Bill</span>
+            <span className="font-bold text-emerald-900 font-mono text-xs mt-0.5 block">{formatIndianCurrency(billApproved)}</span>
+          </div>
+          <div className="p-2 bg-amber-50/50 border border-amber-150 rounded">
+            <span className="text-[9px] uppercase font-bold text-amber-700 block">Held Bill Amount</span>
+            <span className="font-bold text-amber-900 font-mono text-xs mt-0.5 block">{formatIndianCurrency(billHeld)}</span>
+          </div>
+          <div className="p-2 bg-gray-50 border rounded">
+            <span className="text-[9px] uppercase font-bold text-gray-400 block">Unsubmitted Bill</span>
+            <span className="font-bold text-gray-800 font-mono text-xs mt-0.5 block">{formatIndianCurrency(billUnsubmitted)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Visual Chart */}
+      <div className="p-3.5 border border-gray-150 rounded bg-gray-50/30 flex flex-col justify-between">
+        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider mb-2">Tender vs Billing Overview</h4>
+        <div className="h-[200px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={[
+              { name: 'Tender', Submitted: tenderVal, Approved: tenderApprovedVal },
+              { name: 'Extra Items', Submitted: extraTenderVal, Approved: extraApprovedVal },
+              { name: 'Client Bills', Submitted: billSubmitted, Approved: billApproved }
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 9 }} tickFormatter={(val) => `₹${(val / 100000).toFixed(0)}L`} />
+              <Tooltip formatter={(val: number) => [formatIndianCurrency(val), 'Amount']} />
+              <Legend wrapperStyle={{ fontSize: '10px' }} />
+              <Bar dataKey="Submitted" fill="#94a3b8" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="Approved" fill="#ab9570" radius={[2, 2, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// Section 5: Vendor Bill Snapshot
+// ==========================================
+export const VendorBillSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site }) => {
+  const data = [
+    { cat: 'Material', bill: Math.round(site.budget * 0.22), paid: Math.round(site.budget * 0.16), pending: Math.round(site.budget * 0.06), paidPct: '72.7%' },
+    { cat: 'Labour', bill: Math.round(site.budget * 0.12), paid: Math.round(site.budget * 0.09), pending: Math.round(site.budget * 0.03), paidPct: '75.0%' },
+    { cat: 'Utility & Salary', bill: Math.round(site.budget * 0.04), paid: Math.round(site.budget * 0.035), pending: Math.round(site.budget * 0.005), paidPct: '87.5%' }
+  ];
+
+  const totalBill = data.reduce((s, d) => s + d.bill, 0);
+  const totalPaid = data.reduce((s, d) => s + d.paid, 0);
+  const totalPending = data.reduce((s, d) => s + d.pending, 0);
+  const totalPaidPct = `${((totalPaid / totalBill) * 100).toFixed(1)}%`;
+
+  return (
+    <div className="space-y-4 font-sans">
+      <div className="overflow-x-auto border border-gray-150 rounded">
+        <table className="w-full text-left text-xs divide-y divide-gray-150 min-w-[550px]">
+          <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
+            <tr>
+              <th className="p-3">Vendor Category</th>
+              <th className="p-3 text-right">Bill Amount</th>
+              <th className="p-3 text-right">Paid Amount</th>
+              <th className="p-3 text-right">Pending Amount</th>
+              <th className="p-3 text-right">Paid %</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+            {data.map((row, idx) => (
+              <tr key={idx} className="hover:bg-gray-50/50">
+                <td className="p-3 font-bold text-gray-800">{row.cat}</td>
+                <td className="p-3 text-right font-mono">{formatIndianCurrency(row.bill)}</td>
+                <td className="p-3 text-right font-mono text-emerald-700">{formatIndianCurrency(row.paid)}</td>
+                <td className="p-3 text-right font-mono text-rose-700">{formatIndianCurrency(row.pending)}</td>
+                <td className="p-3 text-right font-bold text-gray-900">{row.paidPct}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-gray-50 font-bold border-t border-gray-200 text-gray-900">
+            <tr>
+              <td className="p-3 uppercase text-[10px]">Total Vendor Exposure</td>
+              <td className="p-3 text-right font-mono">{formatIndianCurrency(totalBill)}</td>
+              <td className="p-3 text-right font-mono text-emerald-800">{formatIndianCurrency(totalPaid)}</td>
+              <td className="p-3 text-right font-mono text-rose-800">{formatIndianCurrency(totalPending)}</td>
+              <td className="p-3 text-right text-brand-700">{totalPaidPct}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// Section 6: Approval Pending Counts
+// ==========================================
+export const ApprovalPendingSection: React.FC = () => {
+  const navigate = useNavigate();
+  const items = [
+    { label: 'Indent Approval', count: 4, route: '/settings?mod=indents' },
+    { label: 'Rate Finalization', count: 2, route: '/settings?mod=rate-inquiry' },
+    { label: 'Payment Approval', count: 5, route: '/settings?mod=payments' },
+    { label: 'Budget Approval', count: 1, route: '/sites' },
+    { label: 'Site Approval', count: 3, route: '/sites' },
+    { label: 'Task Approval', count: 6, route: '/settings?mod=tasks' }
+  ];
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 font-sans">
+      {items.map((item, idx) => (
+        <button
+          key={idx}
+          onClick={() => navigate(item.route)}
+          className="p-3.5 border border-gray-150 rounded bg-white hover:border-brand-300 hover:shadow-sm transition-all text-left group cursor-pointer focus:outline-none"
+        >
+          <span className="text-[9.5px] uppercase font-bold text-gray-400 group-hover:text-brand-600 transition-colors block">
+            {item.label}
+          </span>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="font-extrabold text-lg text-gray-900">{item.count}</span>
+            <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-150 px-1.5 py-0.25 rounded">
+              Pending
+            </span>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// ==========================================
+// Section 7: Notifications, Tasks and Activity
+// ==========================================
+export const NotificationsTasksActivitySection: React.FC = () => {
+  const [unreadTab, setUnreadTab] = React.useState<'all' | 'unread'>('all');
+  const [notifications, setNotifications] = React.useState([
+    { id: '1', title: 'Site SITE-2026-006 pending approval', time: '2026-07-24 10:30', read: false },
+    { id: '2', title: 'Material GRN pending for Order PO-892', time: '2026-07-24 09:15', read: false },
+    { id: '3', title: 'Rate Finalization approved by Chairman', time: '2026-07-24 07:00', read: true },
+    { id: '4', title: 'Client Bill payment received (₹15.0 L)', time: '2026-07-23 16:45', read: true }
+  ]);
+
+  const markAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const clearAllNotifications = () => {
+    setNotifications([]);
+  };
+
+  const filteredNotifications = notifications.filter((n) => unreadTab === 'all' || !n.read);
+
+  const [taskTab, setTaskTab] = React.useState<'overdue' | 'upcoming'>('overdue');
+
+  const myTasks = [
+    { id: 't1', title: 'Finalize Joinery Vendor Rates', project: 'Nexus Tech Park', due: '2026-07-22', type: 'overdue', days: '2 days overdue', from: 'Rajesh Kumar' },
+    { id: 't2', title: 'Submit Client Bill #3', project: 'Grand Hyatt Goa', due: '2026-07-20', type: 'overdue', days: '4 days overdue', from: 'Anita Rao' },
+    { id: 't3', title: 'Approve Site Indent #104', project: 'Imperial Heights', due: '2026-07-26', type: 'upcoming', days: 'In 2 days', from: 'Sanjay Mehta' }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 font-sans">
+      {/* 1. Notifications Card */}
+      <div className="border border-gray-150 rounded bg-white p-3.5 space-y-3 flex flex-col justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+              <Bell className="h-4 w-4 text-brand-600" /> Notifications
+            </h4>
+            <div className="flex items-center gap-1 text-[9.5px]">
+              <button
+                onClick={() => setUnreadTab('all')}
+                className={`px-2 py-0.5 rounded font-bold cursor-pointer ${unreadTab === 'all' ? 'bg-brand-50 text-brand-700' : 'text-gray-400'}`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setUnreadTab('unread')}
+                className={`px-2 py-0.5 rounded font-bold cursor-pointer ${unreadTab === 'unread' ? 'bg-brand-50 text-brand-700' : 'text-gray-400'}`}
+              >
+                Unread ({notifications.filter((n) => !n.read).length})
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px]">
+            <button onClick={markAllRead} className="text-brand-650 hover:underline font-bold cursor-pointer">
+              Mark All As Read
+            </button>
+            <button onClick={clearAllNotifications} className="text-gray-400 hover:text-rose-600 font-medium cursor-pointer">
+              Clear All
+            </button>
+          </div>
+
+          <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+            {filteredNotifications.length === 0 ? (
+              <p className="text-[11px] text-gray-400 text-center py-6 italic">No notifications found</p>
+            ) : (
+              filteredNotifications.map((n) => (
+                <div key={n.id} className={`p-2 rounded border text-xs flex items-start justify-between gap-2 ${n.read ? 'bg-gray-50/50 border-gray-100' : 'bg-brand-50/30 border-brand-100 font-semibold'}`}>
+                  <span>{n.title}</span>
+                  <span className="text-[9px] text-gray-400 whitespace-nowrap shrink-0">{n.time}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 2. My Tasks & Alerts */}
+      <div className="border border-gray-150 rounded bg-white p-3.5 space-y-3">
+        <div className="flex items-center justify-between border-b pb-2">
+          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+            <CheckSquare className="h-4 w-4 text-blue-600" /> My Tasks & Alerts
+          </h4>
+          <div className="flex items-center gap-1 text-[9.5px]">
+            <button
+              onClick={() => setTaskTab('overdue')}
+              className={`px-2 py-0.5 rounded font-bold cursor-pointer ${taskTab === 'overdue' ? 'bg-rose-50 text-rose-700' : 'text-gray-400'}`}
+            >
+              Overdue
+            </button>
+            <button
+              onClick={() => setTaskTab('upcoming')}
+              className={`px-2 py-0.5 rounded font-bold cursor-pointer ${taskTab === 'upcoming' ? 'bg-blue-50 text-blue-700' : 'text-gray-400'}`}
+            >
+              Upcoming
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2 max-h-[220px] overflow-y-auto">
+          {myTasks.filter((t) => taskTab === 'overdue' ? t.type === 'overdue' : t.type === 'upcoming').map((task) => (
+            <div key={task.id} className="p-2.5 border border-gray-150 rounded bg-gray-50/40 text-xs space-y-1">
+              <div className="flex items-center justify-between font-bold text-gray-800">
+                <span>{task.title}</span>
+                <span className={`text-[9px] px-1.5 py-0.25 rounded ${task.type === 'overdue' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'}`}>
+                  {task.days}
+                </span>
+              </div>
+              <div className="flex justify-between text-[10px] text-gray-500">
+                <span>Site: {task.project}</span>
+                <span>From: {task.from}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 3. Operational Activity Feed */}
+      <div className="border border-gray-150 rounded bg-white p-3.5 space-y-3">
+        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
+          <Layers className="h-4 w-4 text-emerald-600" /> Recent Activity History
+        </h4>
+        <div className="space-y-2 text-xs">
+          <div className="p-2 border-b border-gray-100 space-y-0.5">
+            <span className="font-bold text-gray-800 block">SITE-2026-003 Submitted for Approval</span>
+            <span className="text-[10px] text-gray-400 block">By Rajesh Kumar • 2026-07-24 11:00</span>
+          </div>
+          <div className="p-2 border-b border-gray-100 space-y-0.5">
+            <span className="font-bold text-gray-800 block">PO-2026-089 Issued to Asian Paints</span>
+            <span className="text-[10px] text-gray-400 block">By Procurement Desk • 2026-07-24 09:30</span>
+          </div>
+          <div className="p-2 border-b border-gray-100 space-y-0.5">
+            <span className="font-bold text-gray-800 block">Client Payment ₹25.0 L Received</span>
+            <span className="text-[10px] text-gray-400 block">By Accounts Team • 2026-07-23 15:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// Section 8: Procurement & Vendor Intelligence
+// ==========================================
+export const ProcurementIntelligenceSection: React.FC = () => {
+  return (
+    <div className="space-y-4 font-sans">
+      {/* 4 Summary Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3 border rounded bg-gray-50/50">
+          <span className="text-[9px] uppercase font-bold text-gray-400 block">Mapped Records</span>
+          <span className="font-extrabold text-base text-gray-900 block mt-0.5">142 Items</span>
+        </div>
+        <div className="p-3 border rounded bg-gray-50/50">
+          <span className="text-[9px] uppercase font-bold text-gray-400 block">Open Items</span>
+          <span className="font-extrabold text-base text-amber-700 block mt-0.5">18 Items</span>
+        </div>
+        <div className="p-3 border rounded bg-gray-50/50">
+          <span className="text-[9px] uppercase font-bold text-gray-400 block">Document Drafts</span>
+          <span className="font-extrabold text-base text-gray-900 block mt-0.5">8 Drafts</span>
+        </div>
+        <div className="p-3 border rounded bg-gray-50/50">
+          <span className="text-[9px] uppercase font-bold text-gray-400 block">Rate Defined</span>
+          <span className="font-extrabold text-base text-emerald-700 block mt-0.5">118 Defined</span>
+        </div>
+      </div>
+
+      {/* 2 Tables: Highest Ordered Materials */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Highest Ordered by Qty */}
+        <div className="border rounded p-3 space-y-2">
+          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Highest Ordered Material (By Qty)</h4>
+          <table className="w-full text-left text-xs divide-y divide-gray-100">
+            <thead className="bg-gray-50 text-[9px] font-bold text-gray-400 uppercase">
+              <tr><th className="p-2">Material</th><th className="p-2 text-right">Quantity</th><th className="p-2 text-right">Unit</th></tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+              <tr><td className="p-2 font-semibold">Gypsum Board 12mm</td><td className="p-2 text-right font-mono">4,500</td><td className="p-2 text-right">Sq Ft</td></tr>
+              <tr><td className="p-2 font-semibold">Teak Wood Veneer 4mm</td><td className="p-2 text-right font-mono">2,800</td><td className="p-2 text-right">Sheets</td></tr>
+              <tr><td className="p-2 font-semibold">LED Recessed Spotlights</td><td className="p-2 text-right font-mono">1,200</td><td className="p-2 text-right">Pcs</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Highest Ordered by Value */}
+        <div className="border rounded p-3 space-y-2">
+          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Highest Ordered Material (By Value)</h4>
+          <table className="w-full text-left text-xs divide-y divide-gray-100">
+            <thead className="bg-gray-50 text-[9px] font-bold text-gray-400 uppercase">
+              <tr><th className="p-2">Material</th><th className="p-2 text-right">Total Invoice Value</th></tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+              <tr><td className="p-2 font-semibold">Italian Marble Flooring</td><td className="p-2 text-right font-mono font-bold text-gray-900">{formatIndianCurrency(4800000)}</td></tr>
+              <tr><td className="p-2 font-semibold">VRV Air Conditioning Units</td><td className="p-2 text-right font-mono font-bold text-gray-900">{formatIndianCurrency(3600000)}</td></tr>
+              <tr><td className="p-2 font-semibold">Acoustic Fabric Wall Panels</td><td className="p-2 text-right font-mono font-bold text-gray-900">{formatIndianCurrency(1800000)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// Section 9: Period Statistics
+// ==========================================
+export const PeriodStatisticsSection: React.FC = () => {
+  const rows = [
+    { name: 'Indent', d1: '2', d7: '14', m1: '45', q1: '120', y1: '480' },
+    { name: 'Rate Inquiry', d1: '1', d7: '8', m1: '28', q1: '85', y1: '310' },
+    { name: 'Rate Finalization', d1: '0', d7: '5', m1: '18', q1: '62', y1: '240' },
+    { name: 'Purchase Order', d1: '3', d7: '16', m1: '52', q1: '150', y1: '580' },
+    { name: 'Invoice', d1: '4', d7: '22', m1: '68', q1: '190', y1: '720' },
+    { name: 'Payment', d1: '₹4.5 L', d7: '₹28.0 L', m1: '₹1.1 Cr', q1: '₹3.4 Cr', y1: '₹14.2 Cr' }
+  ];
+
+  return (
+    <div className="overflow-x-auto border border-gray-150 rounded font-sans">
+      <table className="w-full text-left text-xs divide-y divide-gray-150 min-w-[600px]">
+        <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
+          <tr>
+            <th className="p-3">Operational Record</th>
+            <th className="p-3 text-right">Today</th>
+            <th className="p-3 text-right">Last 7 Days</th>
+            <th className="p-3 text-right">Last Month</th>
+            <th className="p-3 text-right">Last Quarter</th>
+            <th className="p-3 text-right">Last Year</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+          {rows.map((r, idx) => (
+            <tr key={idx} className="hover:bg-gray-50/50">
+              <td className="p-3 font-bold text-gray-800">{r.name}</td>
+              <td className="p-3 text-right font-mono">{r.d1}</td>
+              <td className="p-3 text-right font-mono">{r.d7}</td>
+              <td className="p-3 text-right font-mono">{r.m1}</td>
+              <td className="p-3 text-right font-mono">{r.q1}</td>
+              <td className="p-3 text-right font-mono font-bold text-gray-900">{r.y1}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// ==========================================
+// Section 10: Upcoming & Exception Tables (With Receive Delivery Modal)
+// ==========================================
+export const UpcomingExceptionsSection: React.FC = () => {
+  const [selectedOrder, setSelectedOrder] = React.useState<any>(null);
+  const [rcvdQty, setRcvdQty] = React.useState<string>('');
+  const [rcvdDate, setRcvdDate] = React.useState<string>(new Date().toISOString().split('T')[0]);
+  const [toast, setToast] = React.useState<string | null>(null);
+
+  const deliveries = [
+    { po: 'PO-2026-089', item: 'Plywood 18mm Commercial Grade', ordered: 500, due: '2026-07-26', vendor: 'Century Ply Ltd' },
+    { po: 'PO-2026-092', item: 'Acoustic Insulation Foam Panels', ordered: 200, due: '2026-07-28', vendor: 'Supreme Industries' }
+  ];
+
+  const handleRecordReceipt = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+    setToast(`Recorded receipt of ${rcvdQty} units for ${selectedOrder.po}`);
+    setSelectedOrder(null);
+    setRcvdQty('');
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  return (
+    <div className="space-y-4 font-sans">
+      {toast && (
+        <div className="fixed top-4 right-4 z-[1100] bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded shadow font-bold text-xs flex items-center gap-2">
+          <Check className="h-4 w-4 text-emerald-600" />
+          {toast}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Table 1: Expected Order Deliveries with Receive Delivery button */}
+        <div className="border rounded p-3 space-y-2">
+          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center justify-between">
+            <span>Expected Order Deliveries</span>
+            <Truck className="h-4 w-4 text-gray-400" />
+          </h4>
+          <table className="w-full text-left text-xs divide-y divide-gray-100">
+            <thead className="bg-gray-50 text-[9px] font-bold text-gray-400 uppercase">
+              <tr>
+                <th className="p-2">PO & Item</th>
+                <th className="p-2 text-right">Qty</th>
+                <th className="p-2 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+              {deliveries.map((d, idx) => (
+                <tr key={idx}>
+                  <td className="p-2">
+                    <span className="font-bold text-gray-900 block">{d.po}</span>
+                    <span className="text-[10px] text-gray-500 block">{d.item}</span>
+                  </td>
+                  <td className="p-2 text-right font-mono font-bold">{d.ordered} Pcs</td>
+                  <td className="p-2 text-right">
+                    <button
+                      onClick={() => {
+                        setSelectedOrder(d);
+                        setRcvdQty(d.ordered.toString());
+                      }}
+                      className="px-2 py-1 bg-brand-500 hover:bg-brand-600 text-white rounded text-[10px] font-bold cursor-pointer transition-colors"
+                    >
+                      Receive Delivery
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Table 2: GRN Pending / Exception items */}
+        <div className="border rounded p-3 space-y-2">
+          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center justify-between">
+            <span>GRN Pending & Exceptions</span>
+            <ShieldAlert className="h-4 w-4 text-amber-500" />
+          </h4>
+          <div className="space-y-2 text-xs">
+            <div className="p-2 bg-amber-50/50 border border-amber-150 rounded flex justify-between items-center">
+              <div>
+                <span className="font-bold text-amber-900 block">GRN Pending for PO-2026-074</span>
+                <span className="text-[10px] text-amber-700 block">Received 3 days ago • Material: Hardware Fittings</span>
+              </div>
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-bold text-[9.5px]">Pending GRN</span>
+            </div>
+            <div className="p-2 bg-rose-50/50 border border-rose-150 rounded flex justify-between items-center">
+              <div>
+                <span className="font-bold text-rose-900 block">Payments Done Without Approval</span>
+                <span className="text-[10px] text-rose-700 block">₹45,000 Petty Cash Site Emergency</span>
+              </div>
+              <span className="px-2 py-0.5 bg-rose-100 text-rose-800 rounded font-bold text-[9.5px]">Unapproved</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Receive Delivery Modal */}
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 select-none">
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
+          <div className="relative bg-white rounded-lg border max-w-sm w-full p-5 shadow-xl font-sans text-xs space-y-4">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="font-extrabold text-sm text-gray-900">Receive Delivery</h3>
+              <button onClick={() => setSelectedOrder(null)} className="text-gray-400 hover:text-gray-700 cursor-pointer">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleRecordReceipt} className="space-y-3">
+              <div>
+                <span className="text-[9px] uppercase font-bold text-gray-400 block">Order Number:</span>
+                <span className="font-mono font-bold text-gray-900 text-xs">{selectedOrder.po} ({selectedOrder.vendor})</span>
+              </div>
+
+              <div>
+                <span className="text-[9px] uppercase font-bold text-gray-400 block">Item Description:</span>
+                <span className="font-bold text-gray-800 text-xs">{selectedOrder.item}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[9px] uppercase font-bold text-gray-400 block mb-1">Ordered Quantity:</label>
+                  <input type="text" value={selectedOrder.ordered} readOnly className="w-full border rounded p-1.5 bg-gray-50 font-mono font-bold" />
+                </div>
+                <div>
+                  <label className="text-[9px] uppercase font-bold text-gray-400 block mb-1">Received Quantity:</label>
+                  <input 
+                    type="number" 
+                    value={rcvdQty} 
+                    onChange={(e) => setRcvdQty(e.target.value)} 
+                    className="w-full border rounded p-1.5 bg-white font-mono font-bold focus:outline-none focus:border-brand-500" 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[9px] uppercase font-bold text-gray-400 block mb-1">Received Date:</label>
+                <input 
+                  type="date" 
+                  value={rcvdDate} 
+                  onChange={(e) => setRcvdDate(e.target.value)} 
+                  className="w-full border rounded p-1.5 bg-white text-xs focus:outline-none focus:border-brand-500" 
+                  required 
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button type="button" onClick={() => setSelectedOrder(null)} className="px-3 py-1.5 border rounded font-bold hover:bg-gray-50 cursor-pointer">
+                  Cancel
+                </button>
+                <button type="submit" className="px-3.5 py-1.5 bg-brand-500 hover:bg-brand-600 font-bold text-white rounded shadow-sm cursor-pointer">
+                  Record Receipt
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==========================================
+// Section 11: Vendor Exposure
+// ==========================================
+export const VendorExposureSection: React.FC = () => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans">
+      <div className="border rounded p-3 space-y-2">
+        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Vendors With Highest Amount Due</h4>
+        <table className="w-full text-left text-xs divide-y divide-gray-100">
+          <thead className="bg-gray-50 text-[9px] font-bold text-gray-400 uppercase">
+            <tr><th className="p-2">Vendor Name</th><th className="p-2 text-right">Amount Pending</th></tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+            <tr><td className="p-2 font-semibold">Asian Paints Ltd</td><td className="p-2 text-right font-mono font-bold text-rose-700">{formatIndianCurrency(1850000)}</td></tr>
+            <tr><td className="p-2 font-semibold">Century Plyboards India</td><td className="p-2 text-right font-mono font-bold text-rose-700">{formatIndianCurrency(1420000)}</td></tr>
+            <tr><td className="p-2 font-semibold">Schneider Electric Ltd</td><td className="p-2 text-right font-mono font-bold text-rose-700">{formatIndianCurrency(980000)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="border rounded p-3 space-y-2">
+        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Vendors With Highest Amount Paid</h4>
+        <table className="w-full text-left text-xs divide-y divide-gray-100">
+          <thead className="bg-gray-50 text-[9px] font-bold text-gray-400 uppercase">
+            <tr><th className="p-2">Vendor Name</th><th className="p-2 text-right">Amount Paid</th></tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+            <tr><td className="p-2 font-semibold">Greenlam Industries</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{formatIndianCurrency(4200000)}</td></tr>
+            <tr><td className="p-2 font-semibold">Saint-Gobain India</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{formatIndianCurrency(3800000)}</td></tr>
+            <tr><td className="p-2 font-semibold">Havells India Ltd</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{formatIndianCurrency(2900000)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// Section 12: Flow Reports
+// ==========================================
+export const FlowReportsSection: React.FC = () => {
+  const flowData = [
+    { month: 'Apr', Inflow: 4200000, Outflow: 3100000 },
+    { month: 'May', Inflow: 5800000, Outflow: 4500000 },
+    { month: 'Jun', Inflow: 6500000, Outflow: 5200000 },
+    { month: 'Jul', Inflow: 8200000, Outflow: 6800000 }
+  ];
+
+  return (
+    <div className="p-3.5 border rounded bg-white space-y-2 font-sans">
+      <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Monthly Cash Inflow vs Outflow</h4>
+      <div className="h-[220px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={flowData}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 9 }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+            <Tooltip formatter={(val: number) => [formatIndianCurrency(val), 'Amount']} />
+            <Legend wrapperStyle={{ fontSize: '10px' }} />
+            <Area type="monotone" dataKey="Inflow" stroke="#10b981" fill="#d1fae5" />
+            <Area type="monotone" dataKey="Outflow" stroke="#ef4444" fill="#fee2e2" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// Section 13: Detailed Site Progress
+// ==========================================
+export const DetailedSiteProgressSection: React.FC<{ site: SiteSchema }> = ({ site }) => {
+  const details = [
+    { label: 'Tender Approval Progress', pct: 95 },
+    { label: 'Extra Item Tender Progress', pct: 83 },
+    { label: 'Total Tender Progress', pct: 92 },
+    { label: 'Site Execution Progress', pct: site.progress || 45 },
+    { label: 'Client Bill Progress', pct: 42 },
+    { label: 'Client Payment Progress', pct: 32 },
+    { label: 'Purchase Completion', pct: 38 },
+    { label: 'Total Vendor Payment Progress', pct: 28 },
+    { label: 'Material Payment Progress', pct: 72 },
+    { label: 'Labour Payment Progress', pct: 75 },
+    { label: 'Approved Budget Utilization', pct: 44 },
+    { label: 'Budget Consumption', pct: 44 }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-sans">
+      {details.map((d, idx) => (
+        <div key={idx} className="p-3 border rounded bg-white space-y-1.5">
+          <div className="flex justify-between text-xs font-bold text-gray-700">
+            <span className="text-[10.5px] truncate">{d.label}</span>
+            <span>{d.pct}%</span>
+          </div>
+          <div className="w-full bg-gray-150 h-1.5 rounded-full overflow-hidden">
+            <div className="h-full bg-brand-500 rounded-full" style={{ width: `${d.pct}%` }}></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ==========================================
+// Section 14: Payment Modes
+// ==========================================
+export const PaymentModesSection: React.FC = () => {
+  const vendorModes = [
+    { name: 'Bank Transfer / RTGS', value: 65 },
+    { name: 'Cheque', value: 20 },
+    { name: 'Corporate Card', value: 15 }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans">
+      <div className="p-3 border rounded bg-white space-y-3">
+        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Payment Mode to Vendors</h4>
+        <div className="space-y-2 text-xs">
+          {vendorModes.map((m, idx) => (
+            <div key={idx} className="flex items-center justify-between p-2 rounded bg-gray-50 border">
+              <span className="font-bold text-gray-700">{m.name}</span>
+              <span className="font-mono font-bold text-gray-900">{m.value}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-3 border rounded bg-white space-y-3">
+        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Payment Mode Received From Client</h4>
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center justify-between p-2 rounded bg-gray-50 border">
+            <span className="font-bold text-gray-700">Direct Wire / NEFT</span>
+            <span className="font-mono font-bold text-gray-900">85%</span>
+          </div>
+          <div className="flex items-center justify-between p-2 rounded bg-gray-50 border">
+            <span className="font-bold text-gray-700">Letter of Credit (LC)</span>
+            <span className="font-mono font-bold text-gray-900">15%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
