@@ -399,6 +399,14 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                               >
                                 <Copy className="h-3.5 w-3.5 text-gray-400" /> Duplicate
                               </DropdownMenu.Item>
+                              {(schema.route === '/finance/utility-bills' || schema.id === 'finance-utility-bills') && (
+                                <DropdownMenu.Item 
+                                  onClick={() => navigate('/finance/utility-bills/new')}
+                                  className="px-2.5 py-1.5 hover:bg-brand-50 text-brand-700 rounded flex items-center gap-1.5 cursor-pointer font-bold outline-none"
+                                >
+                                  <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> Split Bill
+                                </DropdownMenu.Item>
+                              )}
                               <DropdownMenu.Item 
                                 onClick={() => handleToggleRowStatus(row.id)}
                                 className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"

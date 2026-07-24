@@ -607,14 +607,17 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     title: 'Site Utility Bills & Overhead Allocations',
     description: 'Electricity, water, diesel generator, site security, and internet utility bills.',
     breadcrumbs: ['Finance', 'Utility Bills'],
-    primaryAction: { label: 'Log Bill', route: `${ROUTES.UTILITY_BILLS}/new` },
+    primaryAction: { label: 'Log Utility Bill', route: `${ROUTES.UTILITY_BILLS}/new` },
     columns: [
       { key: 'billNo', label: 'Bill Reference', type: 'mono' },
       { key: 'utilityType', label: 'Utility Category', type: 'text' },
+      { key: 'provider', label: 'Utility Provider', type: 'text' },
       { key: 'site', label: 'Project Site', type: 'text' },
       { key: 'billDate', label: 'Bill Date', type: 'date' },
+      { key: 'dueDate', label: 'Due Date', type: 'date' },
       { key: 'amount', label: 'Bill Amount', type: 'currency', align: 'right' },
       { key: 'approvalStatus', label: 'Approval Status', type: 'badge' },
+      { key: 'allocationStatus', label: 'Allocation Status', type: 'badge' },
       { key: 'paymentStatus', label: 'Payment Status', type: 'badge' }
     ],
     sections: [
@@ -635,8 +638,11 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       }
     ],
     mockRows: [
-      { id: 'ub-1', billNo: 'UTIL-2026-04', utilityType: 'Temporary Site Power', site: 'Multiple Sites', billDate: '2026-07-05', amount: 85000, approvalStatus: 'approved', paymentStatus: 'paid' },
-      { id: 'ub-2', billNo: 'UTIL-2026-05', utilityType: 'Diesel Generator Fuel Supply', site: 'Grand Hyatt Goa', billDate: '2026-07-10', amount: 145000, approvalStatus: 'approved', paymentStatus: 'paid' }
+      { id: 'ub-1', billNo: 'UTIL-2026-001', utilityType: 'Temporary Site Electricity', provider: 'BESCOM Electricity Board', site: 'Nexus Tech Park Lobby Renovations', billDate: '2026-07-05', dueDate: '2026-07-20', amount: 100000, approvalStatus: 'approved', allocationStatus: 'unallocated', paymentStatus: 'unpaid' },
+      { id: 'ub-2', billNo: 'UTIL-2026-002', utilityType: 'Diesel Generator Fuel Supply', provider: 'Reliance Petroleum Ltd', site: 'Grand Hyatt Executive Lounge', billDate: '2026-07-10', dueDate: '2026-07-25', amount: 145000, approvalStatus: 'approved', allocationStatus: 'fully_allocated', paymentStatus: 'paid' },
+      { id: 'ub-3', billNo: 'UTIL-2026-003', utilityType: 'Site Internet & Fiber Connection', provider: 'ACT Fibernet Broadband', site: 'Imperial Heights Penthouse', billDate: '2026-07-12', dueDate: '2026-07-27', amount: 28000, approvalStatus: 'approved', allocationStatus: 'partially_allocated', paymentStatus: 'partially_paid' },
+      { id: 'ub-4', billNo: 'UTIL-2026-004', utilityType: 'Water Supply Tankers', provider: 'Cauvery Water Supply Services', site: 'Phoenix Marketcity Retail Store', billDate: '2026-07-15', dueDate: '2026-07-30', amount: 65000, approvalStatus: 'pending', allocationStatus: 'unallocated', paymentStatus: 'unpaid' },
+      { id: 'ub-5', billNo: 'UTIL-2026-005', utilityType: 'Site Security Guard Deployment', provider: 'Security Solutions India Pvt Ltd', site: 'Sobha City Luxury Villa', billDate: '2026-07-18', dueDate: '2026-08-02', amount: 120000, approvalStatus: 'draft', allocationStatus: 'unallocated', paymentStatus: 'unpaid' }
     ]
   },
   [ROUTES.SALARY]: {

@@ -17,6 +17,16 @@ export const ModulePageRenderer: React.FC = () => {
   }, []);
 
   const schema: ModuleSchema | null = React.useMemo(() => {
+    // 0. Handle query-based report routes e.g. /reports?module=purchase
+    const searchParams = new URLSearchParams(location.search);
+    const moduleParam = searchParams.get('module');
+    if ((path === '/reports' || path === '/reports/') && moduleParam) {
+      const canonicalPath = `/reports/${moduleParam === 'admin' ? 'administration' : moduleParam}`;
+      if (MODULE_SCHEMAS[canonicalPath]) {
+        return MODULE_SCHEMAS[canonicalPath];
+      }
+    }
+
     // 1. Exact match in MODULE_SCHEMAS
     if (MODULE_SCHEMAS[path]) {
       return MODULE_SCHEMAS[path];

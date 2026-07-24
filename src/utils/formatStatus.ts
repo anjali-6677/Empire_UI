@@ -60,6 +60,12 @@ export function formatStatusLabel(status: string | null | undefined): string {
     failed: 'Failed',
     cancelled: 'Cancelled',
 
+    // Allocation Statuses
+    unallocated: 'Unallocated',
+    partially_allocated: 'Partially Allocated',
+    fully_allocated: 'Fully Allocated',
+    allocated: 'Fully Allocated',
+
     // Inventory
     in_stock: 'In Stock',
     low_stock: 'Low Stock',
@@ -134,6 +140,8 @@ export function getStatusStyle(status: string | null | undefined): { bg: string;
     case 'reconciled':
     case 'success':
     case 'completed':
+    case 'fully_allocated':
+    case 'allocated':
       return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' };
 
     case 'pending_approval':
@@ -141,6 +149,7 @@ export function getStatusStyle(status: string | null | undefined): { bg: string;
     case 'near_limit':
     case 'revision_pending':
     case 'partially_paid':
+    case 'partially_allocated':
     case 'processing':
     case 'scheduled':
     case 'low_stock':
@@ -161,6 +170,7 @@ export function getStatusStyle(status: string | null | undefined): { bg: string;
     case 'out_of_stock':
     case 'outstanding':
     case 'discontinued':
+    case 'unallocated':
       return { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' };
 
     default:
