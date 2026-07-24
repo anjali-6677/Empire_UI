@@ -51,6 +51,12 @@ export const ROUTES = {
   BANKS: '/masters/banks',
   DEPARTMENTS: '/masters/departments',
   ROLES_MASTER: '/masters/roles',
+  DESIGNATIONS: '/masters/designations',
+  MEASUREMENT_CONVERSIONS: '/masters/conversions',
+  BRANDS: '/masters/brands',
+  LOCATIONS: '/masters/locations',
+  PMC: '/masters/pmc',
+  ARCHITECTS: '/masters/architects',
 
   // Reports
   PURCHASE_REPORTS: '/reports/purchase',
@@ -126,16 +132,22 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
     id: 'group-masters',
     label: 'Masters',
     items: [
-      { id: 'nav-clients', label: 'Clients', path: ROUTES.CLIENTS, icon: 'Building2' },
       { id: 'nav-vendors', label: 'Vendors', path: ROUTES.VENDORS, icon: 'Store' },
       { id: 'nav-employees', label: 'Employees', path: ROUTES.EMPLOYEES, icon: 'Briefcase' },
       { id: 'nav-items', label: 'Items', path: ROUTES.ITEMS, icon: 'Grid' },
       { id: 'nav-item-categories', label: 'Item Categories', path: ROUTES.ITEM_CATEGORIES, icon: 'Tags' },
       { id: 'nav-units', label: 'Units', path: ROUTES.UNITS, icon: 'Ruler' },
-      { id: 'nav-companies', label: 'Companies', path: ROUTES.COMPANIES, icon: 'Award' },
-      { id: 'nav-banks', label: 'Banks', path: ROUTES.BANKS, icon: 'Landmark' },
-      { id: 'nav-departments', label: 'Departments', path: ROUTES.DEPARTMENTS, icon: 'GitBranch' },
-      { id: 'nav-roles-master', label: 'Roles Master', path: ROUTES.ROLES_MASTER, icon: 'ShieldCheck' }
+      { id: 'nav-conversions', label: 'Conversions', path: ROUTES.MEASUREMENT_CONVERSIONS, icon: 'Ruler' },
+      { id: 'nav-brands', label: 'Brands', path: ROUTES.BRANDS, icon: 'Tag' },
+      { id: 'nav-companies', label: 'Companies', path: ROUTES.COMPANIES, icon: 'Building2' },
+      { id: 'nav-clients', label: 'Clients', path: ROUTES.CLIENTS, icon: 'UserCircle2' },
+      { id: 'nav-banks', label: 'Bank Accounts', path: ROUTES.BANKS, icon: 'CreditCard' },
+      { id: 'nav-locations', label: 'Locations', path: ROUTES.LOCATIONS, icon: 'MapPin' },
+      { id: 'nav-pmc', label: 'PMC', path: ROUTES.PMC, icon: 'UserRoundCheck' },
+      { id: 'nav-architects', label: 'Architects', path: ROUTES.ARCHITECTS, icon: 'PenTool' },
+      { id: 'nav-departments', label: 'Departments', path: ROUTES.DEPARTMENTS, icon: 'Building' },
+      { id: 'nav-roles', label: 'Roles', path: ROUTES.ROLES_MASTER, icon: 'ShieldAlert' },
+      { id: 'nav-designations', label: 'Designations', path: ROUTES.DESIGNATIONS, icon: 'Contact' }
     ]
   },
   {

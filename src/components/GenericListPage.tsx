@@ -11,7 +11,9 @@ import {
   Eye, 
   Copy,
   Power,
-  X
+  X,
+  Download,
+  Printer
 } from 'lucide-react';
 import { ModuleSchema } from '../config/moduleSchemas';
 import { StatusBadge } from './StatusBadge';
@@ -136,6 +138,26 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
     return schema.columns || [];
   }, [schema.columns, (schema as any).tabColumns, activeTab]);
 
+  const handleExportCSV = () => {
+    if (filteredData.length === 0) {
+      triggerToast('No data to export');
+      return;
+    }
+    const headers = activeColumns.map(c => c.label).join(',');
+    const rows = filteredData.map(row => 
+      activeColumns.map(c => `"${String(row[c.key] || '').replace(/"/g, '""')}"`).join(',')
+    ).join('\\n');
+    const csv = `${headers}\\n${rows}`;
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a'); 
+    a.href = url; 
+    a.download = `${schema.title.replace(/\\s+/g, '_')}_Report.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    triggerToast('Report exported successfully');
+  };
+
   return (
     <div className="flex flex-col gap-5 w-full font-sans text-xs pb-12 select-none relative">
       {/* Toast Notification */}
@@ -170,11 +192,22 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
           <button
             ref={triggerButtonRef}
             onClick={handleOpenCreateModal}
-            className="inline-flex items-center gap-1 px-3.5 py-2 text-[10.5px] font-bold rounded shadow-sm transition-all bg-brand-500 hover:bg-brand-600 text-white cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1 px-3.5 py-2 text-[10.5px] font-bold rounded shadow-sm transition-all bg-brand-500 hover:bg-brand-600 text-white cursor-pointer shrink-0 print:hidden"
           >
             <Plus className="h-4 w-4" />
             {schema.primaryAction.label}
           </button>
+        )}
+
+        {schema.pageType === 'report' && (
+          <div className="flex gap-2 shrink-0 print:hidden mt-2 md:mt-0">
+             <button onClick={handleExportCSV} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-brand-200 bg-brand-50 text-brand-700 font-bold rounded shadow-sm hover:bg-brand-100 text-xs cursor-pointer">
+               <Download className="h-3.5 w-3.5" /> Export Data
+             </button>
+             <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-250 bg-white text-gray-700 font-bold rounded shadow-sm hover:bg-gray-50 text-xs cursor-pointer">
+               <Printer className="h-3.5 w-3.5" /> Print PDF
+             </button>
+          </div>
         )}
       </div>
 
@@ -215,7 +248,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
       )}
 
       {/* Search Bar */}
-      <div className="flex items-center gap-2 bg-white p-2 border border-gray-150 rounded-lg shadow-sm">
+      <div className="flex items-center gap-2 bg-white p-2 border border-gray-150 rounded-lg shadow-sm print:hidden">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
           <input
@@ -226,6 +259,11 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
             className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-brand-500 font-sans"
           />
         </div>
+        {search && (
+          <button onClick={() => setSearch('')} className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded cursor-pointer transition-colors border border-transparent">
+            Clear Filters
+          </button>
+        )}
       </div>
 
       {/* Data Table */}
@@ -239,7 +277,9 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                     {col.label}
                   </th>
                 ))}
-                <th className="p-3 text-right">Actions</th>
+                {schema.pageType !== 'report' && (
+                  <th className="p-3 text-right print:hidden">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
@@ -271,42 +311,44 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                       );
                     })}
 
-                    <td className="p-3 text-right">
-                      <DropdownMenu.Root>
-                        <DropdownMenu.Trigger asChild>
-                          <button className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer focus:outline-none">
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Portal>
-                          <DropdownMenu.Content 
-                            className="bg-white border border-gray-150 rounded shadow-lg z-[1000] p-1 font-sans text-xs min-w-[150px] space-y-0.5 animate-scale-in"
-                            sideOffset={4}
-                            align="end"
-                          >
-                            <DropdownMenu.Item 
-                              onClick={() => navigate(`${schema.route}/${row.id || '1'}`)}
-                              className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                    {schema.pageType !== 'report' && (
+                      <td className="p-3 text-right print:hidden">
+                        <DropdownMenu.Root>
+                          <DropdownMenu.Trigger asChild>
+                            <button className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer focus:outline-none">
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Portal>
+                            <DropdownMenu.Content 
+                              className="bg-white border border-gray-150 rounded shadow-lg z-[1000] p-1 font-sans text-xs min-w-[150px] space-y-0.5 animate-scale-in"
+                              sideOffset={4}
+                              align="end"
                             >
-                              <Eye className="h-3.5 w-3.5 text-gray-400" /> View Details
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item 
-                              onClick={() => handleDuplicateRow(row)}
-                              className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                            >
-                              <Copy className="h-3.5 w-3.5 text-gray-400" /> Duplicate
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item 
-                              onClick={() => handleToggleRowStatus(row.id)}
-                              className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                            >
-                              <Power className="h-3.5 w-3.5 text-gray-400" />
-                              {row.status === 'active' || row.status === 'empanelled' ? 'Deactivate' : 'Activate'}
-                            </DropdownMenu.Item>
-                          </DropdownMenu.Content>
-                        </DropdownMenu.Portal>
-                      </DropdownMenu.Root>
-                    </td>
+                              <DropdownMenu.Item 
+                                onClick={() => navigate(`${schema.route}/${row.id || '1'}`)}
+                                className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                              >
+                                <Eye className="h-3.5 w-3.5 text-gray-400" /> View Details
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item 
+                                onClick={() => handleDuplicateRow(row)}
+                                className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                              >
+                                <Copy className="h-3.5 w-3.5 text-gray-400" /> Duplicate
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item 
+                                onClick={() => handleToggleRowStatus(row.id)}
+                                className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                              >
+                                <Power className="h-3.5 w-3.5 text-gray-400" />
+                                {row.status === 'active' || row.status === 'empanelled' ? 'Deactivate' : 'Activate'}
+                              </DropdownMenu.Item>
+                            </DropdownMenu.Content>
+                          </DropdownMenu.Portal>
+                        </DropdownMenu.Root>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

@@ -1042,9 +1042,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     ]
   },
   [ROUTES.FINANCE_REPORTS]: {
-    id: 'reports-finance',
-    route: ROUTES.FINANCE_REPORTS,
-    pageType: 'report',
+    id: 'reports-finance', route: ROUTES.FINANCE_REPORTS, pageType: 'report',
     title: 'Vendor Bill Payment Summary & Liabilities Report',
     description: 'Reconciliation report of certified vendor bills, disbursed payments, and outstanding liabilities.',
     breadcrumbs: ['Reports', 'Finance Reports'],
@@ -1455,6 +1453,36 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     id: 'overview-messages', route: ROUTES.MESSAGES, pageType: 'list',
     title: 'Messages', description: 'Internal team communication channels.',
     breadcrumbs: ['Overview', 'Messages'],
-    columns: [{ key: 'from', label: 'From' }, { key: 'subject', label: 'Subject' }], mockRows: []
+    columns: [{ key: 'user', label: 'Acting User' }], mockRows: []
   },
+  [ROUTES.DESIGNATIONS]: {
+    id: 'master-designations', route: ROUTES.DESIGNATIONS, pageType: 'list',
+    title: 'Designations', description: 'Employee tier titles.', breadcrumbs: ['Masters', 'Designations'],
+    columns: [{ key: 'title', label: 'Title' }], mockRows: []
+  },
+  [ROUTES.MEASUREMENT_CONVERSIONS]: {
+    id: 'master-conversions', route: ROUTES.MEASUREMENT_CONVERSIONS, pageType: 'list',
+    title: 'Measurement Conversions', description: 'Global item unit scalar logics.', breadcrumbs: ['Masters', 'Conversions'],
+    columns: [{ key: 'formula', label: 'Formula' }], mockRows: []
+  },
+  [ROUTES.BRANDS]: {
+    id: 'master-brands', route: ROUTES.BRANDS, pageType: 'list',
+    title: 'Approved Brands', description: 'Material manufacturing brands registry.', breadcrumbs: ['Masters', 'Brands'],
+    columns: [{ key: 'brandName', label: 'Brand Name' }], mockRows: []
+  },
+  [ROUTES.LOCATIONS]: {
+    id: 'master-locations', route: ROUTES.LOCATIONS, pageType: 'list',
+    title: 'Locations', description: 'Warehousing addresses and yards.', breadcrumbs: ['Masters', 'Locations'],
+    columns: [{ key: 'pin', label: 'Address' }], mockRows: []
+  },
+  [ROUTES.PMC]: {
+    id: 'master-pmc', route: ROUTES.PMC, pageType: 'list',
+    title: 'Project Mgmt. Consultants', description: 'External PMC firms validation matrices.', breadcrumbs: ['Masters', 'PMC'],
+    columns: [{ key: 'firm', label: 'Consultant Firm' }], mockRows: []
+  },
+  [ROUTES.ARCHITECTS]: {
+    id: 'master-architects', route: ROUTES.ARCHITECTS, pageType: 'list',
+    title: 'Design & Architects', description: 'On-record exterior/interior consulting.', breadcrumbs: ['Masters', 'Architects'],
+    columns: [{ key: 'firm', label: 'Architect Firm' }], mockRows: []
+  }
 };
