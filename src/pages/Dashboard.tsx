@@ -42,6 +42,7 @@ import { ROUTES } from '../config/navigation';
 
 import {
   SectionWrapper,
+  PortfolioOverviewSection,
   SiteSnapshotSection,
   SiteProgressMatrixSection,
   ClientTenderBillingSection,
@@ -297,19 +298,21 @@ export const Dashboard: React.FC = () => {
         title="1. Portfolio Overview" 
         description="Global high-level performance indicators across all active construction sites."
       >
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {mockKPIs.map((kpi) => (
-            <MetricCard
-              key={kpi.id}
-              label={kpi.label}
-              value={kpi.value}
-              change={kpi.change}
-              changeType={kpi.changeType}
-              icon={kpi.icon || 'FolderKanban'}
-              isPOItem={kpi.id === 'kpi-6'}
-            />
-          ))}
-        </div>
+        <PortfolioOverviewSection>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {mockKPIs.map((kpi) => (
+              <MetricCard
+                key={kpi.id}
+                label={kpi.label}
+                value={kpi.value}
+                change={kpi.change}
+                changeType={kpi.changeType}
+                icon={kpi.icon || 'FolderKanban'}
+                isPOItem={kpi.id === 'kpi-6'}
+              />
+            ))}
+          </div>
+        </PortfolioOverviewSection>
       </SectionWrapper>
 
       {/* SECTION 2: Selected Site Snapshot */}

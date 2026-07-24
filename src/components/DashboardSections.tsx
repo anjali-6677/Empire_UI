@@ -10,7 +10,14 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  ComposedChart,
+  Line,
+  LabelList,
+  ReferenceLine
 } from 'recharts';
 import { 
   ChevronDown,
@@ -26,6 +33,20 @@ import {
 import { safeFormatCurrency } from '../utils/formatStatus';
 import { SiteSchema } from '../types';
 import { useWorkflow } from '../context/WorkflowContext';
+import {
+  PORTFOLIO_FINANCIAL_COMPARISON,
+  getSelectedSitePerformanceMatrix,
+  SiteMatrixMetric,
+  getSelectedSiteMonthlyBilling,
+  VENDOR_LIABILITY_DATA,
+  APPROVAL_PIPELINE_DATA,
+  TOTAL_APPROVAL_COUNT,
+  PROCUREMENT_PIPELINE_STAGES,
+  MONTHLY_OPERATIONAL_FLOW_DATA,
+  PAYMENT_MODE_DISTRIBUTION,
+  UPCOMING_RISK_TIMELINE_DATA,
+  formatIndianCurrencyAbbrev
+} from '../data/dashboardAnalyticsData';
 
 interface SectionWrapperProps {
   id: string;
@@ -71,6 +92,63 @@ export const SectionWrapper: React.FC<SectionWrapperProps> = ({
 
       {isOpen && <div className="p-4 sm:p-5 space-y-4">{children}</div>}
     </section>
+  );
+};
+
+// ==========================================
+// Section 1: Portfolio Overview
+// ==========================================
+export const PortfolioOverviewSection: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className="space-y-4 font-sans">
+      {children}
+      {/* Chart 1: Portfolio Financial Comparison */}
+      <div className="p-4 border border-gray-150 rounded-lg bg-gray-50/40 space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 pb-2">
+          <div>
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Portfolio Financial Comparison (Top 8 Active Sites)
+            </h4>
+            <p className="text-[10px] text-gray-400 font-medium leading-tight">
+              Compare project scale, approved budgets, actual outlay, and client billing across the portfolio.
+            </p>
+          </div>
+          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
+            Global Portfolio View
+          </span>
+        </div>
+        <div className="h-[270px] w-full pt-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={PORTFOLIO_FINANCIAL_COMPARISON} margin={{ top: 10, right: 10, left: 0, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} 
+                interval={0} 
+                angle={-15} 
+                textAnchor="end" 
+              />
+              <YAxis 
+                tick={{ fontSize: 9, fill: '#6b7280' }} 
+                tickFormatter={(val) => formatIndianCurrencyAbbrev(val)} 
+              />
+              <Tooltip 
+                formatter={(val: number) => [safeFormatCurrency(val), '']} 
+                labelFormatter={(label, items) => {
+                  const item = items && items[0] ? items[0].payload : null;
+                  return item ? `${item.fullName} (${item.siteCode})` : label;
+                }}
+                contentStyle={{ fontSize: '11px', borderRadius: '6px', backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}
+              />
+              <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '8px' }} />
+              <Bar dataKey="approvedBudget" name="Approved Budget" fill="#ab9570" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="actualOutlay" name="Actual Outlay" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="clientBilling" name="Client Billing" fill="#10b981" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -187,6 +265,45 @@ export const SiteSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site }) =>
           </div>
         </div>
       </div>
+
+      {/* Chart 2: Selected Site Performance Matrix */}
+      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-3 font-sans">
+        <div className="flex items-center justify-between border-b pb-2">
+          <div>
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Selected Site Performance Matrix ({site.code} - {site.name})
+            </h4>
+            <p className="text-[10px] text-gray-400 font-medium leading-tight">
+              Operational benchmark metrics scaled from 0% to 100%. Highlighted warnings indicate schedule/cost deviations.
+            </p>
+          </div>
+          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
+            Selected-Site Dynamic
+          </span>
+        </div>
+        <div className="h-[260px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart layout="vertical" data={getSelectedSitePerformanceMatrix(site)} margin={{ top: 5, right: 45, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+              <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 9, fill: '#6b7280' }} />
+              <YAxis type="category" dataKey="metric" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} width={115} />
+              <Tooltip 
+                formatter={(val: number, _n: string, props: any) => [
+                  `${val}% ${props.payload.warningReason ? `⚠️ ${props.payload.warningReason}` : ''}`,
+                  props.payload.metric
+                ]} 
+                contentStyle={{ fontSize: '11px', borderRadius: '6px' }}
+              />
+              <Bar dataKey="value" name="Metric Achievement" radius={[0, 3, 3, 0]}>
+                {getSelectedSitePerformanceMatrix(site).map((entry: SiteMatrixMetric, index: number) => (
+                  <Cell key={`matrix-cell-${index}`} fill={entry.color} />
+                ))}
+                <LabelList dataKey="value" position="right" formatter={(v: number) => `${v}%`} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#374151' }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 };
@@ -288,24 +405,29 @@ export const ClientTenderBillingSection: React.FC<{ site: SiteSchema }> = ({ sit
         </div>
       </div>
 
-      {/* Visual Chart */}
-      <div className="p-3.5 border border-gray-150 rounded bg-gray-50/30 flex flex-col justify-between">
-        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider mb-2">Tender vs Billing Overview</h4>
-        <div className="h-[200px] w-full">
+      {/* Chart 3: Client Billing and Collections Composed Chart */}
+      <div className="p-3.5 border border-gray-150 rounded bg-white flex flex-col justify-between space-y-2">
+        <div className="flex items-center justify-between border-b pb-1.5">
+          <div>
+            <h4 className="font-bold text-xs text-gray-900 uppercase tracking-wider">Client Billing & Collections ({site.code})</h4>
+            <p className="text-[10px] text-gray-400 font-medium">Monthly billing activity vs client receipts for 2026.</p>
+          </div>
+          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-1.5 py-0.5 rounded">
+            Selected-Site Series
+          </span>
+        </div>
+        <div className="h-[220px] w-full pt-1">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={[
-              { name: 'Tender', Submitted: tenderVal, Approved: tenderApprovedVal },
-              { name: 'Extra Items', Submitted: extraTenderVal, Approved: extraApprovedVal },
-              { name: 'Client Bills', Submitted: billSubmitted, Approved: billApproved }
-            ]}>
+            <ComposedChart data={getSelectedSiteMonthlyBilling(site)}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 9 }} tickFormatter={(val) => `₹${Number(val / 100000 || 0).toFixed(0)}L`} />
-              <Tooltip formatter={(val: number) => [safeFormatCurrency(val), 'Amount']} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#374151' }} />
+              <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(val) => formatIndianCurrencyAbbrev(val)} />
+              <Tooltip formatter={(val: number) => [safeFormatCurrency(val), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
               <Legend wrapperStyle={{ fontSize: '10px' }} />
-              <Bar dataKey="Submitted" fill="#94a3b8" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="Approved" fill="#ab9570" radius={[2, 2, 0, 0]} />
-            </BarChart>
+              <Bar dataKey="submittedBills" name="Submitted Bills" fill="#94a3b8" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="approvedBills" name="Approved Bills" fill="#ab9570" radius={[2, 2, 0, 0]} />
+              <Line type="monotone" dataKey="clientReceipts" name="Client Receipts" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>
@@ -363,6 +485,37 @@ export const VendorBillSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site
           </tfoot>
         </table>
       </div>
+
+      {/* Chart 4: Vendor Liability Stacked Bar Chart */}
+      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-2">
+        <div className="flex items-center justify-between border-b pb-2">
+          <div>
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Vendor Liability & Outstanding Exposure (Top Vendors)
+            </h4>
+            <p className="text-[10px] text-gray-400 font-medium">
+              Stacked breakdown of Paid Amount, Outstanding Liability, and Retention Amount for key suppliers.
+            </p>
+          </div>
+          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
+            Portfolio Liability
+          </span>
+        </div>
+        <div className="h-[240px] w-full pt-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart layout="vertical" data={VENDOR_LIABILITY_DATA} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+              <XAxis type="number" tickFormatter={(v) => formatIndianCurrencyAbbrev(v)} tick={{ fontSize: 9, fill: '#6b7280' }} />
+              <YAxis type="category" dataKey="vendor" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} width={125} />
+              <Tooltip formatter={(v: number) => [safeFormatCurrency(v), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
+              <Legend wrapperStyle={{ fontSize: '10px' }} />
+              <Bar dataKey="paidAmount" name="Paid Amount" stackId="a" fill="#10b981" />
+              <Bar dataKey="outstandingAmount" name="Outstanding Liability" stackId="a" fill="#ef4444" />
+              <Bar dataKey="retentionAmount" name="Retention Withheld" stackId="a" fill="#f59e0b" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 };
@@ -382,24 +535,71 @@ export const ApprovalPendingSection: React.FC = () => {
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 font-sans">
-      {items.map((item, idx) => (
-        <button
-          key={idx}
-          onClick={() => navigate(item.route)}
-          className="p-3.5 border border-gray-150 rounded bg-white hover:border-brand-300 hover:shadow-sm transition-all text-left group cursor-pointer focus:outline-none"
-        >
-          <span className="text-[9.5px] uppercase font-bold text-gray-400 group-hover:text-brand-600 transition-colors block">
-            {item.label}
-          </span>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="font-extrabold text-lg text-gray-900">{item.count}</span>
-            <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-150 px-1.5 py-0.25 rounded">
-              Pending
-            </span>
+    <div className="space-y-4 font-sans">
+      {/* Chart 5: Approval Pipeline Donut Chart */}
+      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-2">
+        <div className="flex items-center justify-between border-b pb-2">
+          <div>
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Approval Pipeline Breakdown ({TOTAL_APPROVAL_COUNT} Total Pending)
+            </h4>
+            <p className="text-[10px] text-gray-400 font-medium">
+              Distribution of pending operational approvals across modules.
+            </p>
           </div>
-        </button>
-      ))}
+          <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-150 px-2 py-0.5 rounded">
+            {TOTAL_APPROVAL_COUNT} Action Items
+          </span>
+        </div>
+        <div className="h-[220px] w-full flex items-center justify-center relative">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={APPROVAL_PIPELINE_DATA}
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={75}
+                paddingAngle={3}
+                dataKey="count"
+              >
+                {APPROVAL_PIPELINE_DATA.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip 
+                formatter={(val: number, name: string) => [
+                  `${val} Pending (${((val / TOTAL_APPROVAL_COUNT) * 100).toFixed(1)}%)`,
+                  name
+                ]} 
+                contentStyle={{ fontSize: '11px', borderRadius: '6px' }}
+              />
+              <Legend wrapperStyle={{ fontSize: '10px' }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Quick Approval Nav Cards Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {items.map((item, idx) => (
+          <button
+            key={idx}
+            onClick={() => navigate(item.route)}
+            className="p-3.5 border border-gray-150 rounded bg-white hover:border-brand-300 hover:shadow-sm transition-all text-left group cursor-pointer focus:outline-none"
+          >
+            <span className="text-[9.5px] uppercase font-bold text-gray-400 group-hover:text-brand-600 transition-colors block">
+              {item.label}
+            </span>
+            <div className="flex items-baseline justify-between mt-1">
+              <span className="font-extrabold text-lg text-gray-900">{item.count}</span>
+              <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-150 px-1.5 py-0.25 rounded">
+                Pending
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
@@ -587,7 +787,39 @@ export const ProcurementIntelligenceSection: React.FC = () => {
         </div>
       </div>
 
-      {/* 2 Tables: Highest Ordered Materials */}
+      {/* Chart 6: Procurement Pipeline Conversion Funnel Chart */}
+      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-2">
+        <div className="flex items-center justify-between border-b pb-2">
+          <div>
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Procurement Document Conversion Funnel
+            </h4>
+            <p className="text-[10px] text-gray-400 font-medium">
+              Stage-by-stage progression from Material Indents down to Verified Vendor Invoices.
+            </p>
+          </div>
+          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
+            Procurement Flow
+          </span>
+        </div>
+        <div className="h-[250px] w-full pt-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart layout="vertical" data={PROCUREMENT_PIPELINE_STAGES} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+              <XAxis type="number" tick={{ fontSize: 9, fill: '#6b7280' }} />
+              <YAxis type="category" dataKey="stage" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} width={135} />
+              <Tooltip 
+                formatter={(val: number, _name: string, props: any) => [
+                  `${val} Records (${safeFormatCurrency(props.payload.value)}) • Step Conv: ${props.payload.conversionRate}`,
+                  'Volume'
+                ]} 
+                contentStyle={{ fontSize: '11px', borderRadius: '6px' }}
+              />
+              <Bar dataKey="count" name="Record Volume" fill="#ab9570" radius={[0, 3, 3, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Highest Ordered by Qty */}
         <div className="border rounded p-3 space-y-2">
@@ -637,31 +869,64 @@ export const PeriodStatisticsSection: React.FC = () => {
   ];
 
   return (
-    <div className="overflow-x-auto border border-gray-150 rounded font-sans">
-      <table className="w-full text-left text-xs divide-y divide-gray-150 min-w-[600px]">
-        <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
-          <tr>
-            <th className="p-3">Operational Record</th>
-            <th className="p-3 text-right">Today</th>
-            <th className="p-3 text-right">Last 7 Days</th>
-            <th className="p-3 text-right">Last Month</th>
-            <th className="p-3 text-right">Last Quarter</th>
-            <th className="p-3 text-right">Last Year</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-          {rows.map((r, idx) => (
-            <tr key={idx} className="hover:bg-gray-50/50">
-              <td className="p-3 font-bold text-gray-800">{r.name}</td>
-              <td className="p-3 text-right font-mono">{r.d1}</td>
-              <td className="p-3 text-right font-mono">{r.d7}</td>
-              <td className="p-3 text-right font-mono">{r.m1}</td>
-              <td className="p-3 text-right font-mono">{r.q1}</td>
-              <td className="p-3 text-right font-mono font-bold text-gray-900">{r.y1}</td>
+    <div className="space-y-4 font-sans">
+      {/* Chart 7: Monthly Operational Financial Flow Area Chart */}
+      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-2">
+        <div className="flex items-center justify-between border-b pb-2">
+          <div>
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Monthly Operational Financial Flow (Purchase vs Invoice vs Payment)
+            </h4>
+            <p className="text-[10px] text-gray-400 font-medium">
+              12-month operational trend showing Purchase Order commitments, Invoiced liabilities, and Cash disbursements.
+            </p>
+          </div>
+          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
+            Operational Time-Series
+          </span>
+        </div>
+        <div className="h-[250px] w-full pt-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={MONTHLY_OPERATIONAL_FLOW_DATA} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} />
+              <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v) => formatIndianCurrencyAbbrev(v)} />
+              <Tooltip formatter={(val: number) => [safeFormatCurrency(val), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
+              <Legend wrapperStyle={{ fontSize: '10px' }} />
+              <Area type="monotone" dataKey="purchaseValue" name="Purchase Commitments" stroke="#ab9570" fill="#ab9570" fillOpacity={0.2} />
+              <Area type="monotone" dataKey="invoiceValue" name="Invoiced Liabilities" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
+              <Area type="monotone" dataKey="paymentValue" name="Cash Payments" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto border border-gray-150 rounded">
+        <table className="w-full text-left text-xs divide-y divide-gray-150 min-w-[600px]">
+          <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
+            <tr>
+              <th className="p-3">Operational Record</th>
+              <th className="p-3 text-right">Today</th>
+              <th className="p-3 text-right">Last 7 Days</th>
+              <th className="p-3 text-right">Last Month</th>
+              <th className="p-3 text-right">Last Quarter</th>
+              <th className="p-3 text-right">Last Year</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+            {rows.map((r, idx) => (
+              <tr key={idx} className="hover:bg-gray-50/50">
+                <td className="p-3 font-bold text-gray-800">{r.name}</td>
+                <td className="p-3 text-right font-mono">{r.d1}</td>
+                <td className="p-3 text-right font-mono">{r.d7}</td>
+                <td className="p-3 text-right font-mono">{r.m1}</td>
+                <td className="p-3 text-right font-mono">{r.q1}</td>
+                <td className="p-3 text-right font-mono font-bold text-gray-900">{r.y1}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
@@ -697,6 +962,81 @@ export const UpcomingExceptionsSection: React.FC = () => {
           {toast}
         </div>
       )}
+
+      {/* Chart 9: Upcoming Risk Timeline Diverging Bar Chart */}
+      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-2 font-sans">
+        <div className="flex items-center justify-between border-b pb-2">
+          <div>
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Upcoming Risk & Deadline Timeline
+            </h4>
+            <p className="text-[10px] text-gray-400 font-medium">
+              Diverging timeline relative to zero reference line (Today). Overdue items extend left, upcoming extend right.
+            </p>
+          </div>
+          <span className="text-[9.5px] font-bold text-rose-700 bg-rose-50 border border-rose-150 px-2 py-0.5 rounded">
+            Risk & Deadline Monitor
+          </span>
+        </div>
+
+        {UPCOMING_RISK_TIMELINE_DATA.length === 0 ? (
+          <div className="h-[180px] w-full flex items-center justify-center text-xs text-gray-400 font-medium bg-gray-50 border border-dashed rounded">
+            No active risk or deadline items found.
+          </div>
+        ) : (
+          <div className="h-[250px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart 
+                layout="vertical" 
+                data={UPCOMING_RISK_TIMELINE_DATA.slice().sort((a, b) => a.daysRemaining - b.daysRemaining)} 
+                margin={{ top: 15, right: 65, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                <XAxis 
+                  type="number" 
+                  domain={[-6, 20]} 
+                  tick={{ fontSize: 9, fill: '#6b7280' }} 
+                  tickFormatter={(v) => (v === 0 ? 'Today' : v < 0 ? `${v}d` : `+${v}d`)}
+                />
+                <YAxis type="category" dataKey="refNo" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} width={85} />
+                <ReferenceLine x={0} stroke="#374151" strokeWidth={2} label={{ value: 'Today', position: 'top', fill: '#374151', fontSize: 10, fontWeight: 'bold' }} />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      const days = data.daysRemaining;
+                      const statusText = days < 0 ? `${Math.abs(days)} Days Overdue ⚠️` : days === 0 ? 'Due Today 🔔' : `${days} Days Remaining`;
+                      return (
+                        <div className="bg-white border border-gray-200 p-2.5 rounded shadow-md text-xs space-y-1 z-50">
+                          <div className="font-bold text-gray-900 border-b pb-1">{data.refNo} — {data.title}</div>
+                          <div><span className="text-gray-400">Category:</span> <strong className="text-gray-700">{data.category}</strong></div>
+                          <div><span className="text-gray-400">Due Date:</span> <strong className="text-gray-700">{data.dueDate}</strong></div>
+                          <div><span className="text-gray-400">Status:</span> <strong className={days < 0 ? 'text-red-600' : days <= 5 ? 'text-amber-600' : 'text-emerald-600'}>{statusText}</strong></div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="daysRemaining" name="Days Overdue / Remaining" radius={[3, 3, 3, 3]}>
+                  {UPCOMING_RISK_TIMELINE_DATA.slice().sort((a, b) => a.daysRemaining - b.daysRemaining).map((entry, index) => (
+                    <Cell 
+                      key={`risk-cell-${index}`} 
+                      fill={entry.daysRemaining < 0 ? '#ef4444' : entry.daysRemaining === 0 ? '#f59e0b' : entry.daysRemaining <= 7 ? '#eab308' : '#10b981'} 
+                    />
+                  ))}
+                  <LabelList 
+                    dataKey="daysRemaining" 
+                    position="right" 
+                    formatter={(v: number) => (v < 0 ? `${Math.abs(v)}d overdue` : v === 0 ? 'Due today' : `${v}d remaining`)} 
+                    style={{ fontSize: '9.5px', fontWeight: 'bold', fill: '#374151' }} 
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Table 1: Expected Order Deliveries with Receive Delivery button */}
@@ -945,29 +1285,100 @@ export const PaymentModesSection: React.FC = () => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans">
-      <div className="p-3 border rounded bg-white space-y-3">
-        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Payment Mode to Vendors</h4>
-        <div className="space-y-2 text-xs">
-          {vendorModes.map((m, idx) => (
-            <div key={idx} className="flex items-center justify-between p-2 rounded bg-gray-50 border">
-              <span className="font-bold text-gray-700">{m.name}</span>
-              <span className="font-mono font-bold text-gray-900">{m.value}%</span>
-            </div>
-          ))}
+    <div className="space-y-4 font-sans">
+      {/* Chart 8: Ranked Horizontal Payment Mode Bar Chart */}
+      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-3 font-sans">
+        <div className="flex items-center justify-between border-b pb-2">
+          <div>
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Payment Mode Distribution
+            </h4>
+            <p className="text-[10px] text-gray-400 font-medium leading-tight">
+              Ranked horizontal financial volume by payment method across all operational disbursements.
+            </p>
+          </div>
+          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
+            Payment Methods
+          </span>
+        </div>
+
+        {/* Compact Summary Header Block */}
+        <div className="grid grid-cols-3 gap-2 bg-gray-50 p-2.5 rounded border border-gray-150 text-center">
+          <div>
+            <span className="text-[9px] uppercase font-bold text-gray-400 block">Total Disbursements</span>
+            <span className="text-xs font-extrabold text-gray-900">{formatIndianCurrencyAbbrev(PAYMENT_MODE_DISTRIBUTION.reduce((s, i) => s + i.amount, 0))}</span>
+          </div>
+          <div>
+            <span className="text-[9px] uppercase font-bold text-gray-400 block">Most Used Method</span>
+            <span className="text-xs font-extrabold text-brand-700 truncate block">{PAYMENT_MODE_DISTRIBUTION[0]?.name} ({PAYMENT_MODE_DISTRIBUTION[0]?.value}%)</span>
+          </div>
+          <div>
+            <span className="text-[9px] uppercase font-bold text-gray-400 block">Total Transactions</span>
+            <span className="text-xs font-extrabold text-gray-900">{PAYMENT_MODE_DISTRIBUTION.reduce((s, i) => s + i.txCount, 0)} Payments</span>
+          </div>
+        </div>
+
+        <div className="h-[240px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart 
+              layout="vertical" 
+              data={PAYMENT_MODE_DISTRIBUTION} 
+              margin={{ top: 5, right: 45, left: 25, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+              <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 9, fill: '#6b7280' }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} width={140} />
+              <Tooltip 
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const d = payload[0].payload;
+                    return (
+                      <div className="bg-white border border-gray-200 p-2.5 rounded shadow-md text-xs space-y-1 z-50">
+                        <div className="font-bold text-gray-900 border-b pb-1">{d.name}</div>
+                        <div><span className="text-gray-400">Total Volume:</span> <strong className="text-gray-800">{safeFormatCurrency(d.amount)}</strong></div>
+                        <div><span className="text-gray-400">Share of Payments:</span> <strong className="text-brand-700">{d.value}%</strong></div>
+                        <div><span className="text-gray-400">Transaction Count:</span> <strong className="text-gray-800">{d.txCount} Payments</strong></div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Bar dataKey="value" name="Volume Share" radius={[0, 3, 3, 0]}>
+                {PAYMENT_MODE_DISTRIBUTION.map((entry, index) => (
+                  <Cell key={`pay-mode-cell-${index}`} fill={entry.color} />
+                ))}
+                <LabelList dataKey="value" position="right" formatter={(v: number) => `${v}%`} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#374151' }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
-      <div className="p-3 border rounded bg-white space-y-3">
-        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Payment Mode Received From Client</h4>
-        <div className="space-y-2 text-xs">
-          <div className="flex items-center justify-between p-2 rounded bg-gray-50 border">
-            <span className="font-bold text-gray-700">Direct Wire / NEFT</span>
-            <span className="font-mono font-bold text-gray-900">85%</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-3 border rounded bg-white space-y-3">
+          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Payment Mode to Vendors</h4>
+          <div className="space-y-2 text-xs">
+            {vendorModes.map((m, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2 rounded bg-gray-50 border">
+                <span className="font-bold text-gray-700">{m.name}</span>
+                <span className="font-mono font-bold text-gray-900">{m.value}%</span>
+              </div>
+            ))}
           </div>
-          <div className="flex items-center justify-between p-2 rounded bg-gray-50 border">
-            <span className="font-bold text-gray-700">Letter of Credit (LC)</span>
-            <span className="font-mono font-bold text-gray-900">15%</span>
+        </div>
+
+        <div className="p-3 border rounded bg-white space-y-3">
+          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Payment Mode Received From Client</h4>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center justify-between p-2 rounded bg-gray-50 border">
+              <span className="font-bold text-gray-700">Direct Wire / NEFT</span>
+              <span className="font-mono font-bold text-gray-900">85%</span>
+            </div>
+            <div className="flex items-center justify-between p-2 rounded bg-gray-50 border">
+              <span className="font-bold text-gray-700">Letter of Credit (LC)</span>
+              <span className="font-mono font-bold text-gray-900">15%</span>
+            </div>
           </div>
         </div>
       </div>
