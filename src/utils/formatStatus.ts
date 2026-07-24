@@ -19,6 +19,17 @@ export function formatStatusLabel(status: string | null | undefined): string {
     completed: 'Completed',
     draft: 'Draft',
     on_hold: 'On Hold',
+    sent: 'Sent',
+    quotations_received: 'Quotations Received',
+    compared: 'Compared',
+    finalized: 'Finalized',
+    partially_delivered: 'Partially Delivered',
+    delivered: 'Delivered',
+    closed: 'Closed',
+    created: 'Created',
+    inspected: 'Inspected',
+    certified: 'Certified',
+    payment_requested: 'Payment Requested',
 
     // General Master & Admin
     active: 'Active',

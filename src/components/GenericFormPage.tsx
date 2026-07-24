@@ -45,8 +45,17 @@ export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
   const addItemRow = () => {
     setItems((prev) => [
       ...prev,
-      { id: Date.now().toString(), item: 'Gypsum Board 12mm Standard', unit: 'Sq Ft', qty: 200, rate: 45, amount: 9000 }
+      { id: Date.now().toString(), item: '', unit: 'Sq Ft', qty: 1, rate: 1, amount: 1 }
     ]);
+  };
+
+  const updateItemRow = (id: string, field: string, val: string | number) => {
+    setItems((prev) => prev.map(i => {
+       if (i.id !== id) return i;
+       const updated = { ...i, [field]: val };
+       updated.amount = (Number(updated.qty) || 0) * (Number(updated.rate) || 0);
+       return updated;
+    }));
   };
 
   const removeItemRow = (id: string) => {
@@ -57,7 +66,8 @@ export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
     e.preventDefault();
     const newRecord = {
       ...formValues,
-      status: 'pending_approval' // default form entry status
+      items: schema.sections?.some(s => s.hasItemTable) ? items : undefined,
+      status: 'pending_approval'
     };
     addRecord(collectionId, newRecord);
     triggerToast('Record submitted successfully');
@@ -66,6 +76,7 @@ export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
   const handleSaveDraft = () => {
     const newRecord = {
       ...formValues,
+      items: schema.sections?.some(s => s.hasItemTable) ? items : undefined,
       status: 'draft'
     };
     addRecord(collectionId, newRecord);
@@ -141,6 +152,8 @@ export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
                     ) : (
                       <input
                         type={field.type}
+                        min={field.type === 'number' ? '0' : undefined}
+                        step={field.type === 'number' ? 'any' : undefined}
                         value={formValues[field.name] || field.defaultValue || ''}
                         onChange={(e) => handleFieldChange(field.name, e.target.value)}
                         placeholder={field.placeholder}
@@ -183,11 +196,17 @@ export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
                       {items.map((row) => (
                         <tr key={row.id}>
                           <td className="p-2.5">
-                            <input type="text" value={row.item} onChange={() => {}} className="w-full bg-white border border-gray-200 rounded p-1 text-xs" />
+                            <input type="text" value={row.item} onChange={(e) => updateItemRow(row.id, 'item', e.target.value)} className="w-full bg-white border border-gray-200 rounded p-1 text-xs" required />
                           </td>
-                          <td className="p-2.5 text-center">{row.unit}</td>
-                          <td className="p-2.5 text-right font-mono">{row.qty}</td>
-                          <td className="p-2.5 text-right font-mono">{row.rate}</td>
+                          <td className="p-2.5 text-center">
+                            <input type="text" value={row.unit} onChange={(e) => updateItemRow(row.id, 'unit', e.target.value)} className="w-[60px] text-center bg-white border border-gray-200 rounded p-1 text-xs mx-auto" />
+                          </td>
+                          <td className="p-2.5 text-right font-mono">
+                            <input type="number" min="1" step="any" value={row.qty} onChange={(e) => updateItemRow(row.id, 'qty', e.target.value)} className="w-[60px] text-right bg-white border border-gray-200 rounded p-1 text-xs ml-auto" required />
+                          </td>
+                          <td className="p-2.5 text-right font-mono">
+                            <input type="number" min="0" step="any" value={row.rate} onChange={(e) => updateItemRow(row.id, 'rate', e.target.value)} className="w-[80px] text-right bg-white border border-gray-200 rounded p-1 text-xs ml-auto" required />
+                          </td>
                           <td className="p-2.5 text-right font-mono font-bold text-gray-900">{safeFormatCurrency(row.amount)}</td>
                           <td className="p-2.5 text-center">
                             <button type="button" onClick={() => removeItemRow(row.id)} className="p-1 text-gray-400 hover:text-rose-600 cursor-pointer">
@@ -208,7 +227,7 @@ export const GenericFormPage: React.FC<GenericFormPageProps> = ({ schema }) => {
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-wrap items-center justify-between gap-4 font-sans text-xs">
           <div>
             <span className="font-bold text-gray-500 block uppercase text-[9px]">Calculated Summary Value:</span>
-            <span className="text-lg font-extrabold text-brand-700">{safeFormatCurrency(187500)}</span>
+            <span className="text-lg font-extrabold text-brand-700">{safeFormatCurrency(schema.sections?.some(s => s.hasItemTable) ? items.reduce((sum, item) => sum + (item.amount || 0), 0) : 0)}</span>
           </div>
 
           <div className="flex items-center gap-2">

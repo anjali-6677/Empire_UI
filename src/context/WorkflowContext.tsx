@@ -5,6 +5,7 @@ import { ROUTES } from '../config/navigation';
 export type WorkflowCollectionId =
   | 'indents'
   | 'rfqs'
+  | 'quotations'
   | 'rateComparisons'
   | 'purchaseOrders'
   | 'orders'
@@ -28,6 +29,7 @@ export interface WorkflowRecord {
 export interface WorkflowState {
   indents: WorkflowRecord[];
   rfqs: WorkflowRecord[];
+  quotations: WorkflowRecord[];
   rateComparisons: WorkflowRecord[];
   purchaseOrders: WorkflowRecord[];
   orders: WorkflowRecord[];
@@ -47,6 +49,7 @@ export interface WorkflowState {
   updateRecord: (collection: WorkflowCollectionId | string, id: string, record: Partial<WorkflowRecord>) => void;
   deleteRecord: (collection: WorkflowCollectionId | string, id: string) => void;
   duplicateRecord: (collection: WorkflowCollectionId | string, id: string) => void;
+  rejectRecord: (collection: WorkflowCollectionId | string, id: string, comment: string) => void;
 
   // Specific transition methods
   submitIndentForApproval: (id: string) => void;
@@ -98,6 +101,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [collections, setCollections] = useState<Record<WorkflowCollectionId | string, WorkflowRecord[]>>({
     indents: initCollection(ROUTES.INDENTS),
     rfqs: initCollection(ROUTES.RFQS),
+    quotations: [],
     rateComparisons: initCollection(ROUTES.RATE_COMPARISON),
     purchaseOrders: initCollection(ROUTES.PURCHASE_ORDERS),
     orders: initCollection(ROUTES.ORDERS),
@@ -156,6 +160,15 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
+  const rejectRecord = (collection: WorkflowCollectionId | string, id: string, comment: string) => {
+    updateRecord(collection, id, { 
+      status: 'rejected',
+      rejectedBy: 'Current User', // Stubbed current user
+      rejectionDate: new Date().toISOString().split('T')[0],
+      rejectionComment: comment
+    });
+  };
+
   // ----------------------------------------------------
   // WORKFLOW SPECIFIC TRANSITIONS
   // ----------------------------------------------------
@@ -169,10 +182,11 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     updateRecord('indents', indentId, { status: 'converted' });
     addRecord('rfqs', {
-      referenceNo: `RFQ-GEN-${Date.now().toString().slice(-4)}`,
+      rfqNumber: `RFQ-GEN-${Date.now().toString().slice(-4)}`,
       indentId: indentId,
+      indentNumber: indent.indentNumber || indent.indentNo || indent.referenceNo,
       site: indent.site,
-      title: indent.title || indent.subject || `RFQ for ${indent.referenceNo}`,
+      title: indent.title || indent.subject || `RFQ for ${indent.indentNumber}`,
       date: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0],
       status: 'draft',
@@ -181,14 +195,17 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
-  const recordVendorQuotation = (rfqId: string, _quotationData: any) => {
+  const recordVendorQuotation = (rfqId: string, quotationData: any) => {
+    addRecord('quotations', {
+      rfqId,
+      ...quotationData
+    });
     const rfq = getCollection('rfqs').find(r => r.id === rfqId);
     if (!rfq) return;
     updateRecord('rfqs', rfqId, { 
       bidsRecd: (rfq.bidsRecd || 0) + 1,
       status: 'quotations_received'
     });
-    // the system could route to rate comparison here based on data
   };
 
   const finalizeRateComparison = (rateId: string) => {
@@ -201,19 +218,18 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     updateRecord('rateComparisons', rateId, { status: 'converted' });
     
-    // Also mark RFQ if linked
     if (rate.rfqId) {
       updateRecord('rfqs', rate.rfqId, { status: 'po_issued' });
     }
 
     addRecord('purchaseOrders', {
-      referenceNo: `PO-GEN-${Date.now().toString().slice(-4)}`,
+      poNumber: `PO-GEN-${Date.now().toString().slice(-4)}`,
       rfqId: rate.rfqId,
       indentId: rate.indentId,
-      vendor: vendorId || 'Selected Vendor',
+      selectedVendorId: vendorId || rate.vendorId || 'VND-001',
       site: rate.site,
       date: new Date().toISOString().split('T')[0],
-      amount: rate.selectedAmount || rate.lowestValue || 0,
+      amount: rate.selectedAmount || rate.lowestValue || rate.finalAmount || 0,
       status: 'draft'
     });
   };
@@ -223,13 +239,15 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const createOrderFromPurchaseOrder = (poId: string) => {
     const po = getCollection('purchaseOrders').find(p => p.id === poId);
     if (!po) return;
-    updateRecord('purchaseOrders', poId, { status: 'active_order' }); // e.g active order
+    updateRecord('purchaseOrders', poId, { status: 'partially_delivered' });
     addRecord('orders', {
-      poId: poId,
-      referenceNo: `ORD-${Date.now().toString().slice(-4)}`,
+      purchaseOrderId: poId,
+      poNumber: po.poNumber,
+      orderNumber: `ORD-${Date.now().toString().slice(-4)}`,
       vendor: po.vendor,
+      vendorId: po.selectedVendorId,
       site: po.site,
-      status: 'pending_delivery',
+      status: 'created',
       amount: po.amount,
       date: new Date().toISOString().split('T')[0]
     });
@@ -238,19 +256,19 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const createGrnFromOrder = (orderId: string) => {
     const order = getCollection('orders').find(o => o.id === orderId);
     if (!order) return;
-    updateRecord('orders', orderId, { status: 'delivered' });
-    if(order.poId) {
-      updateRecord('purchaseOrders', order.poId, { status: 'delivered' });
+    updateRecord('orders', orderId, { status: 'partially_received' });
+    if(order.purchaseOrderId) {
+      updateRecord('purchaseOrders', order.purchaseOrderId, { status: 'delivered' });
     }
     
     addRecord('grns', {
       orderId: orderId,
-      poId: order.poId,
-      referenceNo: `GRN-${Date.now().toString().slice(-4)}`,
+      purchaseOrderId: order.purchaseOrderId,
+      grnNumber: `GRN-${Date.now().toString().slice(-4)}`,
       vendor: order.vendor,
       site: order.site,
       date: new Date().toISOString().split('T')[0],
-      status: 'created' // transition to inspected -> completed later
+      status: 'created' 
     });
   };
 
@@ -258,17 +276,19 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const grn = getCollection('grns').find(g => g.id === grnId);
     if (!grn) return;
     
-    updateRecord('grns', grnId, { status: 'invoiced' });
+    updateRecord('grns', grnId, { status: 'completed' });
     
-    const po = getCollection('purchaseOrders').find(p => p.id === grn.poId);
+    const po = getCollection('purchaseOrders').find(p => p.id === grn.purchaseOrderId);
     
     addRecord('invoices', {
       grnId: grnId,
-      poId: grn.poId,
-      referenceNo: `INV-VND-${Date.now().toString().slice(-4)}`,
+      purchaseOrderId: grn.purchaseOrderId,
+      invoiceNumber: `INV-VND-${Date.now().toString().slice(-4)}`,
+      vendorId: po?.selectedVendorId || grn.vendorId,
       vendor: grn.vendor,
       site: grn.site,
-      amount: po?.amount || 0,
+      grossAmount: po?.amount || 0,
+      certifiedAmount: po?.amount || 0,
       date: new Date().toISOString().split('T')[0],
       status: 'draft'
     });
@@ -283,10 +303,11 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     addRecord('paymentRequests', {
       invoiceId: invoiceId,
-      referenceNo: `PREQ-${Date.now().toString().slice(-4)}`,
+      vendorId: inv.vendorId,
+      requestNumber: `PREQ-${Date.now().toString().slice(-4)}`,
       vendor: inv.vendor,
       site: inv.site,
-      amount: inv.amount,
+      amount: inv.certifiedAmount || inv.grossAmount || 0,
       requestDate: new Date().toISOString().split('T')[0],
       status: 'draft'
     });
@@ -306,7 +327,8 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     addRecord('payments', {
       paymentRequestId: reqId,
       invoiceId: pReq.invoiceId,
-      referenceNo: `PAY-${Date.now().toString().slice(-4)}`,
+      vendorId: pReq.vendorId,
+      paymentReference: `PAY-${Date.now().toString().slice(-4)}`,
       vendor: pReq.vendor,
       amount: paymentData.amount || pReq.amount,
       mode: paymentData.mode || 'Bank Transfer',
@@ -333,6 +355,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       value={{
         indents: getCollection('indents'),
         rfqs: getCollection('rfqs'),
+        quotations: getCollection('quotations'),
         rateComparisons: getCollection('rateComparisons'),
         purchaseOrders: getCollection('purchaseOrders'),
         orders: getCollection('orders'),
@@ -350,6 +373,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateRecord,
         deleteRecord,
         duplicateRecord,
+        rejectRecord,
 
         submitIndentForApproval,
         approveIndent,

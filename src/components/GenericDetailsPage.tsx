@@ -20,8 +20,43 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
-  const { getCollection, approveIndent, createRfqFromIndent, recordVendorQuotation, createPurchaseOrderFromComparison, approvePurchaseOrder, createOrderFromPurchaseOrder, createGrnFromOrder, createInvoiceFromGrn, certifyInvoice, createPaymentRequestFromInvoice, approvePaymentRequest, recordPayment } = useWorkflow();
+  const { getCollection, approveIndent, createRfqFromIndent, recordVendorQuotation, createPurchaseOrderFromComparison, approvePurchaseOrder, createOrderFromPurchaseOrder, createGrnFromOrder, createInvoiceFromGrn, certifyInvoice, createPaymentRequestFromInvoice, approvePaymentRequest, recordPayment, rejectRecord } = useWorkflow();
   const collectionId = getCollectionIdFromRoute(schema.route);
+  
+  const [isRejecting, setIsRejecting] = React.useState(false);
+  const [rejectReason, setRejectReason] = React.useState('');
+
+  const [isRecordingQuotations, setIsRecordingQuotations] = React.useState(false);
+  const [qVendor, setQVendor] = React.useState('');
+  const [qRate, setQRate] = React.useState('');
+  const [qDiscount, setQDiscount] = React.useState('');
+  const [qTax, setQTax] = React.useState('');
+  const [qDelivery, setQDelivery] = React.useState('');
+
+  const handleRecordQuotation = () => {
+    if (!qVendor || !qRate) { alert("Vendor and Rate are required."); return; }
+    recordVendorQuotation(activeRecord?.id || '', { 
+       vendorId: qVendor, 
+       basicRate: Number(qRate), 
+       discount: qDiscount, 
+       tax: qTax, 
+       deliveryDays: qDelivery 
+    });
+    setQVendor(''); setQRate(''); setQDiscount(''); setQTax(''); setQDelivery('');
+    setIsRecordingQuotations(false);
+  };
+
+  const handleReject = () => {
+    if (!activeRecord?.id) return;
+    const trimmed = rejectReason.trim();
+    if (!trimmed || trimmed === '-' || trimmed === ',' || trimmed.replace(/["']/g, '') === '') {
+      alert("A valid rejection reason is required.");
+      return;
+    }
+    rejectRecord(collectionId, activeRecord.id, trimmed);
+    setIsRejecting(false);
+    setRejectReason('');
+  };
 
   // Resolve matching row from context
   const activeRecord = React.useMemo(() => {
@@ -91,22 +126,33 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
 
         <div className="flex items-center gap-2">
           {schema.route === ROUTES.INDENTS && activeRecord.status === 'pending_approval' && (
-            <button onClick={() => { approveIndent(activeRecord.id); navigate(ROUTES.INDENTS); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Approve Indent</button>
+            <>
+              <button onClick={() => { approveIndent(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Approve Indent</button>
+              <button onClick={() => setIsRejecting(true)} className="px-3 py-1.5 border border-rose-300 bg-rose-50 rounded font-bold text-rose-700 hover:bg-rose-100 cursor-pointer">Reject</button>
+            </>
           )}
           {schema.route === ROUTES.INDENTS && activeRecord.status === 'approved' && (
             <button onClick={() => { createRfqFromIndent(activeRecord.id); navigate(ROUTES.RFQS); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Generate RFQ</button>
           )}
           
-          {schema.route === ROUTES.RFQS && activeRecord.status === 'draft' && (
-            <button onClick={() => { recordVendorQuotation(activeRecord.id, {}); navigate(ROUTES.RATE_COMPARISON); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Record Quotations</button>
+          {schema.route === ROUTES.RFQS && ['draft', 'sent', 'quotations_received'].includes(activeRecord.status || '') && (
+            <>
+              <button onClick={() => setIsRecordingQuotations(true)} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Add Quotation</button>
+              {activeRecord.status === 'quotations_received' && (
+                 <button onClick={() => navigate(ROUTES.RATE_COMPARISON)} className="px-3 py-1.5 bg-emerald-600 rounded font-bold text-white hover:bg-emerald-700 cursor-pointer text-xs">View Comparison</button>
+              )}
+            </>
           )}
 
           {schema.route === ROUTES.RATE_COMPARISON && activeRecord.status !== 'converted' && (
             <button onClick={() => { createPurchaseOrderFromComparison(activeRecord.id, 'VND-2026-004'); navigate(ROUTES.PURCHASE_ORDERS); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Award PO</button>
           )}
 
-          {schema.route === ROUTES.PURCHASE_ORDERS && activeRecord.status === 'draft' && (
-            <button onClick={() => { approvePurchaseOrder(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Approve PO</button>
+          {schema.route === ROUTES.PURCHASE_ORDERS && ['draft', 'pending_approval'].includes(activeRecord.status || '') && (
+            <>
+              <button onClick={() => { approvePurchaseOrder(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Approve PO</button>
+              <button onClick={() => setIsRejecting(true)} className="px-3 py-1.5 border border-rose-300 bg-rose-50 rounded font-bold text-rose-700 hover:bg-rose-100 cursor-pointer">Reject</button>
+            </>
           )}
           {schema.route === ROUTES.PURCHASE_ORDERS && activeRecord.status === 'approved' && (
             <button onClick={() => { createOrderFromPurchaseOrder(activeRecord.id); navigate(ROUTES.ORDERS); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Release Order</button>
@@ -120,15 +166,21 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
              <button onClick={() => { createInvoiceFromGrn(activeRecord.id); navigate(ROUTES.INVOICES); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Generate Invoice</button>
           )}
 
-          {schema.route === ROUTES.INVOICES && activeRecord.status === 'draft' && (
-             <button onClick={() => { certifyInvoice(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Certify Invoice</button>
+          {schema.route === ROUTES.INVOICES && ['draft', 'pending_approval'].includes(activeRecord.status || '') && (
+             <>
+               <button onClick={() => { certifyInvoice(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Certify Invoice</button>
+               <button onClick={() => setIsRejecting(true)} className="px-3 py-1.5 border border-rose-300 bg-rose-50 rounded font-bold text-rose-700 hover:bg-rose-100 cursor-pointer">Reject</button>
+             </>
           )}
           {schema.route === ROUTES.INVOICES && activeRecord.status === 'certified' && (
              <button onClick={() => { createPaymentRequestFromInvoice(activeRecord.id); navigate(ROUTES.PAYMENT_REQUESTS); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Request Payment</button>
           )}
 
-          {schema.route === ROUTES.PAYMENT_REQUESTS && activeRecord.status === 'draft' && (
-             <button onClick={() => { approvePaymentRequest(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Approve Request</button>
+          {schema.route === ROUTES.PAYMENT_REQUESTS && ['draft', 'pending_approval'].includes(activeRecord.status || '') && (
+             <>
+               <button onClick={() => { approvePaymentRequest(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Approve Request</button>
+               <button onClick={() => setIsRejecting(true)} className="px-3 py-1.5 border border-rose-300 bg-rose-50 rounded font-bold text-rose-700 hover:bg-rose-100 cursor-pointer">Reject</button>
+             </>
           )}
           {schema.route === ROUTES.PAYMENT_REQUESTS && activeRecord.status === 'approved' && (
              <button onClick={() => { recordPayment(activeRecord.id, {}); navigate(ROUTES.PAYMENTS); }} className="px-3 py-1.5 bg-emerald-600 rounded font-bold text-white hover:bg-emerald-700 cursor-pointer text-xs">Process Payment</button>
@@ -149,16 +201,60 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
         </div>
       </div>
 
+      {isRejecting && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm rounded-lg p-5">
+          <div className="bg-white rounded-lg shadow-xl w-[400px] border border-gray-200 flex flex-col overflow-hidden animate-slide-up-fade">
+             <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
+               <h3 className="font-extrabold text-gray-900">Provide Rejection Reason</h3>
+               <button onClick={() => setIsRejecting(false)} className="text-gray-400 hover:text-gray-600 font-bold">&times;</button>
+             </div>
+             <div className="p-4 flex flex-col gap-3">
+               <textarea 
+                 value={rejectReason}
+                 onChange={(e) => setRejectReason(e.target.value)}
+                 className="w-full border border-gray-300 rounded p-2 text-xs focus:ring focus:ring-brand-200 outline-none resize-none h-24"
+                 placeholder="Please provide explicit details for rejecting this record..."
+               ></textarea>
+               <div className="flex justify-end gap-2 mt-2">
+                 <button onClick={() => setIsRejecting(false)} className="px-4 py-2 border border-gray-300 rounded font-bold text-gray-600 bg-white hover:bg-gray-50">Cancel</button>
+                 <button onClick={handleReject} className="px-4 py-2 bg-rose-600 text-white rounded font-bold hover:bg-rose-700">Confirm Rejection</button>
+               </div>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {isRecordingQuotations && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm rounded-lg p-5">
+          <div className="bg-white rounded-lg shadow-xl w-[400px] border border-gray-200 flex flex-col overflow-hidden animate-slide-up-fade">
+             <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
+               <h3 className="font-extrabold text-gray-900">Record Vendor Quotation</h3>
+               <button onClick={() => setIsRecordingQuotations(false)} className="text-gray-400 hover:text-gray-600 font-bold">&times;</button>
+             </div>
+             <div className="p-4 flex flex-col gap-3">
+               <input value={qVendor} onChange={e => setQVendor(e.target.value)} placeholder="Vendor Name (e.g. Century Plyboards)" className="w-full border border-gray-300 rounded p-2 text-xs" />
+               <input value={qRate} onChange={e => setQRate(e.target.value)} placeholder="Basic Rate (e.g. 2200)" type="number" className="w-full border border-gray-300 rounded p-2 text-xs" />
+               <input value={qDiscount} onChange={e => setQDiscount(e.target.value)} placeholder="Discount (e.g. 5%)" className="w-full border border-gray-300 rounded p-2 text-xs" />
+               <input value={qTax} onChange={e => setQTax(e.target.value)} placeholder="Tax (e.g. 18%)" className="w-full border border-gray-300 rounded p-2 text-xs" />
+               <input value={qDelivery} onChange={e => setQDelivery(e.target.value)} placeholder="Delivery Days (e.g. 7)" className="w-full border border-gray-300 rounded p-2 text-xs" />
+               <div className="flex justify-end gap-2 mt-2">
+                 <button onClick={() => setIsRecordingQuotations(false)} className="px-4 py-2 border border-gray-300 rounded font-bold text-gray-600 bg-white">Cancel</button>
+                 <button onClick={handleRecordQuotation} className="px-4 py-2 bg-brand-600 text-white rounded font-bold">Save Quotation</button>
+               </div>
+             </div>
+          </div>
+        </div>
+      )}
+
       {/* Dynamic Detail Attributes */}
       <div className="bg-white border border-gray-150 rounded-lg p-5 shadow-sm space-y-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
           {Object.entries(activeRecord)
               .filter(([k]) => !['id', 'items', 'status'].includes(k))
-              .slice(0, 16)
               .map(([key, value]) => (
                 <div key={key}>
                   <span className="text-gray-400 block text-[9.5px] uppercase font-bold">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                  <span className="font-bold text-gray-900">
+                  <span className={`font-bold text-gray-900 ${key === 'rejectionComment' ? 'text-rose-600' : ''}`}>
                     {typeof value === 'number' && (key.toLowerCase().includes('amount') || key.toLowerCase().includes('spend') || key.toLowerCase().includes('val') || key.toLowerCase().includes('budget') || key.toLowerCase().includes('lowest'))
                       ? safeFormatCurrency(value)
                       : String(value)}
