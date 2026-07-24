@@ -13,7 +13,8 @@ import {
   Power,
   X,
   Download,
-  Printer
+  Printer,
+  AlertCircle
 } from 'lucide-react';
 import { ModuleSchema } from '../config/moduleSchemas';
 import { StatusBadge } from './StatusBadge';
@@ -40,6 +41,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
   // Create Modal state
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [modalFormData, setModalFormData] = React.useState<Record<string, any>>({});
+  const [modalError, setModalError] = React.useState<string | null>(null);
   const triggerButtonRef = React.useRef<HTMLButtonElement | null>(null);
 
   const triggerToast = (msg: string) => {
@@ -96,17 +98,40 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
   const handleSaveRecord = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid) return;
+    setModalError(null);
+
+    // Trim text inputs and validate email format if present
+    const trimmedData: Record<string, any> = {};
+    for (const [key, value] of Object.entries(modalFormData)) {
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (key.toLowerCase().includes('email') && trimmed) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(trimmed)) {
+            setModalError(`Please enter a valid email address for '${key}'.`);
+            return;
+          }
+        }
+        trimmedData[key] = trimmed;
+      } else {
+        trimmedData[key] = value;
+      }
+    }
 
     const newRecord: Record<string, any> = {
       id: `REC-${Date.now()}`,
-      ...modalFormData,
-      status: modalFormData.status || 'draft'
+      ...trimmedData,
+      status: trimmedData.status || 'active'
     };
 
-    addRecord(collectionId, newRecord);
-    setIsModalOpen(false);
-    triggerButtonRef.current?.focus();
-    triggerToast(`New record successfully registered`);
+    try {
+      addRecord(collectionId, newRecord);
+      setIsModalOpen(false);
+      triggerButtonRef.current?.focus();
+      triggerToast(`New record successfully registered`);
+    } catch (err: any) {
+      setModalError(err.message || 'Error saving record.');
+    }
   };
 
   // Row Action Handlers
@@ -169,7 +194,8 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a'); 
     a.href = url; 
-    a.download = `${schema.title.replace(/\\s+/g, '_')}_Report.csv`;
+    const cleanTitle = (displayTitle || schema.title).replace(/\s+/g, '_');
+    a.download = `${cleanTitle}_Report.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
     triggerToast('Report exported successfully');
@@ -302,8 +328,27 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={activeColumns.length + 1} className="p-12 text-center text-gray-400 italic">
-                    No matching records found for active search or tab selection.
+                  <td colSpan={activeColumns.length + 1} className="p-12 text-center text-gray-400">
+                    {localRows.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <p className="text-sm font-bold text-gray-600">No {displayTitle.toLowerCase()} have been added yet.</p>
+                        <p className="text-xs text-gray-400">Use the primary action button below or in the page header to create the first record.</p>
+                        {schema.primaryAction && (
+                          <button
+                            onClick={handleOpenCreateModal}
+                            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded shadow-sm bg-brand-500 hover:bg-brand-600 text-white cursor-pointer"
+                          >
+                            <Plus className="h-4 w-4" />
+                            {schema.primaryAction.label}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-gray-600">No records match the current search or filters.</p>
+                        <p className="text-xs text-gray-400">Clear your search query or change tab selection to view available records.</p>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -437,6 +482,13 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                   </div>
                 ))}
               </div>
+
+              {modalError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded text-rose-700 text-xs font-medium flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
+                  <span>{modalError}</span>
+                </div>
+              )}
 
               <div className="pt-4 border-t border-gray-150 flex items-center justify-end gap-2">
                 <button

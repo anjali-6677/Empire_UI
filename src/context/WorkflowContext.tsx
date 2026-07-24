@@ -326,7 +326,29 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getCollection = (id: WorkflowCollectionId) => collections[id] || [];
 
+  const getRecordCode = (rec: any): { key: string; val: string } | null => {
+    if (!rec) return null;
+    const keys = ['brandCode', 'locationCode', 'pmcCode', 'architectCode', 'conversionCode', 'designationCode', 'code', 'empCode', 'clientCode', 'vendorCode', 'itemCode'];
+    for (const k of keys) {
+      if (rec[k] && typeof rec[k] === 'string' && rec[k].trim() !== '') {
+        return { key: k, val: rec[k].trim().toLowerCase() };
+      }
+    }
+    return null;
+  };
+
   const addRecord = <T extends WorkflowCollectionId>(collection: T, record: Partial<WorkflowCollections[T][number]>) => {
+    const codeInfo = getRecordCode(record);
+    if (codeInfo) {
+      const existing = (collections[collection] as any[]).some(r => {
+        const c = getRecordCode(r);
+        return c && c.key === codeInfo.key && c.val === codeInfo.val;
+      });
+      if (existing) {
+        throw new Error(`Duplicate entry: Record with ${codeInfo.key} '${(record as any)[codeInfo.key]}' already exists.`);
+      }
+    }
+
     const newRecord = { ...record, id: record.id || `REC-${Date.now()}` } as WorkflowCollections[T][number];
     setCollections(prev => ({
       ...prev,
@@ -335,6 +357,18 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateRecord = <T extends WorkflowCollectionId>(collection: T, id: string, record: Partial<WorkflowCollections[T][number]>) => {
+    const codeInfo = getRecordCode(record);
+    if (codeInfo) {
+      const existing = (collections[collection] as any[]).some(r => {
+        if (r.id === id) return false;
+        const c = getRecordCode(r);
+        return c && c.key === codeInfo.key && c.val === codeInfo.val;
+      });
+      if (existing) {
+        throw new Error(`Duplicate entry: Record with ${codeInfo.key} '${(record as any)[codeInfo.key]}' already exists.`);
+      }
+    }
+
     setCollections(prev => ({
       ...prev,
       [collection]: (prev[collection] as any[]).map(r => r.id === id ? { ...r, ...record } : r)
@@ -354,8 +388,13 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const source = records.find(r => r.id === id);
       if (!source) return prev;
       
-      const newRecord = { ...source, id: `${source.id}-COPY-${Date.now()}` };
-      if (newRecord.status) newRecord.status = 'draft';
+      const newRecord = { ...source, id: `REC-${Date.now()}` };
+      const codeInfo = getRecordCode(source);
+      if (codeInfo) {
+        const origVal = source[codeInfo.key];
+        newRecord[codeInfo.key] = `${origVal}-COPY-${Math.floor(100 + Math.random() * 900)}`;
+      }
+      if (newRecord.status) newRecord.status = 'active';
       if (newRecord.referenceNo) newRecord.referenceNo += ' (Copy)';
       
       return {

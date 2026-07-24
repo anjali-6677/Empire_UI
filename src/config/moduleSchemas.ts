@@ -1494,33 +1494,180 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     columns: [{ key: 'user', label: 'Acting User' }], mockRows: []
   },
   [ROUTES.DESIGNATIONS]: {
-    id: 'master-designations', route: ROUTES.DESIGNATIONS, pageType: 'list',
-    title: 'Designations', description: 'Employee tier titles.', breadcrumbs: ['Masters', 'Designations'],
-    columns: [{ key: 'title', label: 'Title' }], mockRows: []
+    id: 'master-designations',
+    route: ROUTES.DESIGNATIONS,
+    pageType: 'list',
+    title: 'Employee Designations & Job Tiers',
+    description: 'Corporate designation hierarchy, organizational levels, and department designations.',
+    breadcrumbs: ['Masters', 'Designations'],
+    primaryAction: { label: 'Add Designation' },
+    createFields: [
+      { name: 'designationCode', label: 'Designation Code', type: 'text', required: true, defaultValue: 'DSG-004' },
+      { name: 'title', label: 'Designation Title', type: 'text', required: true, placeholder: 'e.g. Senior Site Engineer' },
+      { name: 'department', label: 'Department', type: 'select', required: true, options: [{ label: 'Project Execution', value: 'Project Execution' }, { label: 'Procurement & Stores', value: 'Procurement & Stores' }, { label: 'Finance & Accounts', value: 'Finance & Accounts' }, { label: 'Quality & Estimation', value: 'Quality & Estimation' }] },
+      { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }] }
+    ],
+    columns: [
+      { key: 'designationCode', label: 'Designation Code', type: 'mono' },
+      { key: 'title', label: 'Designation Title', type: 'text' },
+      { key: 'department', label: 'Department', type: 'text' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ],
+    mockRows: [
+      { id: 'dsg-1', designationCode: 'DSG-001', title: 'Project Head', department: 'Project Execution', status: 'active' },
+      { id: 'dsg-2', designationCode: 'DSG-002', title: 'Senior Procurement Manager', department: 'Procurement & Stores', status: 'active' },
+      { id: 'dsg-3', designationCode: 'DSG-003', title: 'Accounts Executive', department: 'Finance & Accounts', status: 'active' }
+    ]
   },
   [ROUTES.MEASUREMENT_CONVERSIONS]: {
-    id: 'master-conversions', route: ROUTES.MEASUREMENT_CONVERSIONS, pageType: 'list',
-    title: 'Measurement Conversions', description: 'Global item unit scalar logics.', breadcrumbs: ['Masters', 'Conversions'],
-    columns: [{ key: 'formula', label: 'Formula' }], mockRows: []
+    id: 'master-conversions',
+    route: ROUTES.MEASUREMENT_CONVERSIONS,
+    pageType: 'list',
+    title: 'Measurement Unit Conversions',
+    description: 'Global item unit conversion scalar rules for procurement and site inventory.',
+    breadcrumbs: ['Masters', 'Conversions'],
+    primaryAction: { label: 'Add Measurement Conversion' },
+    createFields: [
+      { name: 'conversionCode', label: 'Conversion Code', type: 'text', required: true, defaultValue: 'CNV-004' },
+      { name: 'fromUnit', label: 'From Unit (Source)', type: 'text', required: true, placeholder: 'e.g. Sq Mtr' },
+      { name: 'toUnit', label: 'To Unit (Target)', type: 'text', required: true, placeholder: 'e.g. Sq Ft' },
+      { name: 'multiplier', label: 'Conversion Multiplier', type: 'number', required: true, defaultValue: 10.7639 },
+      { name: 'formula', label: 'Conversion Logic Formula', type: 'text', required: true, placeholder: '1 Sq Mtr = 10.7639 Sq Ft' },
+      { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }] }
+    ],
+    columns: [
+      { key: 'conversionCode', label: 'Conversion Code', type: 'mono' },
+      { key: 'fromUnit', label: 'From Unit', type: 'text' },
+      { key: 'toUnit', label: 'To Unit', type: 'text' },
+      { key: 'multiplier', label: 'Multiplier Rate', type: 'text', align: 'center' },
+      { key: 'formula', label: 'Conversion Logic Formula', type: 'text' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ],
+    mockRows: [
+      { id: 'cnv-1', conversionCode: 'CNV-001', fromUnit: 'Sq Mtr', toUnit: 'Sq Ft', multiplier: 10.7639, formula: '1 Sq Mtr = 10.7639 Sq Ft', status: 'active' },
+      { id: 'cnv-2', conversionCode: 'CNV-002', fromUnit: 'Meter', toUnit: 'Feet', multiplier: 3.28084, formula: '1 Meter = 3.28084 Feet', status: 'active' },
+      { id: 'cnv-3', conversionCode: 'CNV-003', fromUnit: 'Cu Mtr', toUnit: 'Cu Ft', multiplier: 35.3147, formula: '1 Cu Mtr = 35.3147 Cu Ft', status: 'active' }
+    ]
   },
   [ROUTES.BRANDS]: {
-    id: 'master-brands', route: ROUTES.BRANDS, pageType: 'list',
-    title: 'Approved Brands', description: 'Material manufacturing brands registry.', breadcrumbs: ['Masters', 'Brands'],
-    columns: [{ key: 'brandName', label: 'Brand Name' }], mockRows: []
+    id: 'master-brands',
+    route: ROUTES.BRANDS,
+    pageType: 'list',
+    title: 'Approved Material Brands',
+    description: 'Empanelled manufacturing material brands catalog and contact details.',
+    breadcrumbs: ['Masters', 'Brands'],
+    primaryAction: { label: 'Add Brand' },
+    createFields: [
+      { name: 'brandCode', label: 'Brand Code', type: 'text', required: true, defaultValue: 'BRD-004' },
+      { name: 'brandName', label: 'Brand Name', type: 'text', required: true, placeholder: 'e.g. Century Plyboards' },
+      { name: 'category', label: 'Material Category', type: 'text', required: true, placeholder: 'e.g. Joinery & Woodwork' },
+      { name: 'manufacturer', label: 'Manufacturer Name', type: 'text', required: true, placeholder: 'e.g. Century Ply Ltd' },
+      { name: 'contactPerson', label: 'Contact Representative', type: 'text', required: false, placeholder: 'e.g. Rahul Sharma' },
+      { name: 'phone', label: 'Contact Phone', type: 'text', required: false, placeholder: '+91 98000 11111' },
+      { name: 'email', label: 'Contact Email', type: 'text', required: false, placeholder: 'info@centuryply.com' },
+      { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }] }
+    ],
+    columns: [
+      { key: 'brandCode', label: 'Brand Code', type: 'mono' },
+      { key: 'brandName', label: 'Brand Name', type: 'text' },
+      { key: 'category', label: 'Material Category', type: 'text' },
+      { key: 'manufacturer', label: 'Manufacturer', type: 'text' },
+      { key: 'contactPerson', label: 'Contact Person', type: 'text' },
+      { key: 'email', label: 'Email', type: 'text' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ],
+    mockRows: [
+      { id: 'brd-1', brandCode: 'BRD-001', brandName: 'Century Ply', category: 'Joinery & Woodwork', manufacturer: 'Century Plyboards India Ltd', contactPerson: 'Suresh Kumar', email: 'suresh@centuryply.com', status: 'active' },
+      { id: 'brd-2', brandCode: 'BRD-002', brandName: 'Asian Paints', category: 'Paints & Finishes', manufacturer: 'Asian Paints Ltd', contactPerson: 'Anand Varma', email: 'anand@asianpaints.com', status: 'active' },
+      { id: 'brd-3', brandCode: 'BRD-003', brandName: 'Saint-Gobain', category: 'Glass & Gypsum', manufacturer: 'Saint-Gobain India Pvt Ltd', contactPerson: 'Vikram Joshi', email: 'vikram@saint-gobain.com', status: 'active' }
+    ]
   },
   [ROUTES.LOCATIONS]: {
-    id: 'master-locations', route: ROUTES.LOCATIONS, pageType: 'list',
-    title: 'Locations', description: 'Warehousing addresses and yards.', breadcrumbs: ['Masters', 'Locations'],
-    columns: [{ key: 'pin', label: 'Address' }], mockRows: []
+    id: 'master-locations',
+    route: ROUTES.LOCATIONS,
+    pageType: 'list',
+    title: 'Warehouses & Stock Locations',
+    description: 'Corporate warehouses, central godowns, site yards, and storage locations.',
+    breadcrumbs: ['Masters', 'Locations'],
+    primaryAction: { label: 'Add Location' },
+    createFields: [
+      { name: 'locationCode', label: 'Location Code', type: 'text', required: true, defaultValue: 'LOC-004' },
+      { name: 'name', label: 'Warehouse / Yard Name', type: 'text', required: true, placeholder: 'e.g. Peenya Central Warehouse' },
+      { name: 'city', label: 'City Location', type: 'text', required: true, defaultValue: 'Bengaluru' },
+      { name: 'address', label: 'Full Physical Address', type: 'text', required: true, placeholder: 'Plot 42, 3rd Phase, Industrial Area' },
+      { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }] }
+    ],
+    columns: [
+      { key: 'locationCode', label: 'Location Code', type: 'mono' },
+      { key: 'name', label: 'Location Name', type: 'text' },
+      { key: 'city', label: 'City', type: 'text' },
+      { key: 'address', label: 'Address', type: 'text' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ],
+    mockRows: [
+      { id: 'loc-1', locationCode: 'LOC-001', name: 'Peenya Central Warehouse', city: 'Bengaluru', address: 'Plot 12, Peenya Industrial Area Phase II', status: 'active' },
+      { id: 'loc-2', locationCode: 'LOC-002', name: 'Whitefield Site Yard', city: 'Bengaluru', address: 'Near ITPL Main Road', status: 'active' },
+      { id: 'loc-3', locationCode: 'LOC-003', name: 'Bhiwandi Regional Godown', city: 'Mumbai', address: 'Building 4B, Logistics Park', status: 'active' }
+    ]
   },
   [ROUTES.PMC]: {
-    id: 'master-pmc', route: ROUTES.PMC, pageType: 'list',
-    title: 'Project Mgmt. Consultants', description: 'External PMC firms validation matrices.', breadcrumbs: ['Masters', 'PMC'],
-    columns: [{ key: 'firm', label: 'Consultant Firm' }], mockRows: []
+    id: 'master-pmc',
+    route: ROUTES.PMC,
+    pageType: 'list',
+    title: 'Project Management Consultants (PMC)',
+    description: 'Empanelled PMC firms, site inspection teams, and quality auditing consultants.',
+    breadcrumbs: ['Masters', 'PMC'],
+    primaryAction: { label: 'Add PMC' },
+    createFields: [
+      { name: 'pmcCode', label: 'PMC Code', type: 'text', required: true, defaultValue: 'PMC-004' },
+      { name: 'firmName', label: 'Consultant Firm Name', type: 'text', required: true, placeholder: 'e.g. Synergiz PMC Consultants' },
+      { name: 'contactPerson', label: 'Principal Lead Consultant', type: 'text', required: true, placeholder: 'e.g. K. R. Nambiar' },
+      { name: 'phone', label: 'Contact Phone', type: 'text', required: true, placeholder: '+91 98440 12345' },
+      { name: 'email', label: 'Corporate Email', type: 'text', required: true, placeholder: 'contact@synergizpmc.in' },
+      { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }] }
+    ],
+    columns: [
+      { key: 'pmcCode', label: 'PMC Code', type: 'mono' },
+      { key: 'firmName', label: 'Consultant Firm Name', type: 'text' },
+      { key: 'contactPerson', label: 'Principal Consultant', type: 'text' },
+      { key: 'phone', label: 'Phone', type: 'text' },
+      { key: 'email', label: 'Email', type: 'text' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ],
+    mockRows: [
+      { id: 'pmc-1', pmcCode: 'PMC-001', firmName: 'CBRE South Asia Pvt Ltd', contactPerson: 'Alok Nanda', phone: '+91 98200 99887', email: 'alok.nanda@cbre.com', status: 'active' },
+      { id: 'pmc-2', pmcCode: 'PMC-002', firmName: 'JLL Project Management', contactPerson: 'Deepak Menon', phone: '+91 98110 55443', email: 'deepak.menon@jll.com', status: 'active' },
+      { id: 'pmc-3', pmcCode: 'PMC-003', firmName: 'Knight Frank PMC Services', contactPerson: 'Rohan Sen', phone: '+91 98330 11223', email: 'rohan.sen@knightfrank.com', status: 'active' }
+    ]
   },
   [ROUTES.ARCHITECTS]: {
-    id: 'master-architects', route: ROUTES.ARCHITECTS, pageType: 'list',
-    title: 'Design & Architects', description: 'On-record exterior/interior consulting.', breadcrumbs: ['Masters', 'Architects'],
-    columns: [{ key: 'firm', label: 'Architect Firm' }], mockRows: []
+    id: 'master-architects',
+    route: ROUTES.ARCHITECTS,
+    pageType: 'list',
+    title: 'Designers & Architectural Consultants',
+    description: 'On-record architectural firms, interior designers, and structural engineers.',
+    breadcrumbs: ['Masters', 'Architects'],
+    primaryAction: { label: 'Add Architect' },
+    createFields: [
+      { name: 'architectCode', label: 'Architect Code', type: 'text', required: true, defaultValue: 'ARC-004' },
+      { name: 'firmName', label: 'Architect Firm Name', type: 'text', required: true, placeholder: 'e.g. Design Matrix Architects' },
+      { name: 'principalArchitect', label: 'Principal Architect', type: 'text', required: true, placeholder: 'e.g. Ar. Sanjay Puri' },
+      { name: 'phone', label: 'Phone Number', type: 'text', required: true, placeholder: '+91 98200 33445' },
+      { name: 'email', label: 'Email Address', type: 'text', required: true, placeholder: 'studio@designmatrix.in' },
+      { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }] }
+    ],
+    columns: [
+      { key: 'architectCode', label: 'Architect Code', type: 'mono' },
+      { key: 'firmName', label: 'Architect Firm Name', type: 'text' },
+      { key: 'principalArchitect', label: 'Principal Architect', type: 'text' },
+      { key: 'phone', label: 'Phone', type: 'text' },
+      { key: 'email', label: 'Email', type: 'text' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ],
+    mockRows: [
+      { id: 'arc-1', architectCode: 'ARC-001', firmName: 'Morphogenesis Design Studio', principalArchitect: 'Sonali Rastogi', phone: '+91 98100 12345', email: 'studio@morphogenesis.org', status: 'active' },
+      { id: 'arc-2', architectCode: 'ARC-002', firmName: 'Kapadia Associates Architects', principalArchitect: 'Kiran Kapadia', phone: '+91 98220 88990', email: 'kiran@kapadiaassociates.com', status: 'active' },
+      { id: 'arc-3', architectCode: 'ARC-003', firmName: 'Inspace Interior Design Consultancy', principalArchitect: 'Meera Iyer', phone: '+91 98450 66778', email: 'meera@inspacedesign.in', status: 'active' }
+    ]
   }
 };

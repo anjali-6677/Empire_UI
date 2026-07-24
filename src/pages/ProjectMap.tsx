@@ -36,10 +36,10 @@ export const ProjectMap: React.FC = () => {
     navigate(ROUTES.SITE_DETAILS);
   };
 
-  const getSiteData = (siteName: string, siteCode: string) => {
-    const sInvoices = invoices.filter(i => i.site === siteName);
-    const sPayments = payments.filter(p => p.site === siteName);
-    const sPOs = purchaseOrders.filter(p => p.site === siteName || p.site === siteCode);
+  const getSiteData = (siteId: string, siteCode: string, siteName: string) => {
+    const sInvoices = invoices.filter(i => (i as any).siteId === siteId || i.site === siteCode || i.site === siteName);
+    const sPayments = payments.filter(p => (p as any).siteId === siteId || p.site === siteCode || p.site === siteName);
+    const sPOs = purchaseOrders.filter(p => (p as any).siteId === siteId || p.site === siteCode || p.site === siteName);
 
     return {
       totalBilled: sInvoices.reduce((a, c) => a + (c.certifiedAmount || 0), 0),
@@ -122,7 +122,7 @@ export const ProjectMap: React.FC = () => {
         )} />;
       case 'Bills':
         return <TableWrapper columns={['Total BOQ', 'Certified Bills', 'Unbilled WIP']} renderRow={(site: any) => {
-          const { totalBilled } = getSiteData(site.name, site.code);
+          const { totalBilled } = getSiteData(site.id, site.code, site.name);
           return (
           <>
             <td className="px-4 py-2"><span className="sm:hidden text-gray-400 text-[10px] uppercase mr-2">BOQ:</span>{safeFormatCurrency(site.budget)}</td>
@@ -140,7 +140,7 @@ export const ProjectMap: React.FC = () => {
         )} />;
       case 'Client Payments':
         return <TableWrapper columns={['Certified Bills', 'Received Recpt', 'Outstanding O/S']} renderRow={(site: any) => {
-          const { totalBilled } = getSiteData(site.name, site.code);
+          const { totalBilled } = getSiteData(site.id, site.code, site.name);
           const received = (totalBilled || site.budget * 0.4) * 0.9;
           return (
           <>
@@ -151,7 +151,7 @@ export const ProjectMap: React.FC = () => {
         );}} />;
       case 'Material Vendor Payments':
         return <TableWrapper columns={['Committed POs', 'Vendor Payments', 'Overdue Liability']} renderRow={(site: any) => {
-          const { totalPurchased, totalPaid } = getSiteData(site.name, site.code);
+          const { totalPurchased, totalPaid } = getSiteData(site.id, site.code, site.name);
           return (
           <>
             <td className="px-4 py-2">{safeFormatCurrency(totalPurchased || site.budget * 0.6)}</td>
@@ -169,7 +169,7 @@ export const ProjectMap: React.FC = () => {
         )} />;
       case 'All Vendor Payments':
         return <TableWrapper columns={['Gross Commitments', 'Total Vendor Outflow']} renderRow={(site: any) => {
-           const { totalPurchased, totalPaid } = getSiteData(site.name, site.code);
+           const { totalPurchased, totalPaid } = getSiteData(site.id, site.code, site.name);
            return (
           <>
             <td className="px-4 py-2 font-bold">{safeFormatCurrency((totalPurchased || site.budget * 0.6) + site.budget * 0.25)}</td>
@@ -178,7 +178,7 @@ export const ProjectMap: React.FC = () => {
         );}} />;
       case 'Budget':
         return <TableWrapper columns={['Approved BOQ', 'Allocated Costs', 'Net Outlay', 'Available Variance']} renderRow={(site: any) => {
-           const { totalPurchased } = getSiteData(site.name, site.code);
+           const { totalPurchased } = getSiteData(site.id, site.code, site.name);
            const layout = totalPurchased || site.budget * 0.6;
            return (
           <>
