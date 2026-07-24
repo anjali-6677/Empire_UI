@@ -11,7 +11,7 @@ export type WorkflowCollectionId =
   | 'salaryAllocations' | 'accountingInvoices' | 'creditNotes' 
   | 'debitNotes' | 'workOrders' | 'tasks' | 'alerts' | 'messages' 
   | 'calendarEvents' | 'brands' | 'locations' | 'pmcs' 
-  | 'architects' | 'measurementConversions';
+  | 'architects' | 'measurementConversions' | 'designations';
 
 export interface BaseRecord {
   id: string;
@@ -159,6 +159,7 @@ export interface LocationRecord extends BaseRecord {}
 export interface PMCRecord extends BaseRecord {}
 export interface ArchitectRecord extends BaseRecord {}
 export interface MeasurementConversionRecord extends BaseRecord {}
+export interface DesignationRecord extends BaseRecord {}
 export interface BudgetRevisionRecord extends BaseRecord {}
 export interface ClientRecord extends BaseRecord {}
 export interface VendorRecord extends BaseRecord {}
@@ -201,6 +202,7 @@ export type WorkflowCollections = {
   pmcs: PMCRecord[];
   architects: ArchitectRecord[];
   measurementConversions: MeasurementConversionRecord[];
+  designations: DesignationRecord[];
 };
 
 export interface WorkflowState extends WorkflowCollections {
@@ -268,6 +270,12 @@ export const getCollectionIdFromRoute = (route: string): WorkflowCollectionId =>
     case ROUTES.ITEMS: return 'items';
     case ROUTES.ON_ACCOUNT_DASHBOARD: return 'onAccountPayments';
     case ROUTES.BUDGET_TRANSFERS: return 'budgetTransfers';
+    case ROUTES.BRANDS: return 'brands';
+    case ROUTES.LOCATIONS: return 'locations';
+    case ROUTES.PMC: return 'pmcs';
+    case ROUTES.ARCHITECTS: return 'architects';
+    case ROUTES.MEASUREMENT_CONVERSIONS: return 'measurementConversions';
+    case ROUTES.DESIGNATIONS: return 'designations';
     default: return 'indents'; // Safest fallback instead of throwing
   }
 };
@@ -308,11 +316,12 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     alerts: [],
     messages: [],
     calendarEvents: [],
-    brands: [],
-    locations: [],
-    pmcs: [],
-    architects: [],
-    measurementConversions: []
+    brands: initCollection<BrandRecord>(ROUTES.BRANDS),
+    locations: initCollection<LocationRecord>(ROUTES.LOCATIONS),
+    pmcs: initCollection<PMCRecord>(ROUTES.PMC),
+    architects: initCollection<ArchitectRecord>(ROUTES.ARCHITECTS),
+    measurementConversions: initCollection<MeasurementConversionRecord>(ROUTES.MEASUREMENT_CONVERSIONS),
+    designations: initCollection<DesignationRecord>(ROUTES.DESIGNATIONS)
   });
 
   const getCollection = (id: WorkflowCollectionId) => collections[id] || [];

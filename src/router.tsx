@@ -9,6 +9,8 @@ import { SiteDetails } from './pages/SiteDetails';
 import { PermissionsMatrix } from './pages/PermissionsMatrix';
 import { AppSettings } from './pages/AppSettings';
 import { ModulePageRenderer } from './components/ModulePageRenderer';
+import { UtilitySplitForm } from './pages/UtilitySplitForm';
+import { SalarySplitForm } from './pages/SalarySplitForm';
 import { ROUTES } from './config/navigation';
 
 export const AppRouter: React.FC = () => {
@@ -66,7 +68,9 @@ export const AppRouter: React.FC = () => {
           <Route path={ROUTES.PROJECT_BUDGETS.replace(/^\//, '')} element={<ModulePageRenderer />} />
           <Route path={`${ROUTES.PROJECT_BUDGETS.replace(/^\//, '')}/new`} element={<ModulePageRenderer />} />
           <Route path={ROUTES.UTILITY_BILLS.replace(/^\//, '')} element={<ModulePageRenderer />} />
+          <Route path={`${ROUTES.UTILITY_BILLS.replace(/^\//, '')}/new`} element={<UtilitySplitForm />} />
           <Route path={ROUTES.SALARY.replace(/^\//, '')} element={<ModulePageRenderer />} />
+          <Route path={`${ROUTES.SALARY.replace(/^\//, '')}/new`} element={<SalarySplitForm />} />
 
           {/* Masters Routes */}
           <Route path={ROUTES.CLIENTS.replace(/^\//, '')} element={<ModulePageRenderer />} />
@@ -81,6 +85,12 @@ export const AppRouter: React.FC = () => {
           <Route path={ROUTES.BANKS.replace(/^\//, '')} element={<ModulePageRenderer />} />
           <Route path={ROUTES.DEPARTMENTS.replace(/^\//, '')} element={<ModulePageRenderer />} />
           <Route path={ROUTES.ROLES_MASTER.replace(/^\//, '')} element={<ModulePageRenderer />} />
+          <Route path={ROUTES.DESIGNATIONS.replace(/^\//, '')} element={<ModulePageRenderer />} />
+          <Route path={ROUTES.MEASUREMENT_CONVERSIONS.replace(/^\//, '')} element={<ModulePageRenderer />} />
+          <Route path={ROUTES.BRANDS.replace(/^\//, '')} element={<ModulePageRenderer />} />
+          <Route path={ROUTES.LOCATIONS.replace(/^\//, '')} element={<ModulePageRenderer />} />
+          <Route path={ROUTES.PMC.replace(/^\//, '')} element={<ModulePageRenderer />} />
+          <Route path={ROUTES.ARCHITECTS.replace(/^\//, '')} element={<ModulePageRenderer />} />
 
           {/* Reports Routes */}
           <Route path={ROUTES.PURCHASE_REPORTS.replace(/^\//, '')} element={<ModulePageRenderer />} />

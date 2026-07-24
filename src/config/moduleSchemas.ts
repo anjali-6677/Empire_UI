@@ -15,6 +15,11 @@ export interface TabSchema {
   id: string;
   label: string;
   count?: number;
+  title?: string;
+  description?: string;
+  summaryCards?: SummaryCardSchema[];
+  columns?: ColumnSchema[];
+  mockRows?: Record<string, unknown>[];
 }
 
 export interface ColumnSchema {
@@ -986,109 +991,142 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
   // 6. REPORTS
   // ==========================================
   [ROUTES.PURCHASE_REPORTS]: {
-    id: 'reports-purchase',
-    route: ROUTES.PURCHASE_REPORTS,
-    pageType: 'report',
-    title: 'Purchase Analysis & Material Spend Report',
-    description: 'Comprehensive purchase analysis across active sites, material categories, and vendor suppliers.',
-    breadcrumbs: ['Reports', 'Purchase Reports'],
-    summaryCards: [
-      { id: '1', label: 'Total Purchase Outlay', value: 168000000, isCurrency: true },
-      { id: '2', label: 'Material Savings', value: '8.4%' }
-    ],
-    columns: [
-      { key: 'site', label: 'Project Site', type: 'text' },
-      { key: 'poCount', label: 'Issued POs', type: 'text', align: 'center' },
-      { key: 'materialSpend', label: 'Material Outlay', type: 'currency', align: 'right' },
-      { key: 'freightSpend', label: 'Freight & Overheads', type: 'currency', align: 'right' },
-      { key: 'totalSpend', label: 'Total Outlay', type: 'currency', align: 'right' },
-      { key: 'status', label: 'Variance Status', type: 'badge' }
-    ],
-    mockRows: [
-      { id: 'pr-1', site: 'Nexus Tech Park', poCount: '12 POs', materialSpend: 45000000, freightSpend: 1200000, totalSpend: 46200000, status: 'healthy' },
-      { id: 'pr-2', site: 'Grand Hyatt Goa', poCount: '8 POs', materialSpend: 11000000, freightSpend: 400000, totalSpend: 11400000, status: 'healthy' },
-      { id: 'pr-3', site: 'Imperial Heights Penthouse', poCount: '15 POs', materialSpend: 34000000, freightSpend: 900000, totalSpend: 34900000, status: 'healthy' },
-      { id: 'pr-4', site: 'Phoenix Marketcity Store', poCount: '6 POs', materialSpend: 14000000, freightSpend: 350000, totalSpend: 14350000, status: 'near_limit' },
-      { id: 'pr-5', site: 'Sobha City Villa', poCount: '10 POs', materialSpend: 22000000, freightSpend: 600000, totalSpend: 22600000, status: 'healthy' }
+    id: 'reports-purchase', route: ROUTES.PURCHASE_REPORTS, pageType: 'report',
+    title: 'Purchase Analytics module', description: 'Comprehensive procurement intelligence.', breadcrumbs: ['Reports', 'Purchase Reports'],
+    tabs: [
+      { id: 'purchase-analysis', label: 'Purchase Analysis', title: 'Purchase Analysis', description: 'Global spend trajectories across material brackets.',
+        columns: [{key: 'site', label: 'Site'}, {key: 'poCount', label: 'PO Volume'}, {key: 'totalSpend', label: 'Spends', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Total Purchase Outlay', value: 168000000, isCurrency: true}, {id: 's2', label: 'Material Savings', value: '8.4%'}],
+        mockRows: [{id: 'pa1', site: 'Nexus Tech Park', poCount: '12 POs', totalSpend: 46200000}, {id: 'pa2', site: 'Grand Hyatt', poCount: '8 POs', totalSpend: 11400000}]
+      },
+      { id: 'item-analysis', label: 'Item Analysis', title: 'Item wise Analysis', description: 'Material line-item consumption matrix.',
+        columns: [{key: 'item', label: 'Item'}, {key: 'qty', label: 'Consumed Qty'}, {key: 'rate', label: 'Avg Rate', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Top Item Spends', value: 8500000, isCurrency: true}],
+        mockRows: [{id: 'ia1', item: 'TMT Steel Fe500', qty: '450 MT', rate: 52000}, {id: 'ia2', item: 'OPC 43 Cement', qty: '1200 Bags', rate: 340}]
+      },
+      { id: 'vendor-vs-item', label: 'Vendor Versus Item', title: 'Vendor Versus Item', description: 'Sourcing rates correlation mapped to suppliers.',
+        columns: [{key: 'vendor', label: 'Vendor'}, {key: 'item', label: 'Dominant Item'}, {key: 'supplyVal', label: 'Supply Value', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Max Active Vendor', value: 'Century Ply', color: 'text-brand-700'}],
+        mockRows: [{id: 'vvi1', vendor: 'Century Ply', item: 'Marine Plywood', supplyVal: 3500000}]
+      },
+      { id: 'transfer-log', label: 'Transfer Log', title: 'Material Transfer Log', description: 'Inter-site structural transfers.',
+        columns: [{key: 'txId', label: 'TX ID'}, {key: 'from', label: 'Source'}, {key: 'to', label: 'Dest'}],
+        summaryCards: [{id: 's1', label: 'Active Transfers', value: 45}],
+        mockRows: [{id: 'tl1', txId: 'TRX-101', from: 'Nexus Park', to: 'Sobha Villa'}]
+      },
+      { id: 'consumption-log', label: 'Consumption Log', title: 'Consumption Log', description: 'Inventory burn tracking.',
+        columns: [{key: 'date', label: 'Date', type:'date'}, {key: 'site', label: 'Site'}, {key: 'value', label: 'Value', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Weekly Burn Rates', value: 1200500, isCurrency: true}],
+        mockRows: [{id: 'cl1', date: '2026-07-20', site: 'Nexus Park', value: 145000}]
+      }
     ]
   },
   [ROUTES.BUDGET_REPORTS]: {
-    id: 'reports-budget',
-    route: ROUTES.BUDGET_REPORTS,
-    pageType: 'report',
-    title: 'Project Budget vs Outlay Analysis Report',
-    description: 'Detailed site budget utilization, committed costs, and variance tracking.',
-    breadcrumbs: ['Reports', 'Budget Reports'],
-    summaryCards: [
-      { id: '1', label: 'Portfolio Approved Budget', value: 187000000, isCurrency: true },
-      { id: '2', label: 'Actual Outlay', value: 109500000, isCurrency: true },
-      { id: '3', label: 'Net Available Balance', value: 77500000, isCurrency: true }
-    ],
-    columns: [
-      { key: 'site', label: 'Project Site Name', type: 'text' },
-      { key: 'approvedBudget', label: 'Approved Budget', type: 'currency', align: 'right' },
-      { key: 'committedCost', label: 'Committed Cost', type: 'currency', align: 'right' },
-      { key: 'actualOutlay', label: 'Actual Outlay', type: 'currency', align: 'right' },
-      { key: 'availableBalance', label: 'Available Balance', type: 'currency', align: 'right' },
-      { key: 'utilization', label: 'Utilization (%)', type: 'text', align: 'center' },
-      { key: 'healthStatus', label: 'Health Status', type: 'badge' }
-    ],
-    mockRows: [
-      { id: 'br-1', site: 'Nexus Tech Park Lobby Renovations', approvedBudget: 50000000, committedCost: 35000000, actualOutlay: 22000000, availableBalance: 15000000, utilization: '44.0%', healthStatus: 'healthy' },
-      { id: 'br-2', site: 'Grand Hyatt Executive Lounge Café', approvedBudget: 12000000, committedCost: 12500000, actualOutlay: 12500000, availableBalance: -500000, utilization: '104.2%', healthStatus: 'over_budget' },
-      { id: 'br-3', site: 'Imperial Heights Penthouse Fit-Out', approvedBudget: 65000000, committedCost: 48000000, actualOutlay: 36000000, availableBalance: 17000000, utilization: '55.4%', healthStatus: 'healthy' },
-      { id: 'br-4', site: 'Phoenix Marketcity Retail Store', approvedBudget: 18000000, committedCost: 17200000, actualOutlay: 15000000, availableBalance: 800000, utilization: '83.3%', healthStatus: 'near_limit' },
-      { id: 'br-5', site: 'Sobha City Luxury Villa', approvedBudget: 42000000, committedCost: 31000000, actualOutlay: 24000000, availableBalance: 11000000, utilization: '57.1%', healthStatus: 'healthy' }
+    id: 'reports-budget', route: ROUTES.BUDGET_REPORTS, pageType: 'report',
+    title: 'Budget Analytics module', description: 'Variance and outlay metrics.', breadcrumbs: ['Reports', 'Budget Reports'],
+    tabs: [
+      { id: 'all-project', label: 'All Project Budget', title: 'All Project Budget', description: 'Aggregated Capex caps.',
+        columns: [{key: 'site', label: 'Site'}, {key: 'budget', label: 'Allocated Budget', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Total Portfolio Budget', value: 187000000, isCurrency: true}],
+        mockRows: [{id: 'b1', site: 'Nexus Park', budget: 50000000}]
+      },
+      { id: 'vendor-budget', label: 'Vendor Budget', title: 'Vendor Budget', description: 'Committed caps split per supplier.',
+        columns: [{key: 'vendor', label: 'Vendor'}, {key: 'limit', label: 'Threshold', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Vendor Exposure Limit', value: 25000000, isCurrency: true}],
+        mockRows: [{id: 'vb1', vendor: 'Asian Paints', limit: 8000000}]
+      },
+      { id: 'project-budget', label: 'Project Budget', title: 'Project Specific Budget', description: 'Phase-wise cost bounds.',
+        columns: [{key: 'phase', label: 'Phase'}, {key: 'cost', label: 'Calculated Cost', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Phase 1 Estimates', value: 15400000, isCurrency: true}],
+        mockRows: [{id: 'pb1', phase: 'Design & Foundation', cost: 12000000}]
+      },
+      { id: 'budget-summary', label: 'Budget Summary', title: 'Budget Summary', description: 'Fast aggregation summaries.',
+        columns: [{key: 'metric', label: 'Metric'}, {key: 'value', label: 'Total', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Unallocated Buffer', value: 5000000, isCurrency: true}],
+        mockRows: [{id: 'bs1', metric: 'Capex Reserves', value: 1500000}]
+      },
+      { id: 'savings-analysis', label: 'Savings Analysis', title: 'Savings Analysis', description: 'Negotiation gains and reductions.',
+        columns: [{key: 'site', label: 'Site'}, {key: 'savings', label: 'Net Savings', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Target Savings Hit', value: '11.5%'}],
+        mockRows: [{id: 'sa1', site: 'Nexus Tech Park', savings: 2400000}]
+      }
     ]
   },
   [ROUTES.FINANCE_REPORTS]: {
     id: 'reports-finance', route: ROUTES.FINANCE_REPORTS, pageType: 'report',
-    title: 'Vendor Bill Payment Summary & Liabilities Report',
-    description: 'Reconciliation report of certified vendor bills, disbursed payments, and outstanding liabilities.',
-    breadcrumbs: ['Reports', 'Finance Reports'],
-    summaryCards: [
-      { id: '1', label: 'Total Certified Invoices', value: 31000000, isCurrency: true },
-      { id: '2', label: 'Total Disbursed Payments', value: 20400000, isCurrency: true },
-      { id: '3', label: 'Outstanding Liabilities', value: 10600000, isCurrency: true, color: 'text-rose-600' }
-    ],
-    columns: [
-      { key: 'vendor', label: 'Vendor Supplier', type: 'text' },
-      { key: 'billedAmount', label: 'Total Billed', type: 'currency', align: 'right' },
-      { key: 'certifiedAmount', label: 'Total Certified', type: 'currency', align: 'right' },
-      { key: 'paidAmount', label: 'Total Disbursed', type: 'currency', align: 'right' },
-      { key: 'dueAmount', label: 'Outstanding Due', type: 'currency', align: 'right' },
-      { key: 'status', label: 'Ledger Status', type: 'badge' }
-    ],
-    mockRows: [
-      { id: 'fr-1', vendor: 'Asian Paints Ltd', billedAmount: 5200000, certifiedAmount: 4800000, paidAmount: 3600000, dueAmount: 1200000, status: 'partially_reconciled' },
-      { id: 'fr-2', vendor: 'Century Plyboards India Ltd', billedAmount: 8500000, certifiedAmount: 8000000, paidAmount: 5000000, dueAmount: 3000000, status: 'outstanding' },
-      { id: 'fr-3', vendor: 'Greenlam Industries Ltd', billedAmount: 4200000, certifiedAmount: 4200000, paidAmount: 4200000, dueAmount: 0, status: 'reconciled' },
-      { id: 'fr-4', vendor: 'Saint-Gobain India Pvt Ltd', billedAmount: 6800000, certifiedAmount: 6500000, paidAmount: 4500000, dueAmount: 2000000, status: 'partially_reconciled' },
-      { id: 'fr-5', vendor: 'Schneider Electric India Ltd', billedAmount: 7500000, certifiedAmount: 7500000, paidAmount: 3100000, dueAmount: 4400000, status: 'outstanding' }
+    title: 'Finance Analytics module', description: 'Reconciliation reports and ledgers.', breadcrumbs: ['Reports', 'Finance Reports'],
+    tabs: [
+      { id: 'bill-payment', label: 'Bill Payment Summary', title: 'Bill Payment Summary', description: 'Consolidation of payments made against raised bills.',
+        columns: [{key: 'vendor', label: 'Supplier'}, {key: 'billed', label: 'Totals', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Total Certified Inv', value: 31000000, isCurrency: true}],
+        mockRows: [{id: 'fr1', vendor: 'Asian Paints', billed: 5200000}]
+      },
+      { id: 'net-amount', label: 'Net Amount', title: 'Net Amount Payable', description: 'Pending net balances.',
+        columns: [{key: 'vendor', label: 'Supplier'}, {key: 'net', label: 'Net Payable', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Total Payables', value: 4500000, isCurrency: true}],
+        mockRows: [{id: 'na1', vendor: 'Century Ply', net: 1200000}]
+      },
+      { id: 'invoice-analysis', label: 'Invoice Analysis', title: 'Invoice Analysis', description: 'Deep-dive invoice mapping.',
+        columns: [{key: 'invNo', label: 'Invoice No', type:'mono'}, {key: 'val', label: 'Value', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Active Invoices', value: 114}],
+        mockRows: [{id: 'in1', invNo: 'INV-1090', val: 56000}]
+      },
+      { id: 'payment-analysis', label: 'Payment Analysis', title: 'Payment Analysis', description: 'Cashflow extraction.',
+        columns: [{key: 'ref', label: 'Payment Ref'}, {key: 'amt', label: 'Amount', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Settled Disbursals', value: 12400500, isCurrency:true}],
+        mockRows: [{id: 'pa1', ref: 'PAY-4099', amt: 500000}]
+      },
+      { id: 'fund-flow', label: 'Fund Flow', title: 'Fund Flow statement', description: 'Inbound and Outbound liquidity tracing.',
+        columns: [{key: 'type', label: 'Direction'}, {key: 'amount', label: 'Amount', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Operating Liquidity', value: 800000, isCurrency:true}],
+        mockRows: [{id: 'ff1', type: 'Outbound Vendor Payment', amount: 35000}]
+      },
+      { id: 'vendor-liab', label: 'Vendor Liability', title: 'Vendor Liability', description: 'Creditor exposures.',
+        columns: [{key: 'vendor', label: 'Vendor'}, {key: 'debt', label: 'Debt', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Short term debt', value: 1100000, isCurrency:true}],
+        mockRows: [{id: 'vl1', vendor: 'Schneider India', debt: 800000}]
+      },
+      { id: 'account-close', label: 'Vendor Account Closure', title: 'Account Closure', description: 'Final settlement proofs.',
+        columns: [{key: 'vendor', label: 'Finished Account'}, {key: 'date', label: 'Closed On'}],
+        summaryCards: [{id: 's1', label: 'Closed Accounts', value: 12}],
+        mockRows: [{id: 'ac1', vendor: 'Bosch Ltd', date: '2026-05-12'}]
+      },
+      { id: 'vendor-ledger', label: 'Vendor Ledger', title: 'Vendor Ledger', description: 'Full T-Accounts per vendor.',
+        columns: [{key: 'tran', label: 'Transaction'}, {key: 'val', label: 'Value', type: 'currency'}],
+        summaryCards: [{id: 's1', label: 'Active Ledgers', value: 4}],
+        mockRows: [{id: 'vl1', tran: 'Initial Opening Balance', val: 5000}]
+      }
     ]
   },
   [ROUTES.ADMIN_REPORTS]: {
-    id: 'reports-admin',
-    route: ROUTES.ADMIN_REPORTS,
-    pageType: 'report',
-    title: 'User Activity & Audit Trail Report',
-    description: 'Administrative audit logs of user signins, workflow approvals, and system changes.',
-    breadcrumbs: ['Reports', 'Admin Reports'],
-    columns: [
-      { key: 'logId', label: 'Log ID', type: 'mono' },
-      { key: 'user', label: 'User Name', type: 'text' },
-      { key: 'action', label: 'Operational Action', type: 'text' },
-      { key: 'module', label: 'Module', type: 'text' },
-      { key: 'target', label: 'Target Record', type: 'text' },
-      { key: 'timestamp', label: 'Timestamp', type: 'date' },
-      { key: 'status', label: 'Audit Status', type: 'badge' }
-    ],
-    mockRows: [
-      { id: 'log-1', logId: 'LOG-2026-001', user: 'Rajesh Kumar', action: 'Submitted indent for approval', module: 'Procurement', target: 'IND-2026-001', timestamp: '2026-07-24 10:30', status: 'success' },
-      { id: 'log-2', logId: 'LOG-2026-002', user: 'Anita Rao', action: 'Updated vendor quotation', module: 'RFQ', target: 'RFQ-2026-002', timestamp: '2026-07-24 09:45', status: 'success' },
-      { id: 'log-3', logId: 'LOG-2026-003', user: 'Sanjay Mehta', action: 'Rejected budget revision', module: 'Finance', target: 'BUD-2026-009', timestamp: '2026-07-23 17:20', status: 'warning' },
-      { id: 'log-4', logId: 'LOG-2026-004', user: 'Rohan Deshmukh', action: 'Certified vendor bill', module: 'Finance', target: 'INV-2026-104', timestamp: '2026-07-23 14:10', status: 'success' },
-      { id: 'log-5', logId: 'LOG-2026-005', user: 'System Admin', action: 'Role permission updated', module: 'Administration', target: 'ROLE-QS', timestamp: '2026-07-22 11:00', status: 'success' }
+    id: 'reports-admin', route: ROUTES.ADMIN_REPORTS, pageType: 'report',
+    title: 'Admin Analytics', description: 'Compliance logs.', breadcrumbs: ['Reports', 'Admin Reports'],
+    tabs: [
+      { id: 'login-time', label: 'User Login Time', title: 'User Login Time', description: 'Authentication timestamp audit.',
+        columns: [{key: 'user', label: 'User'}, {key: 'ip', label: 'IP Address', type: 'mono'}],
+        summaryCards: [{id: 's1', label: 'Active Sessions', value: 15}],
+        mockRows: [{id: 'ul1', user: 'Rajesh Kumar', ip: '119.0.0.1'}]
+      },
+      { id: 'activity-history', label: 'User Activity History', title: 'User Activity History', description: 'Data mutation events.',
+        columns: [{key: 'log', label: 'Log ID'}, {key: 'action', label: 'Action'}],
+        summaryCards: [{id: 's1', label: 'DB Writes', value: 540}],
+        mockRows: [{id: 'ua1', log: 'LOG-45', action: 'Created RFQ-099'}]
+      },
+      { id: 'contacts-diary', label: 'Contacts Diary', title: 'Contacts Diary', description: 'Centralized CRM address book.',
+        columns: [{key: 'name', label: 'Contact Name'}, {key: 'phone', label: 'Direct Line'}],
+        summaryCards: [{id: 's1', label: 'Stored Contacts', value: 145}],
+        mockRows: [{id: 'cd1', name: 'John Supplier', phone: '+919988776655'}]
+      },
+      { id: 'project-progress', label: 'Project Progress', title: 'Project Progress', description: 'Administrative snapshot of progress variants.',
+        columns: [{key: 'site', label: 'Site'}, {key: 'prog', label: 'S-Curve'}],
+        summaryCards: [{id: 's1', label: 'Delayed Sites', value: 2, color: 'text-rose-600'}],
+        mockRows: [{id: 'pp1', site: 'Nexus Tech Park', prog: '65%'}]
+      },
+      { id: 'site-analysis', label: 'Site Analysis', title: 'Site Analysis', description: 'Resource mapping density per site.',
+        columns: [{key: 'site', label: 'Site'}, {key: 'headcount', label: 'Assigned Roster'}],
+        summaryCards: [{id: 's1', label: 'Global Density', value: '45 FTE'}],
+        mockRows: [{id: 'sa1', site: 'Nexus Tech Park', headcount: '23 FTE'}]
+      }
     ]
   },
 

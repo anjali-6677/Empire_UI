@@ -123,20 +123,37 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
     triggerToast('Record duplicated successfully');
   };
 
-  const filteredData = React.useMemo(() => {
-    return localRows.filter((item) => {
-      const matchSearch = JSON.stringify(item).toLowerCase().includes(search.toLowerCase());
-      const matchTab = activeTab === 'all' || item.status === activeTab || item.tab === activeTab || item.category === activeTab;
-      return matchSearch && matchTab;
-    });
-  }, [localRows, search, activeTab]);
+  const activeTabConfig = React.useMemo(() => {
+    return schema.tabs?.find(t => t.id === activeTab);
+  }, [schema.tabs, activeTab]);
 
   const activeColumns: any[] = React.useMemo(() => {
+    if (activeTabConfig && (activeTabConfig as any).columns) return (activeTabConfig as any).columns;
     if ((schema as any).tabColumns && (schema as any).tabColumns[activeTab]) {
       return (schema as any).tabColumns[activeTab];
     }
     return schema.columns || [];
-  }, [schema.columns, (schema as any).tabColumns, activeTab]);
+  }, [schema.columns, (schema as any).tabColumns, activeTabConfig, activeTab]);
+
+  const displayTitle = (activeTabConfig as any)?.title || schema.title;
+  const displayDescription = (activeTabConfig as any)?.description || schema.description;
+  const displaySummaryCards = (activeTabConfig as any)?.summaryCards || schema.summaryCards;
+
+  const filteredData = React.useMemo(() => {
+    // Priority 1: Check if the tab itself has its own mock rows (Specialized Reports)
+    if (activeTabConfig && (activeTabConfig as any).mockRows) {
+       return (activeTabConfig as any).mockRows.filter((item: any) => 
+          JSON.stringify(item).toLowerCase().includes(search.toLowerCase())
+       );
+    }
+    
+    // Priority 2: Standard unified contextual rows filtered by tab ID
+    return localRows.filter((item) => {
+      const matchSearch = JSON.stringify(item).toLowerCase().includes(search.toLowerCase());
+      const matchTab = activeTab === 'all' || item.status === activeTab || item.tab === activeTab || item.category === activeTab || item.type === activeTab;
+      return matchSearch && matchTab;
+    });
+  }, [localRows, search, activeTab, activeTabConfig]);
 
   const handleExportCSV = () => {
     if (filteredData.length === 0) {
@@ -144,7 +161,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
       return;
     }
     const headers = activeColumns.map(c => c.label).join(',');
-    const rows = filteredData.map(row => 
+    const rows = filteredData.map((row: any) => 
       activeColumns.map(c => `"${String(row[c.key] || '').replace(/"/g, '""')}"`).join(',')
     ).join('\\n');
     const csv = `${headers}\\n${rows}`;
@@ -184,8 +201,8 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
       {/* Header & Primary Action */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-150 pb-4">
         <div className="space-y-0.5">
-          <h1 className="text-lg md:text-xl font-extrabold text-gray-900 tracking-tight">{schema.title}</h1>
-          {schema.description && <p className="text-[10.5px] text-gray-400 font-medium">{schema.description}</p>}
+          <h1 className="text-lg md:text-xl font-extrabold text-gray-900 tracking-tight">{displayTitle}</h1>
+          {displayDescription && <p className="text-[10.5px] text-gray-400 font-medium">{displayDescription}</p>}
         </div>
 
         {schema.primaryAction && (
@@ -212,10 +229,10 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
       </div>
 
       {/* Summary Cards */}
-      {schema.summaryCards && (
+      {displaySummaryCards && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {schema.summaryCards.map((card, idx) => {
-            const cardValue = idx === 0 && schema.createFields ? localRows.length : card.value;
+          {displaySummaryCards.map((card: any, idx: number) => {
+            const cardValue = idx === 0 && schema.createFields && !activeTabConfig?.summaryCards ? localRows.length : card.value;
             return (
               <div key={card.id} className="p-3.5 border border-gray-150 rounded bg-white shadow-sm space-y-1">
                 <span className="text-[9.5px] uppercase font-bold text-gray-400 block">{card.label}</span>
@@ -290,7 +307,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                   </td>
                 </tr>
               ) : (
-                filteredData.map((row) => (
+                filteredData.map((row: any) => (
                   <tr key={row.id} className="hover:bg-gray-50/60 transition-colors">
                     {activeColumns.map((col) => {
                       const val = row[col.key as keyof typeof row];
