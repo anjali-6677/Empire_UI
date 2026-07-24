@@ -71,13 +71,16 @@ export const ModulePageRenderer: React.FC = () => {
       // 3. Parameterized Detail Sub-Routes (e.g., /procurement/indents/IND-2026-001)
       if (MODULE_SCHEMAS[parentPath]) {
         const parentSchema = MODULE_SCHEMAS[parentPath];
+        const cleanTitle = parentSchema.title.replace(/\s+(List|Registry|Management|Overview|Dashboard)$/i, '');
         return {
           id: `gen-detail-${segments.join('-')}`,
           route: path,
           pageType: 'details',
-          title: `${parentSchema.title} Record`,
-          description: `Detailed record overview for ${lastSegment}.`,
-          breadcrumbs: [...parentSchema.breadcrumbs, lastSegment]
+          title: cleanTitle === 'Indent & Material Requisitions' ? 'Indent Details' : `${cleanTitle} Details`,
+          description: cleanTitle === 'Indent & Material Requisitions' 
+            ? 'Material and service request details, approval status and requested items.' 
+            : `Detailed record overview for ${lastSegment}.`,
+          breadcrumbs: [...parentSchema.breadcrumbs.map(b => b.replace(/\s+List$/i, '')), lastSegment]
         };
       }
     }

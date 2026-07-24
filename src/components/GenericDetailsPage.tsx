@@ -73,7 +73,12 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
   }, [getCollection, collectionId, id]);
 
   // Parent return path for Back to List button
-  const parentListPath = schema.route.includes('/:') ? schema.route.split('/:')[0] : schema.route.replace(/\/new$/, '').replace(/\/edit.*$/, '');
+  const parentListPath = React.useMemo(() => {
+    if (schema.route.includes('/:')) return schema.route.split('/:')[0];
+    const segs = schema.route.split('/').filter(Boolean);
+    if (segs.length >= 2) return `/${segs.slice(0, segs.length - 1).join('/')}`;
+    return schema.route.replace(/\/new$/, '').replace(/\/edit.*$/, '');
+  }, [schema.route]);
 
   if (!activeRecord) {
     return (
@@ -84,7 +89,7 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
           onClick={() => navigate(parentListPath)} 
           className="mt-4 px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 bg-white hover:bg-gray-50 cursor-pointer shadow-sm"
         >
-          [Back to List]
+          Back to List
         </button>
       </div>
     );
@@ -127,17 +132,17 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
         </div>
 
         <div className="flex items-center gap-2">
-          {schema.route === ROUTES.INDENTS && activeRecord.status === 'pending_approval' && (
+          {schema.route.startsWith('/procurement/indents') && activeRecord.status === 'pending_approval' && (
             <>
               <button onClick={() => { approveIndent(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Approve Indent</button>
               <button onClick={() => setIsRejecting(true)} className="px-3 py-1.5 border border-rose-300 bg-rose-50 rounded font-bold text-rose-700 hover:bg-rose-100 cursor-pointer">Reject</button>
             </>
           )}
-          {schema.route === ROUTES.INDENTS && activeRecord.status === 'approved' && (
+          {schema.route.startsWith('/procurement/indents') && activeRecord.status === 'approved' && (
             <button onClick={() => { createRfqFromIndent(activeRecord.id); navigate(ROUTES.RFQS); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Generate RFQ</button>
           )}
           
-          {schema.route === ROUTES.RFQS && ['draft', 'sent', 'quotations_received'].includes(activeRecord.status || '') && (
+          {schema.route.startsWith('/procurement/rfqs') && ['draft', 'sent', 'quotations_received'].includes(activeRecord.status || '') && (
             <>
               <button onClick={() => setIsRecordingQuotations(true)} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Add Quotation</button>
               {activeRecord.status === 'quotations_received' && (
@@ -146,45 +151,45 @@ export const GenericDetailsPage: React.FC<GenericDetailsPageProps> = ({ schema }
             </>
           )}
 
-          {schema.route === ROUTES.RATE_COMPARISON && activeRecord.status !== 'converted' && (
+          {schema.route.startsWith('/procurement/rate-comparison') && activeRecord.status !== 'converted' && (
             <button onClick={() => { createPurchaseOrderFromComparison(activeRecord.id, 'VND-2026-004'); navigate(ROUTES.PURCHASE_ORDERS); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Award PO</button>
           )}
 
-          {schema.route === ROUTES.PURCHASE_ORDERS && ['draft', 'pending_approval'].includes(activeRecord.status || '') && (
+          {schema.route.startsWith('/procurement/purchase-orders') && ['draft', 'pending_approval'].includes(activeRecord.status || '') && (
             <>
               <button onClick={() => { approvePurchaseOrder(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Approve PO</button>
               <button onClick={() => setIsRejecting(true)} className="px-3 py-1.5 border border-rose-300 bg-rose-50 rounded font-bold text-rose-700 hover:bg-rose-100 cursor-pointer">Reject</button>
             </>
           )}
-          {schema.route === ROUTES.PURCHASE_ORDERS && activeRecord.status === 'approved' && (
+          {schema.route.startsWith('/procurement/purchase-orders') && activeRecord.status === 'approved' && (
             <button onClick={() => { createOrderFromPurchaseOrder(activeRecord.id); navigate(ROUTES.ORDERS); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Release Order</button>
           )}
 
-          {schema.route === ROUTES.ORDERS && activeRecord.status === 'pending_delivery' && (
+          {schema.route.startsWith('/procurement/orders') && activeRecord.status === 'pending_delivery' && (
              <button onClick={() => { createGrnFromOrder(activeRecord.id); navigate(ROUTES.GRNS); }} className="px-3 py-1.5 bg-emerald-600 rounded font-bold text-white hover:bg-emerald-700 cursor-pointer text-xs">Receive GRN</button>
           )}
 
-          {schema.route === ROUTES.GRNS && activeRecord.status === 'created' && (
+          {schema.route.startsWith('/procurement/grns') && activeRecord.status === 'created' && (
              <button onClick={() => { createInvoiceFromGrn(activeRecord.id); navigate(ROUTES.INVOICES); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Generate Invoice</button>
           )}
 
-          {schema.route === ROUTES.INVOICES && ['draft', 'pending_approval'].includes(activeRecord.status || '') && (
+          {schema.route.startsWith('/finance/invoices') && ['draft', 'pending_approval'].includes(activeRecord.status || '') && (
              <>
                <button onClick={() => { certifyInvoice(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Certify Invoice</button>
                <button onClick={() => setIsRejecting(true)} className="px-3 py-1.5 border border-rose-300 bg-rose-50 rounded font-bold text-rose-700 hover:bg-rose-100 cursor-pointer">Reject</button>
              </>
           )}
-          {schema.route === ROUTES.INVOICES && activeRecord.status === 'certified' && (
+          {schema.route.startsWith('/finance/invoices') && activeRecord.status === 'certified' && (
              <button onClick={() => { createPaymentRequestFromInvoice(activeRecord.id); navigate(ROUTES.PAYMENT_REQUESTS); }} className="px-3 py-1.5 bg-brand-600 rounded font-bold text-white hover:bg-brand-700 cursor-pointer text-xs">Request Payment</button>
           )}
 
-          {schema.route === ROUTES.PAYMENT_REQUESTS && ['draft', 'pending_approval'].includes(activeRecord.status || '') && (
+          {schema.route.startsWith('/finance/payment-requests') && ['draft', 'pending_approval'].includes(activeRecord.status || '') && (
              <>
                <button onClick={() => { approvePaymentRequest(activeRecord.id); }} className="px-3 py-1.5 border border-brand-300 bg-brand-50 rounded font-bold text-brand-700 hover:bg-brand-100 cursor-pointer">Approve Request</button>
                <button onClick={() => setIsRejecting(true)} className="px-3 py-1.5 border border-rose-300 bg-rose-50 rounded font-bold text-rose-700 hover:bg-rose-100 cursor-pointer">Reject</button>
              </>
           )}
-          {schema.route === ROUTES.PAYMENT_REQUESTS && activeRecord.status === 'approved' && (
+          {schema.route.startsWith('/finance/payment-requests') && activeRecord.status === 'approved' && (
              <button onClick={() => { recordPayment(activeRecord.id, {}); navigate(ROUTES.PAYMENTS); }} className="px-3 py-1.5 bg-emerald-600 rounded font-bold text-white hover:bg-emerald-700 cursor-pointer text-xs">Process Payment</button>
           )}
 

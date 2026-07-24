@@ -284,7 +284,8 @@ export const MyTasksPage: React.FC = () => {
                         <button
                           onClick={() => setSelectedTask(t)}
                           title="View Details"
-                          className="p-1 hover:bg-gray-100 text-gray-500 hover:text-gray-800 rounded cursor-pointer"
+                          aria-label="View Details"
+                          className="p-1 hover:bg-gray-100 text-gray-600 hover:text-gray-900 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-brand-500"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -297,7 +298,8 @@ export const MyTasksPage: React.FC = () => {
                                   triggerToast(`Started task ${t.taskCode}`);
                                 }}
                                 title="Start Task"
-                                className="p-1 hover:bg-blue-50 text-blue-600 rounded cursor-pointer"
+                                aria-label="Start Task"
+                                className="p-1 hover:bg-blue-50 text-blue-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500"
                               >
                                 <Play className="h-4 w-4" />
                               </button>
@@ -308,7 +310,8 @@ export const MyTasksPage: React.FC = () => {
                                 triggerToast(`Submitted ${t.taskCode} for completion acceptance`);
                               }}
                               title="Complete Task"
-                              className="p-1 hover:bg-purple-50 text-purple-600 rounded cursor-pointer"
+                              aria-label="Complete Task"
+                              className="p-1 hover:bg-purple-50 text-purple-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-purple-500"
                             >
                               <Check className="h-4 w-4" />
                             </button>
@@ -319,7 +322,8 @@ export const MyTasksPage: React.FC = () => {
                                   triggerToast(`Accepted completion for ${t.taskCode}`);
                                 }}
                                 title="Accept Completion"
-                                className="p-1 hover:bg-emerald-50 text-emerald-700 rounded cursor-pointer font-bold"
+                                aria-label="Accept Completion"
+                                className="p-1 hover:bg-emerald-50 text-emerald-700 rounded cursor-pointer font-bold transition-colors focus:ring-1 focus:ring-emerald-500"
                               >
                                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                               </button>
@@ -327,20 +331,12 @@ export const MyTasksPage: React.FC = () => {
                             <button
                               onClick={() => setReassignModalTask(t)}
                               title="Reassign Task"
-                              className="p-1 hover:bg-amber-50 text-amber-600 rounded cursor-pointer"
+                              aria-label="Reassign Task"
+                              className="p-1 hover:bg-amber-50 text-amber-600 rounded cursor-pointer transition-colors focus:ring-1 focus:ring-amber-500"
                             >
                               <UserCheck className="h-4 w-4" />
                             </button>
                           </>
-                        )}
-                        {t.relatedRoute && (
-                          <button
-                            onClick={() => navigate(t.relatedRoute)}
-                            title="Open Related ERP Record"
-                            className="p-1 hover:bg-gray-100 text-brand-600 rounded cursor-pointer"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </button>
                         )}
                       </div>
                     </td>
