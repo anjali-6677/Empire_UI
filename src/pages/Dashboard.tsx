@@ -278,7 +278,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Sticky Horizontal Section Navigation Index */}
-      <div className="sticky top-[52px] z-30 bg-white border border-gray-200 rounded-lg p-2 shadow-sm flex items-center gap-2 overflow-x-auto scrollbar-none text-[10.5px] font-bold">
+      <div className="sticky top-[52px] z-20 bg-white border border-gray-200 rounded-lg p-2 shadow-sm flex items-center gap-2 overflow-x-auto scrollbar-none text-[10.5px] font-bold">
         <span className="text-[9px] uppercase tracking-widest text-gray-400 px-2 shrink-0 font-bold">Jump To Section:</span>
         {sectionNavLinks.map((sec) => (
           <button

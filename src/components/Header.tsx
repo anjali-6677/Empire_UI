@@ -131,7 +131,7 @@ export const ProjectSwitcher: React.FC = () => {
             left: `${position.left}px`,
             width: `${position.width}px`,
             maxHeight: 'min(420px, calc(100vh - 100px))',
-            zIndex: 999
+            zIndex: 99999
           }}
           className="bg-white border border-gray-200 rounded-lg shadow-2xl py-1.5 focus:outline-none overflow-y-auto font-sans text-xs"
         >
