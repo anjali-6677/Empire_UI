@@ -107,7 +107,34 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
     }
 
     const firstRow = filteredRows[0];
-    const xKey = firstRow.site ? 'site' : firstRow.vendor ? 'vendor' : firstRow.item ? 'item' : firstRow.month ? 'month' : firstRow.user ? 'user' : 'id';
+    const xKey = firstRow.site ? 'site' : firstRow.vendor ? 'vendor' : firstRow.item ? 'item' : firstRow.month ? 'month' : firstRow.userName ? 'userName' : firstRow.user ? 'user' : 'id';
+
+    if (firstRow.sessionDurationMinutes !== undefined) {
+      const sorted = [...filteredRows].sort((a, b) => (b.sessionDurationMinutes || 0) - (a.sessionDurationMinutes || 0));
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={sorted} margin={{ top: 10, right: 20, left: 10, bottom: 25 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+            <XAxis dataKey="userName" tick={{ fontSize: 9 }} interval={0} angle={-15} textAnchor="end" />
+            <YAxis 
+              tick={{ fontSize: 9 }} 
+              tickFormatter={(val) => typeof val === 'number' ? `${Math.floor(val / 60)}h ${val % 60}m` : String(val)} 
+            />
+            <Tooltip 
+              formatter={(val: any) => [
+                typeof val === 'number' ? `${val} Mins (${Math.floor(val / 60)}h ${val % 60}m)` : val, 
+                'Session Duration'
+              ]}
+              labelFormatter={(label, payload) => {
+                const item = payload?.[0]?.payload;
+                return item ? `${item.userName || label} (${item.designation || 'Staff'})` : label;
+              }}
+            />
+            <Bar dataKey="sessionDurationMinutes" name="Session Duration" fill="#10b981" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
 
     return (
       <ResponsiveContainer width="100%" height="100%">
@@ -380,14 +407,24 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
       {/* Summary Cards */}
       {activeTab.summaryCards && activeTab.summaryCards.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {activeTab.summaryCards.map((card: any) => (
-            <div key={card.id} className="p-3.5 border border-gray-150 rounded bg-white shadow-sm space-y-1">
-              <span className="text-[9.5px] uppercase font-bold text-gray-400 block">{card.label}</span>
-              <span className={`font-extrabold text-base block ${card.color || 'text-gray-900'}`}>
-                {card.isCurrency ? safeFormatCurrency(card.value) : card.value}
-              </span>
-            </div>
-          ))}
+          {activeTab.summaryCards.map((card: any) => {
+            let cardVal = card.value;
+            if (activeTab.id === 'login-time') {
+              if (card.label.toLowerCase().includes('active')) {
+                cardVal = filteredRows.filter(r => r.activeSession || r.logoutTime === 'Active Session').length;
+              } else if (card.label.toLowerCase().includes('failed')) {
+                cardVal = filteredRows.filter(r => r.authResult === 'failed').length;
+              }
+            }
+            return (
+              <div key={card.id} className="p-3.5 border border-gray-150 rounded bg-white shadow-sm space-y-1">
+                <span className="text-[9.5px] uppercase font-bold text-gray-400 block">{card.label}</span>
+                <span className={`font-extrabold text-base block ${card.color || 'text-gray-900'}`}>
+                  {card.isCurrency ? safeFormatCurrency(cardVal) : cardVal}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
 

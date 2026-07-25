@@ -16,7 +16,7 @@ export type WorkflowCollectionId =
   | 'debitNotes' | 'workOrders' | 'tasks' | 'alerts' | 'messages' 
   | 'calendarEvents' | 'brands' | 'locations' | 'pmcs' 
   | 'architects' | 'measurementConversions' | 'designations'
-  | 'companies' | 'users' | 'projectTeams' | 'tenders'
+  | 'companies' | 'users' | 'projectTeams' | 'tenders' | 'projects'
   | 'clientBills' | 'clientPayments' | 'bankAccounts'
   | 'itemCategories' | 'units' | 'departments' | 'roles'
   | 'salaryAllocations';
@@ -184,6 +184,24 @@ export interface ItemCategoryRecord extends BaseRecord { code?: string; }
 export interface UnitRecord extends BaseRecord { code?: string; symbol?: string; }
 export interface DepartmentRecord extends BaseRecord { code?: string; head?: string; }
 export interface RoleRecord extends BaseRecord { roleId?: string; roleName?: string; }
+export interface ProjectRecord extends BaseRecord {
+  projectCode?: string;
+  projectName?: string;
+  siteId?: string;
+  siteCode?: string;
+  clientId?: string;
+  clientName?: string;
+  companyId?: string;
+  companyName?: string;
+  city?: string;
+  projectManagerId?: string;
+  projectManagerName?: string;
+  startDate?: string;
+  targetCompletionDate?: string;
+  approvedBudget?: number;
+  progressPercentage?: number;
+  executionStatus?: string;
+}
 
 export type WorkflowCollections = {
   indents: IndentRecord[];
@@ -226,6 +244,7 @@ export type WorkflowCollections = {
   // New collections from Stage 7
   companies: CompanyRecord[];
   users: UserRecord[];
+  projects: ProjectRecord[];
   projectTeams: ProjectTeamRecord[];
   tenders: TenderRecord[];
   clientBills: ClientBillRecord[];
@@ -301,6 +320,7 @@ export const getCollectionIdFromRoute = (route: string): WorkflowCollectionId =>
     case ROUTES.PAYMENT_REQUESTS: return 'paymentRequests';
     case ROUTES.PAYMENTS: return 'payments';
     case ROUTES.PROJECT_BUDGETS: return 'budgetRevisions';
+    case ROUTES.PROJECTS: return 'projects';
     case ROUTES.CLIENTS: return 'clients';
     case ROUTES.VENDORS: return 'vendors';
     case ROUTES.EMPLOYEES: return 'employees';
@@ -375,6 +395,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     items: INITIAL_COLLECTIONS.items as unknown as ItemMasterRecord[],
     companies: INITIAL_COLLECTIONS.companies as unknown as CompanyRecord[],
     users: INITIAL_COLLECTIONS.users as unknown as UserRecord[],
+    projects: INITIAL_COLLECTIONS.projects as unknown as ProjectRecord[],
     bankAccounts: INITIAL_COLLECTIONS.bankAccounts as unknown as BankAccountRecord[],
     itemCategories: INITIAL_COLLECTIONS.itemCategories as unknown as ItemCategoryRecord[],
     units: INITIAL_COLLECTIONS.units as unknown as UnitRecord[],

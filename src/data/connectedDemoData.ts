@@ -343,31 +343,39 @@ export const USERS: UserRecord[] = [
 export interface ProjectRecord {
   id: string;
   projectCode: string;
+  projectName: string;
   name: string;
   siteId: string;
+  siteCode: string;
   clientId: string;
+  clientName: string;
   client: string;
   companyId: string;
+  companyName: string;
   company: string;
-  projectManagerId: string;
-  manager: string;
-  projectHeadId: string;
-  projectHead: string;
   city: string;
+  projectManagerId: string;
+  projectManagerName: string;
+  manager: string;
   startDate: string;
+  targetCompletionDate: string;
   completionDate: string;
+  approvedBudget: number;
   budget: number;
+  progressPercentage: number;
   progress: string;
+  executionStatus: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
   status: string;
+  approvalStatus?: string;
 }
 
 export const PROJECTS: ProjectRecord[] = [
-  { id: 'p-1', projectCode: 'PRJ-2026-001', name: 'Nexus Tech Park Lobby Renovations', siteId: 'site-1', clientId: 'cl-1', client: 'Nexus Realty Group', companyId: 'cmp-1', company: 'Empire Interior Contracting Pvt Ltd', projectManagerId: 'emp-2', manager: 'Anita Rao', projectHeadId: 'emp-1', projectHead: 'Rajesh Kumar', city: 'Bengaluru', startDate: '2026-01-10', completionDate: '2026-08-30', budget: 50000000, progress: '45%', status: 'active' },
-  { id: 'p-2', projectCode: 'PRJ-2026-002', name: 'Grand Hyatt Executive Lounge Café', siteId: 'site-2', clientId: 'cl-2', client: 'Hyatt Hospitality India', companyId: 'cmp-3', company: 'Empire Construction Ltd', projectManagerId: 'emp-2', manager: 'Anita Rao', projectHeadId: 'emp-1', projectHead: 'Rajesh Kumar', city: 'Goa', startDate: '2025-11-15', completionDate: '2026-04-10', budget: 12000000, progress: '92%', status: 'active' },
-  { id: 'p-3', projectCode: 'PRJ-2026-003', name: 'Imperial Heights Penthouse Fit-Out', siteId: 'site-3', clientId: 'cl-3', client: 'Imperial Realty Holdings', companyId: 'cmp-1', company: 'Empire Interior Contracting Pvt Ltd', projectManagerId: 'emp-11', manager: 'Vikram Reddy', projectHeadId: 'emp-10', projectHead: 'Karan Malhotra', city: 'Mumbai', startDate: '2026-02-05', completionDate: '2026-10-15', budget: 65000000, progress: '72%', status: 'active' },
-  { id: 'p-4', projectCode: 'PRJ-2026-004', name: 'Synergy Co-Working Workspace', siteId: 'site-4', clientId: 'cl-5', client: 'Phoenix Marketcity', companyId: 'cmp-1', company: 'Empire Interior Contracting Pvt Ltd', projectManagerId: 'emp-11', manager: 'Vikram Reddy', projectHeadId: 'emp-10', projectHead: 'Karan Malhotra', city: 'Hyderabad', startDate: '2026-06-01', completionDate: '2027-01-15', budget: 45000000, progress: '15%', status: 'active' },
-  { id: 'p-5', projectCode: 'PRJ-2026-005', name: 'Oasis Luxury Villa Construction', siteId: 'site-5', clientId: 'cl-6', client: 'Sobha Ltd', companyId: 'cmp-3', company: 'Empire Construction Ltd', projectManagerId: 'emp-8', manager: 'Rohan Deshmukh', projectHeadId: 'emp-8', projectHead: 'Rohan Deshmukh', city: 'Pune', startDate: '2025-05-10', completionDate: '2026-06-30', budget: 15000000, progress: '100%', status: 'completed' },
-  { id: 'p-6', projectCode: 'PRJ-2026-006', name: 'HDFC Regional Office Expansion', siteId: 'site-6', clientId: 'cl-4', client: 'HDFC Bank Ltd', companyId: 'cmp-1', company: 'Empire Interior Contracting Pvt Ltd', projectManagerId: 'emp-10', manager: 'Karan Malhotra', projectHeadId: 'emp-10', projectHead: 'Karan Malhotra', city: 'Navi Mumbai', startDate: '2026-08-01', completionDate: '2027-03-31', budget: 35000000, progress: '0%', status: 'not_started' }
+  { id: 'p-1', projectCode: 'PRJ-2026-001', projectName: 'Nexus Tech Park Lobby Renovations', name: 'Nexus Tech Park Lobby Renovations', siteId: 'site-1', siteCode: 'SITE-2026-001', clientId: 'cl-1', clientName: 'Nexus Realty Group', client: 'Nexus Realty Group', companyId: 'cmp-1', companyName: 'Empire Interior Contracting Pvt Ltd', company: 'Empire Interior Contracting Pvt Ltd', projectManagerId: 'emp-1', projectManagerName: 'Rajesh Kumar', manager: 'Rajesh Kumar', city: 'Bengaluru', startDate: '2026-01-10', targetCompletionDate: '2026-08-30', completionDate: '2026-08-30', approvedBudget: 50000000, budget: 50000000, progressPercentage: 58, progress: '58%', executionStatus: 'active', status: 'active' },
+  { id: 'p-2', projectCode: 'PRJ-2026-002', projectName: 'Grand Hyatt Executive Lounge Café', name: 'Grand Hyatt Executive Lounge Café', siteId: 'site-2', siteCode: 'SITE-2026-002', clientId: 'cl-2', clientName: 'Hyatt Hospitality India', client: 'Hyatt Hospitality India', companyId: 'cmp-2', companyName: 'Empire Joinery & Furniture Works', company: 'Empire Joinery & Furniture Works', projectManagerId: 'emp-2', projectManagerName: 'Anita Rao', manager: 'Anita Rao', city: 'Goa', startDate: '2025-11-15', targetCompletionDate: '2026-04-10', completionDate: '2026-04-10', approvedBudget: 12000000, budget: 12000000, progressPercentage: 84, progress: '84%', executionStatus: 'active', status: 'active' },
+  { id: 'p-3', projectCode: 'PRJ-2026-003', projectName: 'Imperial Heights Penthouse Fit-Out', name: 'Imperial Heights Penthouse Fit-Out', siteId: 'site-3', siteCode: 'SITE-2026-003', clientId: 'cl-3', clientName: 'Imperial Realty Holdings', client: 'Imperial Realty Holdings', companyId: 'cmp-1', companyName: 'Empire Interior Contracting Pvt Ltd', company: 'Empire Interior Contracting Pvt Ltd', projectManagerId: 'emp-7', projectManagerName: 'Vikramaditya Nair', manager: 'Vikramaditya Nair', city: 'Mumbai', startDate: '2026-02-05', targetCompletionDate: '2026-10-15', completionDate: '2026-10-15', approvedBudget: 38000000, budget: 38000000, progressPercentage: 46, progress: '46%', executionStatus: 'active', status: 'active' },
+  { id: 'p-4', projectCode: 'PRJ-2026-004', projectName: 'Synergy Co-Working Workspace', name: 'Synergy Co-Working Workspace', siteId: 'site-4', siteCode: 'SITE-2026-004', clientId: 'cl-5', clientName: 'Synergy Workspaces', client: 'Synergy Workspaces', companyId: 'cmp-1', companyName: 'Empire Interior Contracting Pvt Ltd', company: 'Empire Interior Contracting Pvt Ltd', projectManagerId: 'emp-11', projectManagerName: 'Vikram Reddy', manager: 'Vikram Reddy', city: 'Bengaluru', startDate: '2026-06-01', targetCompletionDate: '2027-01-15', completionDate: '2027-01-15', approvedBudget: 45000000, budget: 45000000, progressPercentage: 52, progress: '52%', executionStatus: 'active', status: 'active' },
+  { id: 'p-5', projectCode: 'PRJ-2026-005', projectName: 'Oasis Luxury Villa Construction', name: 'Oasis Luxury Villa Construction', siteId: 'site-5', siteCode: 'SITE-2026-005', clientId: 'cl-6', clientName: 'Oasis Developers', client: 'Oasis Developers', companyId: 'cmp-3', companyName: 'Empire Construction Ltd', company: 'Empire Construction Ltd', projectManagerId: 'emp-8', projectManagerName: 'Rohan Deshmukh', manager: 'Rohan Deshmukh', city: 'Hyderabad', startDate: '2025-05-10', targetCompletionDate: '2026-06-30', completionDate: '2026-06-30', approvedBudget: 15000000, budget: 15000000, progressPercentage: 100, progress: '100%', executionStatus: 'completed', status: 'completed' },
+  { id: 'p-6', projectCode: 'PRJ-2026-006', projectName: 'HDFC Regional Office Expansion', name: 'HDFC Regional Office Expansion', siteId: 'site-6', siteCode: 'SITE-2026-006', clientId: 'cl-4', clientName: 'HDFC Bank', client: 'HDFC Bank', companyId: 'cmp-1', companyName: 'Empire Interior Contracting Pvt Ltd', company: 'Empire Interior Contracting Pvt Ltd', projectManagerId: 'emp-10', projectManagerName: 'Karan Malhotra', manager: 'Karan Malhotra', city: 'Chennai', startDate: '2026-08-01', targetCompletionDate: '2027-03-31', completionDate: '2027-03-31', approvedBudget: 35000000, budget: 35000000, progressPercentage: 0, progress: '0%', executionStatus: 'planning', status: 'planning' }
 ];
 
 // ─── PROJECT TEAMS ────────────────────────────────────────────────────────────
@@ -1238,6 +1246,13 @@ export function validateDemoData(): void {
   GRNS.forEach(grn => {
     if (!orderIds.has(grn.orderId)) errors.push(`GRN ${grn.grnNo} references unknown orderId: ${grn.orderId}`);
     if (!poIds.has(grn.purchaseOrderId)) errors.push(`GRN ${grn.grnNo} references unknown purchaseOrderId: ${grn.purchaseOrderId}`);
+  });
+
+  // Check projects reference valid site, client, manager
+  PROJECTS.forEach(proj => {
+    if (!siteIds.has(proj.siteId)) errors.push(`Project ${proj.projectCode} references unknown siteId: ${proj.siteId}`);
+    if (!clientIds.has(proj.clientId)) errors.push(`Project ${proj.projectCode} references unknown clientId: ${proj.clientId}`);
+    if (!employeeIds.has(proj.projectManagerId)) errors.push(`Project ${proj.projectCode} references unknown projectManagerId: ${proj.projectManagerId}`);
   });
 
   // Check invoices reference valid vendors and sites

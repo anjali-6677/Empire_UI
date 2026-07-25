@@ -133,26 +133,21 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     breadcrumbs: ['Projects', 'Project List'],
     primaryAction: { label: 'Register New Project', route: '/sites/new' },
     summaryCards: [
-      { id: '1', label: 'Active Projects', value: 18 },
-      { id: '2', label: 'Total Budget Portfolio', value: 248000000, isCurrency: true },
-      { id: '3', label: 'Average Completion', value: '58.4%' }
+      { id: '1', label: 'Active Projects', value: 4 },
+      { id: '2', label: 'Total Budget Portfolio', value: 195000000, isCurrency: true },
+      { id: '3', label: 'Average Completion', value: '56.7%' }
     ],
     columns: [
       { key: 'projectCode', label: 'Project Code', type: 'mono' },
-      { key: 'name', label: 'Project Name', type: 'text' },
-      { key: 'client', label: 'Client Entity', type: 'text' },
+      { key: 'projectName', label: 'Project Name', type: 'text' },
+      { key: 'clientName', label: 'Client Entity', type: 'text' },
       { key: 'city', label: 'City', type: 'text' },
-      { key: 'manager', label: 'Project Manager', type: 'text' },
+      { key: 'projectManagerName', label: 'Project Manager', type: 'text' },
       { key: 'startDate', label: 'Start Date', type: 'date' },
-      { key: 'completionDate', label: 'Target Completion', type: 'date' },
-      { key: 'budget', label: 'Approved Budget', type: 'currency', align: 'right' },
-      { key: 'progress', label: 'Progress (%)', type: 'text', align: 'center' },
-      { key: 'status', label: 'Execution Status', type: 'badge' }
-    ],
-    mockRows: [
-      { id: 'p-1', projectCode: 'PRJ-2026-001', name: 'Nexus Tech Park Lobby Renovations', client: 'Nexus Realty Group', city: 'Bengaluru', manager: 'Rajesh Kumar', startDate: '2026-02-01', completionDate: '2026-10-30', budget: 50000000, progress: '45%', status: 'in_progress' },
-      { id: 'p-2', projectCode: 'PRJ-2026-002', name: 'Grand Hyatt Executive Lounge Café', client: 'Hyatt Hospitality India', city: 'Goa', manager: 'Anita Rao', startDate: '2026-01-15', completionDate: '2026-08-20', budget: 12000000, progress: '92%', status: 'in_progress' },
-      { id: 'p-3', projectCode: 'PRJ-2026-003', name: 'Imperial Heights Penthouse Fit-Out', client: 'Imperial Realty Holdings', city: 'Mumbai', manager: 'Sanjay Mehta', startDate: '2026-03-10', completionDate: '2026-11-15', budget: 65000000, progress: '72%', status: 'in_progress' }
+      { key: 'targetCompletionDate', label: 'Target Completion', type: 'date' },
+      { key: 'approvedBudget', label: 'Approved Budget', type: 'currency', align: 'right' },
+      { key: 'progressPercentage', label: 'Progress (%)', type: 'text', align: 'center' },
+      { key: 'executionStatus', label: 'Execution Status', type: 'badge' }
     ]
   },
   [ROUTES.SITE_DETAILS]: {
@@ -490,6 +485,84 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
   // ==========================================
   // 4. FINANCE
   // ==========================================
+  [ROUTES.ON_ACCOUNT_DASHBOARD]: {
+    id: 'finance-on-account',
+    route: ROUTES.ON_ACCOUNT_DASHBOARD,
+    pageType: 'list',
+    title: 'Vendor On-Account & Advance Management',
+    description: 'Track vendor advances, site allocations, inter-site advance transfers, and available on-account balances.',
+    breadcrumbs: ['Finance', 'On-Account Dashboard'],
+    primaryAction: { label: 'New On-Account Payment' },
+    summaryCards: [
+      { id: '1', label: 'Total Vendor Available Balance', value: 550000, isCurrency: true },
+      { id: '2', label: 'Total Site Available Balance', value: 550000, isCurrency: true },
+      { id: '3', label: 'Transfers This Month', value: 1 }
+    ],
+    tabs: [
+      {
+        id: 'vendor_balances',
+        label: 'Vendor Balances',
+        title: 'Empanelled Vendor On-Account Balances',
+        description: 'Vendor advance receipts, invoice allocations, transfers, and available net balances.',
+        columns: [
+          { key: 'vendorName', label: 'Vendor Supplier', type: 'text' },
+          { key: 'siteName', label: 'Project Site', type: 'text' },
+          { key: 'originalAmount', label: 'Original On-Account', type: 'currency', align: 'right' },
+          { key: 'allocatedToInvoices', label: 'Allocated To Invoices', type: 'currency', align: 'right' },
+          { key: 'transferredAmount', label: 'Transferred', type: 'currency', align: 'right' },
+          { key: 'availableBalance', label: 'Available Balance', type: 'currency', align: 'right' },
+          { key: 'lastTransactionDate', label: 'Last Transaction', type: 'date' },
+          { key: 'status', label: 'Status', type: 'badge' }
+        ],
+        mockRows: [
+          { id: 'vob-1', vendorName: 'Century Plyboards India Ltd', vendor: 'Century Plyboards India Ltd', siteName: 'Nexus Tech Park', site: 'Nexus Tech Park', originalAmount: 500000, allocatedToInvoices: 300000, transferredAmount: 0, availableBalance: 200000, lastTransactionDate: '2026-07-24', status: 'active' },
+          { id: 'vob-2', vendorName: 'Asian Paints Ltd', vendor: 'Asian Paints Ltd', siteName: 'Grand Hyatt Goa', site: 'Grand Hyatt Goa', originalAmount: 400000, allocatedToInvoices: 250000, transferredAmount: 0, availableBalance: 150000, lastTransactionDate: '2026-07-22', status: 'active' },
+          { id: 'vob-3', vendorName: 'Saint-Gobain India Pvt Ltd', vendor: 'Saint-Gobain India Pvt Ltd', siteName: 'Imperial Heights', site: 'Imperial Heights', originalAmount: 300000, allocatedToInvoices: 100000, transferredAmount: 0, availableBalance: 200000, lastTransactionDate: '2026-07-20', status: 'active' }
+        ]
+      },
+      {
+        id: 'site_balances',
+        label: 'Site Balances',
+        title: 'Project Site On-Account Fund Balances',
+        description: 'Site-wise advance funds received, invoice allocations, and net transfers.',
+        columns: [
+          { key: 'siteName', label: 'Project Site', type: 'text' },
+          { key: 'receivedAmount', label: 'Received Amount', type: 'currency', align: 'right' },
+          { key: 'allocatedToInvoices', label: 'Allocated To Invoices', type: 'currency', align: 'right' },
+          { key: 'transferredIn', label: 'Transferred In', type: 'currency', align: 'right' },
+          { key: 'transferredOut', label: 'Transferred Out', type: 'currency', align: 'right' },
+          { key: 'availableBalance', label: 'Available Balance', type: 'currency', align: 'right' },
+          { key: 'lastUpdatedDate', label: 'Last Updated', type: 'date' }
+        ],
+        mockRows: [
+          { id: 'sob-1', siteName: 'Nexus Tech Park', site: 'Nexus Tech Park', receivedAmount: 500000, allocatedToInvoices: 300000, transferredIn: 0, transferredOut: 100000, availableBalance: 100000, lastUpdatedDate: '2026-07-24' },
+          { id: 'sob-2', siteName: 'Grand Hyatt Goa', site: 'Grand Hyatt Goa', receivedAmount: 400000, allocatedToInvoices: 250000, transferredIn: 100000, transferredOut: 0, availableBalance: 250000, lastUpdatedDate: '2026-07-23' },
+          { id: 'sob-3', siteName: 'Imperial Heights', site: 'Imperial Heights', receivedAmount: 300000, allocatedToInvoices: 100000, transferredIn: 0, transferredOut: 0, availableBalance: 200000, lastUpdatedDate: '2026-07-20' }
+        ]
+      },
+      {
+        id: 'recent_transactions',
+        label: 'Recent Transactions',
+        title: 'On-Account Advance Transaction History',
+        description: 'Chronological ledger of receipts, invoice allocations, and inter-site transfers.',
+        columns: [
+          { key: 'transactionReference', label: 'Transaction Ref', type: 'mono' },
+          { key: 'transactionDate', label: 'Date', type: 'date' },
+          { key: 'type', label: 'Transaction Type', type: 'text' },
+          { key: 'sourceSiteName', label: 'Source', type: 'text' },
+          { key: 'destinationSiteName', label: 'Destination / Invoice', type: 'text' },
+          { key: 'vendorName', label: 'Vendor', type: 'text' },
+          { key: 'amount', label: 'Amount', type: 'currency', align: 'right' },
+          { key: 'status', label: 'Status', type: 'badge' }
+        ],
+        mockRows: [
+          { id: 'oat-1', transactionReference: 'OAT-2026-001', transactionDate: '2026-07-24', transactionType: 'invoice_allocation', type: 'Invoice Allocation', vendorName: 'Century Plyboards India Ltd', vendor: 'Century Plyboards India Ltd', destinationSiteName: 'INV-VND-2026-001', amount: 300000, status: 'processed' },
+          { id: 'oat-2', transactionReference: 'OAT-2026-002', transactionDate: '2026-07-23', transactionType: 'inter_site_transfer', type: 'Inter-Site Transfer', sourceSiteName: 'Nexus Tech Park', source: 'Nexus Tech Park', destinationSiteName: 'Grand Hyatt Goa', destination: 'Grand Hyatt Goa', vendorName: 'Century Plyboards India Ltd', vendor: 'Century Plyboards India Ltd', amount: 100000, status: 'processed' },
+          { id: 'oat-3', transactionReference: 'OAT-2026-003', transactionDate: '2026-07-22', transactionType: 'receipt', type: 'On-Account Receipt', sourceSiteName: 'Grand Hyatt Goa', source: 'Grand Hyatt Goa', vendorName: 'Asian Paints Ltd', vendor: 'Asian Paints Ltd', amount: 400000, status: 'approved' }
+        ]
+      }
+    ]
+  },
   [ROUTES.INVOICES]: {
     id: 'finance-invoices',
     route: ROUTES.INVOICES,
@@ -1451,15 +1524,15 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
           { key: 'status', label: 'Auth Result', type: 'badge' }
         ],
         summaryCards: [
-          { id: 's1', label: 'Active Concurrent Sessions', value: 18 },
+          { id: 's1', label: 'Active Concurrent Sessions', value: 4 },
           { id: 's2', label: 'Failed Login Attempts', value: 0 }
         ],
         mockRows: [
-          { id: 'lt-1', user: 'Rajesh Kumar (Project Director)', loginDate: '2026-07-24', loginTime: '08:45 AM', logoutTime: 'Active Session', duration: '5h 15m', ipAddress: '119.82.102.45', device: 'Chrome / Windows 11', status: 'completed' },
-          { id: 'lt-2', user: 'Priya Sharma (Senior Billing Engineer)', loginDate: '2026-07-24', loginTime: '09:00 AM', logoutTime: 'Active Session', duration: '5h 00m', ipAddress: '119.82.102.48', device: 'Chrome / Windows 11', status: 'completed' },
-          { id: 'lt-3', user: 'Amitabh Sen (Procurement Head)', loginDate: '2026-07-24', loginTime: '09:15 AM', logoutTime: '12:30 PM', duration: '3h 15m', ipAddress: '103.22.14.88', device: 'Safari / macOS', status: 'completed' },
-          { id: 'lt-4', user: 'Vikramaditya Nair (Site Engineer)', loginDate: '2026-07-24', loginTime: '09:30 AM', logoutTime: 'Active Session', duration: '4h 30m', ipAddress: '119.82.102.50', device: 'Firefox / Android', status: 'completed' },
-          { id: 'lt-5', user: 'Sneha Kulkarni (Finance Manager)', loginDate: '2026-07-24', loginTime: '10:00 AM', logoutTime: 'Active Session', duration: '4h 00m', ipAddress: '103.22.14.92', device: 'Edge / Windows 11', status: 'completed' }
+          { id: 'lt-1', user: 'Rajesh Kumar', userName: 'Rajesh Kumar', designation: 'Project Director', loginDate: '2026-07-24', loginTime: '08:45 AM', logoutTime: 'Active Session', duration: '5h 15m', sessionDurationMinutes: 315, ipAddress: '119.82.102.45', device: 'Chrome / Windows 11', deviceBrowser: 'Chrome / Windows 11', authResult: 'success', activeSession: true, status: 'completed' },
+          { id: 'lt-2', user: 'Priya Sharma', userName: 'Priya Sharma', designation: 'Senior Billing Engineer', loginDate: '2026-07-24', loginTime: '09:00 AM', logoutTime: 'Active Session', duration: '5h 00m', sessionDurationMinutes: 300, ipAddress: '119.82.102.48', device: 'Chrome / Windows 11', deviceBrowser: 'Chrome / Windows 11', authResult: 'success', activeSession: true, status: 'completed' },
+          { id: 'lt-4', user: 'Vikramaditya Nair', userName: 'Vikramaditya Nair', designation: 'Site Engineer', loginDate: '2026-07-24', loginTime: '09:30 AM', logoutTime: 'Active Session', duration: '4h 30m', sessionDurationMinutes: 270, ipAddress: '119.82.102.50', device: 'Firefox / Android', deviceBrowser: 'Firefox / Android', authResult: 'success', activeSession: true, status: 'completed' },
+          { id: 'lt-5', user: 'Sneha Kulkarni', userName: 'Sneha Kulkarni', designation: 'Finance Manager', loginDate: '2026-07-24', loginTime: '10:00 AM', logoutTime: 'Active Session', duration: '4h 00m', sessionDurationMinutes: 240, ipAddress: '103.22.14.92', device: 'Edge / Windows 11', deviceBrowser: 'Edge / Windows 11', authResult: 'success', activeSession: true, status: 'completed' },
+          { id: 'lt-3', user: 'Amitabh Sen', userName: 'Amitabh Sen', designation: 'Procurement Head', loginDate: '2026-07-24', loginTime: '09:15 AM', logoutTime: '12:30 PM', duration: '3h 15m', sessionDurationMinutes: 195, ipAddress: '103.22.14.88', device: 'Safari / macOS', deviceBrowser: 'Safari / macOS', authResult: 'success', activeSession: false, status: 'completed' }
         ]
       },
       { id: 'activity-history', label: 'User Activity History', title: 'System Mutation Audit Trail', description: 'Chronological tracking of system data insertions, approvals, modifications, and master record creations.',
@@ -1744,67 +1817,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       }
     ]
   },
-  [ROUTES.ON_ACCOUNT_DASHBOARD]: {
-    id: 'mod-on-account-dashboard',
-    title: 'On-Account Dashboard',
-    description: 'Centralized overview of vendor and site on-account balances, and recent transfers.',
-    route: ROUTES.ON_ACCOUNT_DASHBOARD,
-    pageType: 'list',
-    breadcrumbs: ['Finance', 'On-Account Dashboard'],
-    summaryCards: [
-      { id: 'sc1', label: 'Total Vendor Balance', value: 1205000, isCurrency: true, color: 'text-brand-700' },
-      { id: 'sc2', label: 'Total Site Balance', value: 3450000, isCurrency: true, color: 'text-brand-700' },
-      { id: 'sc3', label: 'Transfers This Month', value: 18, color: 'text-gray-900' }
-    ],
-    tabs: [
-      { id: 'vendors', label: 'Vendor Balances' },
-      { id: 'sites', label: 'Site Balances' },
-      { id: 'transactions', label: 'Recent Transactions' }
-    ],
-    tabColumns: {
-      vendors: [
-        { key: 'referenceNo', label: 'Ref No', type: 'mono' },
-        { key: 'vendor', label: 'Vendor' },
-        { key: 'opening', label: 'Total Received', type: 'currency' },
-        { key: 'allocated', label: 'Allocated', type: 'currency' },
-        { key: 'balance', label: 'Available', type: 'currency' },
-        { key: 'status', label: 'Status', type: 'badge' }
-      ],
-      sites: [
-        { key: 'referenceNo', label: 'Ref No', type: 'mono' },
-        { key: 'site', label: 'Site' },
-        { key: 'opening', label: 'Opening', type: 'currency' },
-        { key: 'transferredIn', label: 'Transferred In', type: 'currency' },
-        { key: 'transferredOut', label: 'Transferred Out', type: 'currency' },
-        { key: 'balance', label: 'Available', type: 'currency' },
-        { key: 'status', label: 'Status', type: 'badge' }
-      ],
-      transactions: [
-        { key: 'referenceNo', label: 'Transaction ID', type: 'mono' },
-        { key: 'date', label: 'Date', type: 'date' },
-        { key: 'type', label: 'Type' },
-        { key: 'source', label: 'Source' },
-        { key: 'destination', label: 'Destination' },
-        { key: 'amount', label: 'Amount', type: 'currency', align: 'right' },
-        { key: 'status', label: 'Status', type: 'badge' }
-      ]
-    },
-    primaryAction: { label: 'New Transfer', route: '' },
-    createFields: [
-      { name: 'type', label: 'Transfer Type', type: 'select', required: true, options: [{ value: 'Payment', label: 'Payment' }, { value: 'Site Transfer', label: 'Site Transfer' }] },
-      { name: 'source', label: 'Source', type: 'text', required: true },
-      { name: 'destination', label: 'Destination', type: 'text', required: true },
-      { name: 'amount', label: 'Amount', type: 'number', required: true }
-    ],
-    mockRows: [
-      { id: 'v1', tab: 'vendors', referenceNo: 'OAP-V1001', vendor: 'Global Trade Co', opening: 500000, allocated: 200000, balance: 300000, status: 'active' },
-      { id: 'v2', tab: 'vendors', referenceNo: 'OAP-V1002', vendor: 'Apex Supplies', opening: 100000, allocated: 100000, balance: 0, status: 'completed' },
-      { id: 's1', tab: 'sites', referenceNo: 'OAP-S1001', site: 'Downtown Tower', opening: 2000000, transferredIn: 500000, transferredOut: 100000, balance: 2400000, status: 'healthy' },
-      { id: 's2', tab: 'sites', referenceNo: 'OAP-S1002', site: 'Riverside Complex', opening: 1000000, transferredIn: 0, transferredOut: 200000, balance: 800000, status: 'active' },
-      { id: 't1', tab: 'transactions', referenceNo: 'TX-4921', date: '2024-03-24', type: 'Site Transfer', source: 'Downtown Tower', destination: 'Riverside Complex', amount: 100000, status: 'processed' },
-      { id: 't2', tab: 'transactions', referenceNo: 'TX-4922', date: '2024-03-25', type: 'Payment', source: 'Bank', destination: 'Global Trade Co', amount: 500000, status: 'processed' }
-    ]
-  },
+
   [ROUTES.BUDGET_TRANSFERS]: {
     id: 'mod-budget-transfers',
     title: 'Budget Transfers',
