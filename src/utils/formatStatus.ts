@@ -173,6 +173,13 @@ export function getStatusStyle(status: string | null | undefined): { bg: string;
     case 'unallocated':
       return { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' };
 
+    case 'reserved':
+      return { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' };
+
+    case 'excess':
+    case 'excess_stock':
+      return { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' };
+
     default:
       return { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-250' };
   }

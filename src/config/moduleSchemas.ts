@@ -1,5 +1,6 @@
 import { ROUTES } from './navigation';
 import { SiteScopeMode } from '../utils/siteScope';
+import { INVENTORY_RECORDS } from '../data/connectedDemoData';
 
 export type PageType = 'list' | 'form' | 'details' | 'report' | 'custom';
 
@@ -463,25 +464,27 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     title: 'Site Inventory & Stock Balance',
     description: 'On-site stock levels, reserved material quantities, reorder thresholds and stock transfers.',
     breadcrumbs: ['Procurement', 'Inventory'],
+    siteScopeMode: 'selected_site',
     summaryCards: [
-      { id: '1', label: 'Total In-Stock Value', value: 34500000, isCurrency: true },
-      { id: '2', label: 'Low Stock Alerts', value: 4, color: 'text-amber-600' }
+      { id: '1', label: 'Total In-Stock Value', value: 371700, isCurrency: true },
+      { id: '2', label: 'Low Stock Alerts', value: 2, color: 'text-amber-600' },
+      { id: '3', label: 'Out of Stock Items', value: 1, color: 'text-rose-600' }
     ],
     columns: [
       { key: 'itemCode', label: 'Item Code', type: 'mono' },
-      { key: 'item', label: 'Material Description', type: 'text' },
-      { key: 'category', label: 'Category', type: 'text' },
-      { key: 'site', label: 'Project Site Location', type: 'text' },
-      { key: 'availableQty', label: 'Available Stock', type: 'text', align: 'center' },
-      { key: 'unit', label: 'Unit', type: 'text', align: 'center' },
-      { key: 'reorderLevel', label: 'Reorder Threshold', type: 'text', align: 'center' },
-      { key: 'status', label: 'Stock Health Status', type: 'badge' }
+      { key: 'itemName', label: 'Material Description', type: 'text' },
+      { key: 'categoryName', label: 'Category', type: 'text' },
+      { key: 'brandName', label: 'Brand', type: 'text' },
+      { key: 'siteName', label: 'Project Site', type: 'text' },
+      { key: 'availableQuantity', label: 'Available Stock', type: 'text', align: 'right' },
+      { key: 'reservedQuantity', label: 'Reserved Stock', type: 'text', align: 'right' },
+      { key: 'unitSymbol', label: 'Unit', type: 'text', align: 'center' },
+      { key: 'averageRate', label: 'Average Rate', type: 'currency', align: 'right' },
+      { key: 'stockValue', label: 'Stock Value', type: 'currency', align: 'right' },
+      { key: 'reorderThreshold', label: 'Reorder Threshold', type: 'text', align: 'right' },
+      { key: 'healthStatus', label: 'Stock Health', type: 'badge' }
     ],
-    mockRows: [
-      { id: 'inv-1', itemCode: 'MAT-101', item: 'Gypsum Board 12mm Standard', category: 'Ceiling Materials', site: 'Nexus Tech Park', availableQty: '4,500', unit: 'Sq Ft', reorderLevel: '1,000 Sq Ft', status: 'in_stock' },
-      { id: 'inv-2', itemCode: 'MAT-105', item: 'Teak Wood Veneer 4mm', category: 'Joinery & Wood', site: 'Grand Hyatt Goa', availableQty: '280', unit: 'Sheets', reorderLevel: '300 Sheets', status: 'low_stock' },
-      { id: 'inv-3', itemCode: 'MAT-109', item: 'Asian Paints Royale Emulsion', category: 'Paints & Finishes', site: 'Imperial Heights', availableQty: '1,200', unit: 'Liters', reorderLevel: '500 Liters', status: 'in_stock' }
-    ]
+    mockRows: INVENTORY_RECORDS
   },
 
   // ==========================================

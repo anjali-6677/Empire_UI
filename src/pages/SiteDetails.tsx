@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   Home, ChevronRight, Building, FileText, CheckCircle2, Clock, Users,
   BarChart, CreditCard, Receipt, FileStack, Package, AlignLeft
@@ -15,9 +15,22 @@ const TABS = [
 
 export const SiteDetails: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { sites, selectedSiteId } = useSites();
 
-  const [activeTab, setActiveTab] = React.useState('Overview');
+  const initialTab = React.useMemo(() => {
+    const tabState = (location.state as any)?.tab;
+    return (tabState && TABS.includes(tabState)) ? tabState : 'Overview';
+  }, [location.state]);
+
+  const [activeTab, setActiveTab] = React.useState(initialTab);
+
+  React.useEffect(() => {
+    const tabState = (location.state as any)?.tab;
+    if (tabState && TABS.includes(tabState)) {
+      setActiveTab(tabState);
+    }
+  }, [location.state]);
 
   const site = sites.find((s) => s.id === selectedSiteId) || sites[0];
 

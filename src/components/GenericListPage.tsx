@@ -181,7 +181,37 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
 
   const isOnAccountPage = schema.route === '/finance/on-account' || schema.id === 'finance-on-account';
 
+  const { selectedSiteId, sites } = useSites();
+  const selectedSite = React.useMemo(() => {
+    if (selectedSiteId === 'all') return null;
+    return sites.find((s) => s.id === selectedSiteId) || null;
+  }, [sites, selectedSiteId]);
+
+  const siteScopeMode: SiteScopeMode = schema.siteScopeMode || 'portfolio';
+
+  const siteFilteredRows = React.useMemo(() => {
+    const rawRows = (activeTabConfig && (activeTabConfig as any).mockRows)
+      ? (activeTabConfig as any).mockRows
+      : localRows;
+
+    return filterBySiteScope(rawRows, siteScopeMode, selectedSiteId);
+  }, [activeTabConfig, localRows, siteScopeMode, selectedSiteId]);
+
+  const isInventoryPage = schema.id === 'procurement-inventory' || schema.route === '/procurement/inventory';
+
   const calculatedSummaryCards = React.useMemo(() => {
+    if (isInventoryPage && siteFilteredRows) {
+      const totalStockValue = siteFilteredRows.reduce((acc: number, r: any) => acc + toSafeNumber(r.stockValue), 0);
+      const lowStockAlerts = siteFilteredRows.filter((r: any) => r.healthStatus === 'low_stock' || r.healthStatus === 'reorder_required').length;
+      const outOfStockCount = siteFilteredRows.filter((r: any) => r.healthStatus === 'out_of_stock').length;
+
+      return [
+        { id: '1', label: 'Total In-Stock Value', value: totalStockValue, isCurrency: true, color: 'text-brand-700' },
+        { id: '2', label: 'Low Stock Alerts', value: lowStockAlerts, color: 'text-amber-600' },
+        { id: '3', label: 'Out of Stock Items', value: outOfStockCount, color: 'text-rose-600' }
+      ];
+    }
+
     if (isOnAccountPage && schema.tabs) {
       const vendorTab = schema.tabs.find(t => t.id === 'vendor_balances');
       const siteTab = schema.tabs.find(t => t.id === 'site_balances');
@@ -207,23 +237,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
       ];
     }
     return displaySummaryCards;
-  }, [isOnAccountPage, schema.tabs, displaySummaryCards]);
-
-  const { selectedSiteId, sites } = useSites();
-  const selectedSite = React.useMemo(() => {
-    if (selectedSiteId === 'all') return null;
-    return sites.find((s) => s.id === selectedSiteId) || null;
-  }, [sites, selectedSiteId]);
-
-  const siteScopeMode: SiteScopeMode = schema.siteScopeMode || 'portfolio';
-
-  const siteFilteredRows = React.useMemo(() => {
-    const rawRows = (activeTabConfig && (activeTabConfig as any).mockRows)
-      ? (activeTabConfig as any).mockRows
-      : localRows;
-
-    return filterBySiteScope(rawRows, siteScopeMode, selectedSiteId);
-  }, [activeTabConfig, localRows, siteScopeMode, selectedSiteId]);
+  }, [isInventoryPage, siteFilteredRows, isOnAccountPage, schema.tabs, displaySummaryCards]);
 
   const filteredData = React.useMemo(() => {
     return siteFilteredRows.filter((item: any) => {
@@ -546,6 +560,45 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                                       </DropdownMenu.Item>
                                     </>
                                   )}
+                                </>
+                              ) : isInventoryPage ? (
+                                <>
+                                  <DropdownMenu.Item 
+                                    onClick={() => triggerToast(`Stock Details: ${row.itemCode || ''} - ${row.itemName || ''} (${row.availableQuantity || 0} ${row.unitSymbol || ''} available)`)}
+                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                  >
+                                    <Eye className="h-3.5 w-3.5 text-brand-600" /> View Stock Details
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Item 
+                                    onClick={() => navigate('/masters/items')}
+                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                  >
+                                    <Search className="h-3.5 w-3.5 text-gray-400" /> View Item Master
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Item 
+                                    onClick={() => navigate('/procurement/grns')}
+                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                  >
+                                    <ChevronRight className="h-3.5 w-3.5 text-gray-400" /> View GRN History
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Item 
+                                    onClick={() => triggerToast(`Consumption History: ${row.itemCode} at ${row.siteName}`)}
+                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                  >
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> View Consumption
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Item 
+                                    onClick={() => triggerToast(`Initiated stock transfer request for ${row.itemCode}`)}
+                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                  >
+                                    <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> Transfer Stock
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Item 
+                                    onClick={() => triggerToast(`Material issue recorded for ${row.itemCode}`)}
+                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                  >
+                                    <Plus className="h-3.5 w-3.5 text-brand-600" /> Record Material Issue
+                                  </DropdownMenu.Item>
                                 </>
                               ) : (
                                 <>

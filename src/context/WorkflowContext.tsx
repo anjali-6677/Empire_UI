@@ -3,13 +3,14 @@ import { MODULE_SCHEMAS } from '../config/moduleSchemas';
 import { ROUTES } from '../config/navigation';
 import {
   INITIAL_COLLECTIONS,
-  validateDemoData
+  validateDemoData,
+  InventoryRecord
 } from '../data/connectedDemoData';
 
 export type WorkflowCollectionId =
   | 'indents' | 'rfqs' | 'quotations' | 'rateComparisons' | 'purchaseOrders'
   | 'orders' | 'grns' | 'invoices' | 'vendorInvoices' | 'paymentRequests' | 'payments'
-  | 'budgetRevisions' | 'clients' | 'vendors' | 'employees' | 'items'
+  | 'budgetRevisions' | 'clients' | 'vendors' | 'employees' | 'items' | 'inventory'
   | 'onAccountPayments' | 'onAccountTransfers' | 'budgetTransfers'
   | 'utilityBills' | 'utilityAllocations' | 'salaryDisbursements' 
   | 'salaryAllocations' | 'accountingInvoices' | 'creditNotes' 
@@ -220,6 +221,7 @@ export type WorkflowCollections = {
   vendors: VendorRecord[];
   employees: EmployeeRecord[];
   items: ItemMasterRecord[];
+  inventory: InventoryRecord[];
   onAccountPayments: OnAccountPaymentRecord[];
   onAccountTransfers: OnAccountTransferRecord[];
   budgetTransfers: BudgetTransferRecord[];
@@ -325,6 +327,7 @@ export const getCollectionIdFromRoute = (route: string): WorkflowCollectionId =>
     case ROUTES.VENDORS: return 'vendors';
     case ROUTES.EMPLOYEES: return 'employees';
     case ROUTES.ITEMS: return 'items';
+    case ROUTES.INVENTORY: return 'inventory';
     case ROUTES.ITEM_CATEGORIES: return 'itemCategories';
     case ROUTES.UNITS: return 'units';
     case ROUTES.COMPANIES: return 'companies';
@@ -393,6 +396,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     vendors: INITIAL_COLLECTIONS.vendors as unknown as VendorRecord[],
     employees: INITIAL_COLLECTIONS.employees as unknown as EmployeeRecord[],
     items: INITIAL_COLLECTIONS.items as unknown as ItemMasterRecord[],
+    inventory: INITIAL_COLLECTIONS.inventory as unknown as InventoryRecord[],
     companies: INITIAL_COLLECTIONS.companies as unknown as CompanyRecord[],
     users: INITIAL_COLLECTIONS.users as unknown as UserRecord[],
     projects: INITIAL_COLLECTIONS.projects as unknown as ProjectRecord[],

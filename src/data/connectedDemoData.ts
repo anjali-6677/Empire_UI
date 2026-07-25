@@ -1333,6 +1333,7 @@ export function validateDemoData(): void {
   const orderIds = new Set(ORDERS.map(o => o.id));
   const invoiceIds = new Set(VENDOR_INVOICES.map(i => i.id));
   const indentIds = new Set(INDENTS.map(i => i.id));
+  const itemIds = new Set(ITEMS.map(i => i.id));
 
   // Check projects reference valid clients and companies
   PROJECTS.forEach(p => {
@@ -1404,6 +1405,13 @@ export function validateDemoData(): void {
     if (typeof amt === 'number' && amt < 0) errors.push(`Negative amount in record ${String(rec['id'])}`);
   });
 
+  // Check inventory integrity
+  INVENTORY_RECORDS.forEach((inv) => {
+    if (!itemIds.has(inv.itemId)) errors.push(`Inventory ${inv.id} references unknown itemId: ${inv.itemId}`);
+    if (!siteIds.has(inv.siteId)) errors.push(`Inventory ${inv.id} references unknown siteId: ${inv.siteId}`);
+    if (inv.availableQuantity < 0) errors.push(`Negative availableQuantity in inventory record ${inv.id}`);
+    if (!Number.isFinite(inv.stockValue)) errors.push(`Invalid stockValue in inventory record ${inv.id}`);
+  });
 
   if (errors.length > 0) {
     console.group('[ERP Data Validation] Referential Integrity Errors:');
@@ -1413,6 +1421,179 @@ export function validateDemoData(): void {
     console.log('[ERP Data Validation] ✅ All referential integrity checks passed.');
   }
 }
+
+
+export interface InventoryRecord {
+  id: string;
+  itemId: string;
+  itemCode: string;
+  itemName: string;
+  categoryId: string;
+  categoryName: string;
+  brandId?: string;
+  brandName?: string;
+  siteId: string;
+  siteName: string;
+  availableQuantity: number;
+  reservedQuantity: number;
+  unitId: string;
+  unitName: string;
+  unitSymbol: string;
+  reorderThreshold: number;
+  averageRate: number;
+  stockValue: number;
+  lastReceivedDate?: string;
+  lastIssuedDate?: string;
+  healthStatus:
+    | 'in_stock'
+    | 'low_stock'
+    | 'out_of_stock'
+    | 'reorder_required'
+    | 'reserved'
+    | 'excess';
+  [key: string]: unknown;
+}
+
+export const INVENTORY_RECORDS: InventoryRecord[] = [
+  {
+    id: 'inv-1',
+    itemId: 'itm-1',
+    itemCode: 'MAT-101',
+    itemName: 'Gypsum Board 12mm Standard',
+    categoryId: 'cat-1',
+    categoryName: 'Ceiling and Partitions',
+    brandId: 'brd-1',
+    brandName: 'Saint-Gobain Gyproc',
+    siteId: 'site-1',
+    siteName: 'Nexus Tech Park Lobby Renovations',
+    availableQuantity: 850,
+    reservedQuantity: 150,
+    unitId: 'unit-1',
+    unitName: 'Square Feet',
+    unitSymbol: 'Sq Ft',
+    reorderThreshold: 300,
+    averageRate: 65,
+    stockValue: 55250,
+    lastReceivedDate: '2026-07-22',
+    lastIssuedDate: '2026-07-24',
+    healthStatus: 'in_stock'
+  },
+  {
+    id: 'inv-2',
+    itemId: 'itm-2',
+    itemCode: 'MAT-102',
+    itemName: 'Plywood 18mm Commercial Grade',
+    categoryId: 'cat-2',
+    categoryName: 'Joinery and Woodwork',
+    brandId: 'brd-2',
+    brandName: 'Century Ply',
+    siteId: 'site-2',
+    siteName: 'Grand Hyatt Executive Lounge Café',
+    availableQuantity: 120,
+    reservedQuantity: 80,
+    unitId: 'unit-2',
+    unitName: 'Sheets',
+    unitSymbol: 'Sheets',
+    reorderThreshold: 75,
+    averageRate: 1850,
+    stockValue: 222000,
+    lastReceivedDate: '2026-07-20',
+    lastIssuedDate: '2026-07-23',
+    healthStatus: 'low_stock'
+  },
+  {
+    id: 'inv-3',
+    itemId: 'itm-3',
+    itemCode: 'MAT-103',
+    itemName: 'Teak Wood Veneer 4mm',
+    categoryId: 'cat-2',
+    categoryName: 'Joinery and Woodwork',
+    brandId: 'brd-3',
+    brandName: 'Greenlam',
+    siteId: 'site-3',
+    siteName: 'Imperial Heights Penthouse Fit-Out',
+    availableQuantity: 0,
+    reservedQuantity: 0,
+    unitId: 'unit-2',
+    unitName: 'Sheets',
+    unitSymbol: 'Sheets',
+    reorderThreshold: 25,
+    averageRate: 2400,
+    stockValue: 0,
+    lastReceivedDate: '2026-06-15',
+    lastIssuedDate: '2026-07-10',
+    healthStatus: 'out_of_stock'
+  },
+  {
+    id: 'inv-4',
+    itemId: 'itm-4',
+    itemCode: 'MAT-104',
+    itemName: 'Interior Emulsion Paint',
+    categoryId: 'cat-3',
+    categoryName: 'Paint and Finishes',
+    brandId: 'brd-4',
+    brandName: 'Asian Paints',
+    siteId: 'site-4',
+    siteName: 'Synergy Co-Working Workspace',
+    availableQuantity: 180,
+    reservedQuantity: 40,
+    unitId: 'unit-3',
+    unitName: 'Liters',
+    unitSymbol: 'Litres',
+    reorderThreshold: 100,
+    averageRate: 320,
+    stockValue: 57600,
+    lastReceivedDate: '2026-07-18',
+    lastIssuedDate: '2026-07-22',
+    healthStatus: 'in_stock'
+  },
+  {
+    id: 'inv-5',
+    itemId: 'itm-5',
+    itemCode: 'MAT-105',
+    itemName: 'Modular Electrical Switch',
+    categoryId: 'cat-4',
+    categoryName: 'Electrical',
+    brandId: 'brd-5',
+    brandName: 'Schneider Electric',
+    siteId: 'site-1',
+    siteName: 'Nexus Tech Park Lobby Renovations',
+    availableQuantity: 45,
+    reservedQuantity: 30,
+    unitId: 'unit-4',
+    unitName: 'Numbers',
+    unitSymbol: 'Nos',
+    reorderThreshold: 50,
+    averageRate: 280,
+    stockValue: 12600,
+    lastReceivedDate: '2026-07-14',
+    lastIssuedDate: '2026-07-21',
+    healthStatus: 'reorder_required'
+  },
+  {
+    id: 'inv-6',
+    itemId: 'itm-1',
+    itemCode: 'MAT-101',
+    itemName: 'Gypsum Board 12mm Standard',
+    categoryId: 'cat-1',
+    categoryName: 'Ceiling and Partitions',
+    brandId: 'brd-1',
+    brandName: 'Saint-Gobain Gyproc',
+    siteId: 'site-5',
+    siteName: 'Oasis Luxury Villa',
+    availableQuantity: 450,
+    reservedQuantity: 50,
+    unitId: 'unit-1',
+    unitName: 'Square Feet',
+    unitSymbol: 'Sq Ft',
+    reorderThreshold: 200,
+    averageRate: 65,
+    stockValue: 29250,
+    lastReceivedDate: '2026-07-10',
+    lastIssuedDate: '2026-07-20',
+    healthStatus: 'in_stock'
+  }
+];
 
 // ─── AGGREGATED INITIAL COLLECTIONS ─────────────────────────────────────────
 // Used by WorkflowContext to initialize state
@@ -1424,6 +1605,7 @@ export const INITIAL_COLLECTIONS = {
   vendors: VENDORS,
   employees: EMPLOYEES,
   items: ITEMS,
+  inventory: INVENTORY_RECORDS,
   itemCategories: ITEM_CATEGORIES,
   units: UNITS,
   departments: DEPARTMENTS,
