@@ -20,6 +20,8 @@ import { ModuleSchema } from '../config/moduleSchemas';
 import { StatusBadge } from './StatusBadge';
 import { safeFormatCurrency, safeFormatText, toSafeNumber } from '../utils/formatStatus';
 import { useWorkflow, getCollectionIdFromRoute } from '../context/WorkflowContext';
+import { useSites } from '../context/SitesContext';
+import { filterBySiteScope, SiteScopeMode } from '../utils/siteScope';
 
 interface GenericListPageProps {
   schema: ModuleSchema;
@@ -207,21 +209,29 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
     return displaySummaryCards;
   }, [isOnAccountPage, schema.tabs, displaySummaryCards]);
 
+  const { selectedSiteId, sites } = useSites();
+  const selectedSite = React.useMemo(() => {
+    if (selectedSiteId === 'all') return null;
+    return sites.find((s) => s.id === selectedSiteId) || null;
+  }, [sites, selectedSiteId]);
+
+  const siteScopeMode: SiteScopeMode = schema.siteScopeMode || 'portfolio';
+
+  const siteFilteredRows = React.useMemo(() => {
+    const rawRows = (activeTabConfig && (activeTabConfig as any).mockRows)
+      ? (activeTabConfig as any).mockRows
+      : localRows;
+
+    return filterBySiteScope(rawRows, siteScopeMode, selectedSiteId);
+  }, [activeTabConfig, localRows, siteScopeMode, selectedSiteId]);
+
   const filteredData = React.useMemo(() => {
-    // Priority 1: Check if the tab itself has its own mock rows (Specialized Reports)
-    if (activeTabConfig && (activeTabConfig as any).mockRows) {
-       return (activeTabConfig as any).mockRows.filter((item: any) => 
-          JSON.stringify(item).toLowerCase().includes(search.toLowerCase())
-       );
-    }
-    
-    // Priority 2: Standard unified contextual rows filtered by tab ID
-    return localRows.filter((item) => {
+    return siteFilteredRows.filter((item: any) => {
       const matchSearch = JSON.stringify(item).toLowerCase().includes(search.toLowerCase());
       const matchTab = activeTab === 'all' || item.status === activeTab || item.tab === activeTab || item.category === activeTab || item.type === activeTab;
       return matchSearch && matchTab;
     });
-  }, [localRows, search, activeTab, activeTabConfig]);
+  }, [siteFilteredRows, search, activeTab]);
 
   const handleExportCSV = () => {
     if (filteredData.length === 0) {
@@ -372,29 +382,44 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
               {filteredData.length === 0 ? (
                 <tr>
                   <td colSpan={activeColumns.length + 1} className="p-12 text-center text-gray-400">
-                    {isOnAccountPage ? (
+                    {search.trim() !== '' ? (
                       <div className="space-y-1">
-                        <p className="text-sm font-bold text-gray-600">No on-account records are available for this view.</p>
-                        <p className="text-xs text-gray-400 font-medium">Adjust search filters or select another tab to view on-account fund balances.</p>
+                        <p className="text-sm font-bold text-gray-600">No records match your search.</p>
+                        <p className="text-xs text-gray-400 font-medium">Clear search query "{search}" to view available records.</p>
                       </div>
-                    ) : localRows.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center gap-3">
-                        <p className="text-sm font-bold text-gray-600">No {displayTitle.toLowerCase()} have been added yet.</p>
-                        <p className="text-xs text-gray-400">Use the primary action button below or in the page header to create the first record.</p>
-                        {schema.primaryAction && (
-                          <button
-                            onClick={handleOpenCreateModal}
-                            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded shadow-sm bg-brand-500 hover:bg-brand-600 text-white cursor-pointer"
-                          >
-                            <Plus className="h-4 w-4" />
-                            {schema.primaryAction.label}
-                          </button>
-                        )}
+                    ) : activeTab !== 'all' && siteFilteredRows.length > 0 ? (
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-gray-600">No records match the selected filters.</p>
+                        <p className="text-xs text-gray-400 font-medium">Switch status tabs or adjust filter selections to view available records.</p>
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        <p className="text-sm font-bold text-gray-600">No records match the current search or filters.</p>
-                        <p className="text-xs text-gray-400">Clear your search query or change tab selection to view available records.</p>
+                        {schema.id === 'finance-utility-bills' ? (
+                          <>
+                            <p className="text-sm font-bold text-gray-600">No utility bills have been logged for {selectedSite ? selectedSite.name : 'this site'}.</p>
+                            <p className="text-xs text-gray-400 font-medium">Utility bill logging will commence when operational site activity begins.</p>
+                          </>
+                        ) : schema.id === 'finance-salary' ? (
+                          <>
+                            <p className="text-sm font-bold text-gray-600">Payroll allocation has not started for {selectedSite ? selectedSite.name : 'this site'}.</p>
+                            <p className="text-xs text-gray-400 font-medium">Staff salary allocations will be registered once site mobilization begins.</p>
+                          </>
+                        ) : schema.id === 'finance-budget-transfers' ? (
+                          <>
+                            <p className="text-sm font-bold text-gray-600">No budget transfers involve {selectedSite ? selectedSite.name : 'this site'}.</p>
+                            <p className="text-xs text-gray-400 font-medium">Inter-site fund reallocations will appear here when transfers occur.</p>
+                          </>
+                        ) : schema.id === 'finance-budgets' ? (
+                          <>
+                            <p className="text-sm font-bold text-gray-600">No budget records registered for {selectedSite ? selectedSite.name : 'this site'}.</p>
+                            <p className="text-xs text-gray-400 font-medium">Budget allocations will be initialized upon project registration.</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-bold text-gray-600">No {displayTitle.toLowerCase()} available for {selectedSite ? selectedSite.name : 'this view'}.</p>
+                            <p className="text-xs text-gray-400 font-medium">Use the primary action button to register the first record.</p>
+                          </>
+                        )}
                       </div>
                     )}
                   </td>

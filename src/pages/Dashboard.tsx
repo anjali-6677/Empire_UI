@@ -164,8 +164,8 @@ export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { sites, selectedSiteId } = useSites();
 
-  // Active site for site-specific dashboard sections
-  const activeSite = sites.find((s) => s.id === selectedSiteId) || sites[0];
+  // Active site for site-specific dashboard sections (null when 'all' is selected)
+  const activeSite = selectedSiteId === 'all' ? null : (sites.find((s) => s.id === selectedSiteId) || null);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -265,7 +265,7 @@ export const Dashboard: React.FC = () => {
             Site Dashboard & Operations Overview
           </h1>
           <p className="text-[10.5px] text-gray-400 font-medium leading-normal">
-            Comprehensive operational intelligence for active project site: <strong className="text-brand-700">{activeSite.code} - {activeSite.name}</strong>
+            Comprehensive operational intelligence for active project site: <strong className="text-brand-700">{activeSite ? `${activeSite.code} - ${activeSite.name}` : 'ALL SITES — Portfolio Mode'}</strong>
           </p>
         </div>
 
@@ -318,7 +318,7 @@ export const Dashboard: React.FC = () => {
       {/* SECTION 2: Selected Site Snapshot */}
       <SectionWrapper 
         id="site-snapshot" 
-        title={`2. Selected Site Snapshot (${activeSite.code})`}
+        title={`2. Selected Site Snapshot (${activeSite ? activeSite.code : 'All Project Sites'})`}
         description="Financial breakdown and schedule timelines for the site selected in the Header switcher."
       >
         <SiteSnapshotSection site={activeSite} />

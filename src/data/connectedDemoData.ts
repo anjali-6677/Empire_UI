@@ -1294,9 +1294,12 @@ export const SALARY_ALLOCATIONS: SalaryAllocationRecord[] = [
 
 export interface BudgetRevisionRecord {
   id: string;
+  budgetReference: string;
   site: string;
   siteId: string;
   projectId: string;
+  estimatedBudget: number;
+  approvedBudget: number;
   appBudget: number;
   revisedBudget: number;
   committed: number;
@@ -1307,12 +1310,12 @@ export interface BudgetRevisionRecord {
 }
 
 export const BUDGET_REVISIONS: BudgetRevisionRecord[] = [
-  { id: 'bg-1', site: 'Nexus Tech Park Lobby Renovations', siteId: 'site-1', projectId: 'p-1', appBudget: 50000000, revisedBudget: 52500000, committed: 35000000, actualSpend: 22000000, available: 17500000, utilization: '41.9%', status: 'healthy' },
-  { id: 'bg-2', site: 'Grand Hyatt Executive Lounge Café', siteId: 'site-2', projectId: 'p-2', appBudget: 12000000, revisedBudget: 13000000, committed: 10500000, actualSpend: 9800000, available: 2500000, utilization: '75.4%', status: 'near_limit' },
-  { id: 'bg-3', site: 'Imperial Heights Penthouse Fit-Out', siteId: 'site-3', projectId: 'p-3', appBudget: 65000000, revisedBudget: 65000000, committed: 46000000, actualSpend: 34000000, available: 19000000, utilization: '52.3%', status: 'healthy' },
-  { id: 'bg-4', site: 'Synergy Co-Working Workspace', siteId: 'site-4', projectId: 'p-4', appBudget: 45000000, revisedBudget: 45750000, committed: 18000000, actualSpend: 8000000, available: 27750000, utilization: '17.5%', status: 'healthy' },
-  { id: 'bg-5', site: 'Oasis Luxury Villa Construction', siteId: 'site-5', projectId: 'p-5', appBudget: 15000000, revisedBudget: 15000000, committed: 15000000, actualSpend: 15000000, available: 0, utilization: '100.0%', status: 'completed' },
-  { id: 'bg-6', site: 'HDFC Regional Office Expansion', siteId: 'site-6', projectId: 'p-6', appBudget: 35000000, revisedBudget: 35000000, committed: 0, actualSpend: 0, available: 35000000, utilization: '0.0%', status: 'draft' }
+  { id: 'bg-1', budgetReference: 'BUD-2026-001', site: 'Nexus Tech Park Lobby Renovations', siteId: 'site-1', projectId: 'p-1', estimatedBudget: 50000000, approvedBudget: 50000000, appBudget: 50000000, revisedBudget: 52500000, committed: 35000000, actualSpend: 22000000, available: 17500000, utilization: '41.9%', status: 'healthy' },
+  { id: 'bg-2', budgetReference: 'BUD-2026-002', site: 'Grand Hyatt Executive Lounge Café', siteId: 'site-2', projectId: 'p-2', estimatedBudget: 12000000, approvedBudget: 12000000, appBudget: 12000000, revisedBudget: 13000000, committed: 10500000, actualSpend: 9800000, available: 2500000, utilization: '75.4%', status: 'near_limit' },
+  { id: 'bg-3', budgetReference: 'BUD-2026-003', site: 'Imperial Heights Penthouse Fit-Out', siteId: 'site-3', projectId: 'p-3', estimatedBudget: 65000000, approvedBudget: 65000000, appBudget: 65000000, revisedBudget: 65000000, committed: 46000000, actualSpend: 34000000, available: 19000000, utilization: '52.3%', status: 'healthy' },
+  { id: 'bg-4', budgetReference: 'BUD-2026-004', site: 'Synergy Co-Working Workspace', siteId: 'site-4', projectId: 'p-4', estimatedBudget: 45000000, approvedBudget: 45000000, appBudget: 45000000, revisedBudget: 45750000, committed: 18000000, actualSpend: 8000000, available: 27750000, utilization: '17.5%', status: 'healthy' },
+  { id: 'bg-5', budgetReference: 'BUD-2026-005', site: 'Oasis Luxury Villa Construction', siteId: 'site-5', projectId: 'p-5', estimatedBudget: 15000000, approvedBudget: 15000000, appBudget: 15000000, revisedBudget: 15000000, committed: 15000000, actualSpend: 15000000, available: 0, utilization: '100.0%', status: 'completed' },
+  { id: 'bg-6', budgetReference: 'BUD-2026-006', site: 'HDFC Regional Office Expansion', siteId: 'site-6', projectId: 'p-6', estimatedBudget: 24000000, approvedBudget: 0, appBudget: 0, revisedBudget: 0, committed: 0, actualSpend: 0, available: 0, utilization: '0.0%', status: 'draft' }
 ];
 
 // ─── VALIDATION FUNCTION (development only) ──────────────────────────────────

@@ -1,4 +1,5 @@
 import { ROUTES } from './navigation';
+import { SiteScopeMode } from '../utils/siteScope';
 
 export type PageType = 'list' | 'form' | 'details' | 'report' | 'custom';
 
@@ -56,6 +57,7 @@ export interface ModuleSchema {
   title: string;
   description?: string;
   breadcrumbs: string[];
+  siteScopeMode?: SiteScopeMode;
   primaryAction?: {
     label: string;
     route?: string;

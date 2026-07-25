@@ -41,7 +41,7 @@ export const ProjectSwitcher: React.FC = () => {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [position, setPosition] = React.useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 240 });
 
-  const activeSite = sites.find((s) => s.id === selectedSiteId) || sites[0];
+  const activeSite = selectedSiteId === 'all' ? null : (sites.find((s) => s.id === selectedSiteId) || null);
 
   const updatePosition = React.useCallback(() => {
     if (triggerRef.current) {
@@ -116,7 +116,7 @@ export const ProjectSwitcher: React.FC = () => {
             Active Site
           </span>
           <span className="font-semibold text-gray-700 truncate block text-[11px] leading-tight">
-            {activeSite ? `${activeSite.code} - ${activeSite.name}` : 'Select Site'}
+            {selectedSiteId === 'all' ? 'ALL — All Project Sites' : activeSite ? `${activeSite.code} - ${activeSite.name}` : 'Select Site'}
           </span>
         </div>
         <ChevronsUpDown className="h-3.5 w-3.5 text-gray-400 shrink-0" />
@@ -139,6 +139,23 @@ export const ProjectSwitcher: React.FC = () => {
             <span className="font-bold text-[9.5px] text-gray-400 uppercase tracking-widest block">Project Sites</span>
             <span className="text-[9.5px] font-semibold text-brand-650 bg-brand-50 px-1.5 py-0.25 rounded">{sites.length} Sites</span>
           </div>
+
+          {/* All Project Sites option */}
+          <button
+            key="all"
+            onClick={() => {
+              setSelectedSiteId('all');
+              handleClose();
+            }}
+            className={`w-full text-left px-3 py-2 border-b border-gray-100 hover:bg-brand-50/50 flex items-center justify-between text-[11px] font-bold transition-colors cursor-pointer ${selectedSiteId === 'all' ? 'bg-brand-50/40 text-brand-700' : 'text-gray-700'}`}
+          >
+            <div className="flex items-center gap-2 truncate pr-2">
+              <Briefcase className={`h-3.5 w-3.5 shrink-0 ${selectedSiteId === 'all' ? 'text-brand-600' : 'text-gray-400'}`} />
+              <span className="truncate">ALL — All Project Sites (Portfolio View)</span>
+            </div>
+            {selectedSiteId === 'all' && <Check className="h-3.5 w-3.5 text-brand-600 shrink-0" />}
+          </button>
+
           {sites.map((site) => (
             <button
               key={site.id}

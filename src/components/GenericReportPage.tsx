@@ -22,12 +22,14 @@ import {
 import { ModuleSchema } from '../config/moduleSchemas';
 import { StatusBadge } from './StatusBadge';
 import { safeFormatCurrency, safeFormatText, formatStatusLabel } from '../utils/formatStatus';
+import { useSites } from '../context/SitesContext';
 
 interface GenericReportPageProps {
   schema: ModuleSchema;
 }
 
 export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) => {
+  const { sites } = useSites();
   const [toast, setToast] = React.useState<string | null>(null);
   
   // Tab Management
@@ -83,7 +85,11 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
   const filteredRows = React.useMemo(() => {
     return rawRows.filter((r: any) => {
       const matchSearch = JSON.stringify(r).toLowerCase().includes(search.toLowerCase());
-      const matchSite = !selectedSite || (r.site && String(r.site).toLowerCase().includes(selectedSite.toLowerCase()));
+      const matchSite = !selectedSite || (
+        r.siteId === selectedSite ||
+        (r.site && String(r.site).toLowerCase().includes(selectedSite.toLowerCase())) ||
+        (r.siteName && String(r.siteName).toLowerCase().includes(selectedSite.toLowerCase()))
+      );
       
       // ISO Date filtering
       const rowDate = r.poDate || r.date || r.invoiceDate || r.paymentDate || r.loginDate || r.lastContactDate || r.billDate;
@@ -348,11 +354,11 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
             className="w-full border border-gray-250 rounded p-1.5 bg-white text-xs text-gray-800 font-medium"
           >
             <option value="">All Project Sites</option>
-            <option value="Nexus Tech Park">Nexus Tech Park</option>
-            <option value="Grand Hyatt">Grand Hyatt Goa</option>
-            <option value="Imperial Heights">Imperial Heights</option>
-            <option value="Phoenix Marketcity">Phoenix Marketcity</option>
-            <option value="Sobha City">Sobha City Luxury Villa</option>
+            {sites.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code} - {s.name}
+              </option>
+            ))}
           </select>
         </div>
         <div>

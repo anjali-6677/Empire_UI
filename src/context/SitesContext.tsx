@@ -5,6 +5,7 @@ import { mockSites } from '../data/mockData';
 interface SitesContextValue {
   sites: SiteSchema[];
   selectedSiteId: string;
+  selectedSite: SiteSchema | null;
   setSelectedSiteId: (siteId: string) => void;
   addSite: (site: SiteSchema) => void;
   duplicateSite: (id: string) => void;
@@ -23,6 +24,11 @@ export const SitesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return [...mockSites];
   });
   const [selectedSiteId, setSelectedSiteId] = React.useState<string>('site-1');
+
+  const selectedSite = React.useMemo(() => {
+    if (selectedSiteId === 'all') return null;
+    return sites.find((s) => s.id === selectedSiteId) || null;
+  }, [sites, selectedSiteId]);
 
   const addSite = (site: SiteSchema) => {
     setSites((prev) => [site, ...prev]);
@@ -214,6 +220,7 @@ export const SitesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value={{
         sites,
         selectedSiteId,
+        selectedSite,
         setSelectedSiteId,
         addSite,
         duplicateSite,

@@ -168,16 +168,29 @@ export const PortfolioOverviewSection: React.FC<{ children: React.ReactNode }> =
 // ==========================================
 // Section 2: Selected Site Snapshot
 // ==========================================
-export const SiteSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site }) => {
-  const approvedClientBill = Math.round(site.budget * 0.42);
-  const projectPurchase = Math.round(site.budget * 0.35);
-  const profitMargin = Math.round(site.budget * 0.22);
-  const profitMarginPct = 22.0;
-  const totalApprovedTender = Math.round(site.budget * 0.95);
-  const clientBillApproved = Math.round(site.budget * 0.38);
-  const clientPaymentReceived = Math.round(site.budget * 0.32);
-  const approvedBudgetVal = site.approvedValue || site.budget;
-  const vendorPaidTotal = Math.round(site.budget * 0.28);
+export const SiteSnapshotSection: React.FC<{ site: SiteSchema | null }> = ({ site }) => {
+  if (!site) {
+    return (
+      <div className="p-6 bg-brand-50/50 border border-brand-200 rounded-md text-center space-y-2 font-sans">
+        <h3 className="font-extrabold text-sm text-brand-900">ALL SITES — Portfolio Performance Mode</h3>
+        <p className="text-xs text-gray-500 max-w-xl mx-auto">
+          Currently displaying portfolio-wide metrics. Select a specific project site from the Header dropdown to inspect site-level financial snapshot and ledger outlays.
+        </p>
+      </div>
+    );
+  }
+
+  const isNotStarted = site.executionStatus === 'not_started' || site.workflowStatus === 'draft';
+
+  const approvedClientBill = isNotStarted ? 0 : Math.round(site.budget * 0.42);
+  const projectPurchase = isNotStarted ? 0 : Math.round(site.budget * 0.35);
+  const profitMargin = isNotStarted ? 0 : Math.round(site.budget * 0.22);
+  const profitMarginPct = isNotStarted ? 0 : 22.0;
+  const totalApprovedTender = isNotStarted ? 0 : Math.round(site.budget * 0.95);
+  const clientBillApproved = isNotStarted ? 0 : Math.round(site.budget * 0.38);
+  const clientPaymentReceived = isNotStarted ? 0 : Math.round(site.budget * 0.32);
+  const approvedBudgetVal = isNotStarted ? 0 : (site.approvedValue || site.budget);
+  const vendorPaidTotal = isNotStarted ? 0 : Math.round(site.budget * 0.28);
 
   return (
     <div className="space-y-4 font-sans">
@@ -254,26 +267,26 @@ export const SiteSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site }) =>
             </div>
             <div className="flex justify-between py-1 border-b border-gray-100">
               <span className="text-gray-500">Total Site Budget:</span>
-              <span className="font-extrabold text-brand-700">{safeFormatCurrency(site.budget)}</span>
+              <span className="font-extrabold text-brand-700">{isNotStarted ? safeFormatCurrency(0) : safeFormatCurrency(site.budget)}</span>
             </div>
           </div>
         </div>
 
-        {/* Start & Due Date Summary */}
+        {/* Schedule & Progress Status */}
         <div className="p-3.5 border border-gray-150 rounded bg-gray-50/40 space-y-2 text-xs">
           <h4 className="font-bold text-gray-700 uppercase text-[9.5px] tracking-wider border-b pb-1.5 border-gray-200">
-            Timeline & Schedule Summary
+            Site Schedule & Progress Tracker
           </h4>
-          <div className="grid grid-cols-2 gap-3 text-[11px]">
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
             <div className="p-2 bg-white rounded border border-gray-200">
-              <span className="text-[9px] uppercase font-bold text-gray-400 block">Start Date Summary</span>
+              <span className="text-[9px] uppercase font-bold text-gray-400 block">Start Date</span>
               <div className="font-mono font-bold text-gray-800 mt-0.5">{site.startDate}</div>
-              <span className="text-[9.5px] text-gray-500 block mt-1">Completed Days: <strong className="text-gray-800">142 Days</strong></span>
+              <span className="text-[9.5px] text-gray-500 block mt-1">Status: <strong className="text-gray-800 uppercase">{site.executionStatus}</strong></span>
             </div>
             <div className="p-2 bg-white rounded border border-gray-200">
-              <span className="text-[9px] uppercase font-bold text-gray-400 block">Due Date Summary</span>
+              <span className="text-[9px] uppercase font-bold text-gray-400 block">Target Completion</span>
               <div className="font-mono font-bold text-gray-800 mt-0.5">{site.targetCompletion}</div>
-              <span className="text-[9.5px] text-gray-500 block mt-1">Total: <strong className="text-gray-800">270 Days</strong> | Remaining: <strong className="text-amber-700">128 Days</strong></span>
+              <span className="text-[9.5px] text-gray-500 block mt-1">Progress: <strong className="text-brand-700">{site.progress}%</strong></span>
             </div>
           </div>
         </div>
@@ -324,16 +337,29 @@ export const SiteSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site }) =>
 // ==========================================
 // Section 3: Site Progress Matrix
 // ==========================================
-export const SiteProgressMatrixSection: React.FC<{ site: SiteSchema }> = ({ site }) => {
+export const SiteProgressMatrixSection: React.FC<{ site: SiteSchema | null }> = ({ site }) => {
+  if (!site) {
+    return (
+      <div className="p-6 bg-brand-50/50 border border-brand-200 rounded-md text-center space-y-2 font-sans">
+        <h3 className="font-extrabold text-sm text-brand-900">ALL SITES — Portfolio Performance Mode</h3>
+        <p className="text-xs text-gray-500 max-w-xl mx-auto">
+          Currently displaying portfolio view. Select a specific project site from the Header dropdown to inspect site-level progress matrix metrics.
+        </p>
+      </div>
+    );
+  }
+
+  const isNotStarted = site.executionStatus === 'not_started' || site.workflowStatus === 'draft';
+
   const indicators = [
-    { label: 'Time Progress', pct: Math.round((142 / 270) * 100), color: 'bg-blue-500' },
-    { label: 'Site Execution Progress', pct: site.progress || 45, color: 'bg-brand-500' },
-    { label: 'Bill Progress', pct: 42, color: 'bg-amber-500' },
-    { label: 'Client Payment Progress', pct: 32, color: 'bg-emerald-500' },
-    { label: 'Vendor Bill Progress', pct: 38, color: 'bg-indigo-500' },
-    { label: 'Vendor Payment Progress', pct: 28, color: 'bg-purple-500' },
-    { label: 'Budget Consumption', pct: 44, color: 'bg-rose-500' },
-    { label: 'Gross Profit', pct: 22, color: 'bg-teal-500' }
+    { label: 'Time Progress', pct: isNotStarted ? 0 : Math.round((142 / 270) * 100), color: 'bg-blue-500' },
+    { label: 'Site Execution Progress', pct: isNotStarted ? 0 : (site.progress || 0), color: 'bg-brand-500' },
+    { label: 'Bill Progress', pct: isNotStarted ? 0 : 42, color: 'bg-amber-500' },
+    { label: 'Client Payment Progress', pct: isNotStarted ? 0 : 32, color: 'bg-emerald-500' },
+    { label: 'Vendor Bill Progress', pct: isNotStarted ? 0 : 38, color: 'bg-indigo-500' },
+    { label: 'Vendor Payment Progress', pct: isNotStarted ? 0 : 28, color: 'bg-purple-500' },
+    { label: 'Budget Consumption', pct: isNotStarted ? 0 : 44, color: 'bg-rose-500' },
+    { label: 'Gross Profit', pct: isNotStarted ? 0 : 22, color: 'bg-teal-500' }
   ];
 
   return (
@@ -356,16 +382,29 @@ export const SiteProgressMatrixSection: React.FC<{ site: SiteSchema }> = ({ site
 // ==========================================
 // Section 4: Client Tender and Billing Snapshot
 // ==========================================
-export const ClientTenderBillingSection: React.FC<{ site: SiteSchema }> = ({ site }) => {
-  const tenderVal = Math.round(site.budget * 0.95);
-  const tenderApprovedVal = Math.round(site.budget * 0.90);
-  const extraTenderVal = Math.round(site.budget * 0.12);
-  const extraApprovedVal = Math.round(site.budget * 0.10);
+export const ClientTenderBillingSection: React.FC<{ site: SiteSchema | null }> = ({ site }) => {
+  if (!site) {
+    return (
+      <div className="p-6 bg-brand-50/50 border border-brand-200 rounded-md text-center space-y-2 font-sans col-span-2">
+        <h3 className="font-extrabold text-sm text-brand-900">ALL SITES — Portfolio View</h3>
+        <p className="text-xs text-gray-500 max-w-xl mx-auto">
+          Select a specific project site from the Header dropdown to inspect client tender approvals and billing series.
+        </p>
+      </div>
+    );
+  }
 
-  const billSubmitted = Math.round(site.budget * 0.45);
-  const billApproved = Math.round(site.budget * 0.40);
-  const billHeld = Math.round(site.budget * 0.03);
-  const billUnsubmitted = Math.round(site.budget * 0.52);
+  const isNotStarted = site.executionStatus === 'not_started' || site.workflowStatus === 'draft';
+
+  const tenderVal = isNotStarted ? 0 : Math.round(site.budget * 0.95);
+  const tenderApprovedVal = isNotStarted ? 0 : Math.round(site.budget * 0.90);
+  const extraTenderVal = isNotStarted ? 0 : Math.round(site.budget * 0.12);
+  const extraApprovedVal = isNotStarted ? 0 : Math.round(site.budget * 0.10);
+
+  const billSubmitted = isNotStarted ? 0 : Math.round(site.budget * 0.45);
+  const billApproved = isNotStarted ? 0 : Math.round(site.budget * 0.40);
+  const billHeld = isNotStarted ? 0 : Math.round(site.budget * 0.03);
+  const billUnsubmitted = isNotStarted ? 0 : Math.round(site.budget * 0.52);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 font-sans">
@@ -451,11 +490,24 @@ export const ClientTenderBillingSection: React.FC<{ site: SiteSchema }> = ({ sit
 // ==========================================
 // Section 5: Vendor Bill Snapshot
 // ==========================================
-export const VendorBillSnapshotSection: React.FC<{ site: SiteSchema }> = ({ site }) => {
+export const VendorBillSnapshotSection: React.FC<{ site: SiteSchema | null }> = ({ site }) => {
+  if (!site) {
+    return (
+      <div className="p-6 bg-brand-50/50 border border-brand-200 rounded-md text-center space-y-2 font-sans">
+        <h3 className="font-extrabold text-sm text-brand-900">ALL SITES — Portfolio View</h3>
+        <p className="text-xs text-gray-500 max-w-xl mx-auto">
+          Select a specific project site from the Header dropdown to inspect site vendor bill ledger snapshot.
+        </p>
+      </div>
+    );
+  }
+
+  const isNotStarted = site.executionStatus === 'not_started' || site.workflowStatus === 'draft';
+
   const data = [
-    { cat: 'Material', bill: Math.round(site.budget * 0.22), paid: Math.round(site.budget * 0.16), pending: Math.round(site.budget * 0.06), paidPct: '72.7%' },
-    { cat: 'Labour', bill: Math.round(site.budget * 0.12), paid: Math.round(site.budget * 0.09), pending: Math.round(site.budget * 0.03), paidPct: '75.0%' },
-    { cat: 'Utility & Salary', bill: Math.round(site.budget * 0.04), paid: Math.round(site.budget * 0.035), pending: Math.round(site.budget * 0.005), paidPct: '87.5%' }
+    { cat: 'Material', bill: isNotStarted ? 0 : Math.round(site.budget * 0.22), paid: isNotStarted ? 0 : Math.round(site.budget * 0.16), pending: isNotStarted ? 0 : Math.round(site.budget * 0.06), paidPct: isNotStarted ? '0%' : '72.7%' },
+    { cat: 'Labour', bill: isNotStarted ? 0 : Math.round(site.budget * 0.12), paid: isNotStarted ? 0 : Math.round(site.budget * 0.09), pending: isNotStarted ? 0 : Math.round(site.budget * 0.03), paidPct: isNotStarted ? '0%' : '75.0%' },
+    { cat: 'Utility & Salary', bill: isNotStarted ? 0 : Math.round(site.budget * 0.04), paid: isNotStarted ? 0 : Math.round(site.budget * 0.035), pending: isNotStarted ? 0 : Math.round(site.budget * 0.005), paidPct: isNotStarted ? '0%' : '87.5%' }
   ];
 
   const totalBill = data.reduce((s, d) => s + d.bill, 0);
@@ -1254,18 +1306,31 @@ export const FlowReportsSection: React.FC = () => {
 // ==========================================
 // Section 13: Detailed Site Progress
 // ==========================================
-export const DetailedSiteProgressSection: React.FC<{ site: SiteSchema }> = ({ site }) => {
+export const DetailedSiteProgressSection: React.FC<{ site: SiteSchema | null }> = ({ site }) => {
+  if (!site) {
+    return (
+      <div className="p-6 bg-brand-50/50 border border-brand-200 rounded-md text-center space-y-2 font-sans">
+        <h3 className="font-extrabold text-sm text-brand-900">ALL SITES — Portfolio View</h3>
+        <p className="text-xs text-gray-500 max-w-xl mx-auto">
+          Select a specific project site from the Header dropdown to inspect detailed site progress indicators.
+        </p>
+      </div>
+    );
+  }
+
+  const isNotStarted = site.executionStatus === 'not_started' || site.workflowStatus === 'draft';
+
   const details = [
-    { label: 'Tender Approval Progress', pct: 95 },
-    { label: 'Extra Item Tender Progress', pct: 83 },
-    { label: 'Total Tender Progress', pct: 92 },
-    { label: 'Site Execution Progress', pct: site.progress || 45 },
-    { label: 'Client Bill Progress', pct: 42 },
-    { label: 'Client Payment Progress', pct: 32 },
-    { label: 'Purchase Completion', pct: 38 },
-    { label: 'Total Vendor Payment Progress', pct: 28 },
-    { label: 'Material Payment Progress', pct: 72 },
-    { label: 'Labour Payment Progress', pct: 75 },
+    { label: 'Tender Approval Progress', pct: isNotStarted ? 0 : 95 },
+    { label: 'Extra Item Tender Progress', pct: isNotStarted ? 0 : 83 },
+    { label: 'Total Tender Progress', pct: isNotStarted ? 0 : 92 },
+    { label: 'Site Execution Progress', pct: isNotStarted ? 0 : (site.progress || 0) },
+    { label: 'Client Bill Progress', pct: isNotStarted ? 0 : 42 },
+    { label: 'Client Payment Progress', pct: isNotStarted ? 0 : 32 },
+    { label: 'Purchase Completion', pct: isNotStarted ? 0 : 38 },
+    { label: 'Total Vendor Payment Progress', pct: isNotStarted ? 0 : 28 },
+    { label: 'Material Payment Progress', pct: isNotStarted ? 0 : 72 },
+    { label: 'Labour Payment Progress', pct: isNotStarted ? 0 : 75 },
     { label: 'Approved Budget Utilization', pct: 44 },
     { label: 'Budget Consumption', pct: 44 }
   ];
