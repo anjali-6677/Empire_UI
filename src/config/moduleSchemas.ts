@@ -899,11 +899,13 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     ],
     columns: [
       { key: 'code', label: 'Entity Code', type: 'mono' },
-      { key: 'name', label: 'Company Entity Name', type: 'text' },
-      { key: 'gstin', label: 'Corporate GSTIN', type: 'mono' },
-      { key: 'city', label: 'Headquarters', type: 'text' },
+      { key: 'legalName', label: 'Legal Name', type: 'text' },
+      { key: 'tradingName', label: 'Trading Name', type: 'text' },
+      { key: 'gstin', label: 'GSTIN', type: 'mono' },
+      { key: 'city', label: 'City', type: 'text' },
       { key: 'status', label: 'Status', type: 'badge' }
     ],
+
     mockRows: [
       { id: 'cmp-1', code: 'CMP-01', name: 'Empire Interior Contracting Pvt Ltd', gstin: '29AAACE1234A1Z5', city: 'Bengaluru', status: 'active' },
       { id: 'cmp-2', code: 'CMP-02', name: 'Empire Joinery & Furniture Works', gstin: '29AAACE5678B2Z4', city: 'Bengaluru', status: 'active' }

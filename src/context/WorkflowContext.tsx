@@ -1,17 +1,25 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MODULE_SCHEMAS } from '../config/moduleSchemas';
 import { ROUTES } from '../config/navigation';
+import {
+  INITIAL_COLLECTIONS,
+  validateDemoData
+} from '../data/connectedDemoData';
 
 export type WorkflowCollectionId =
   | 'indents' | 'rfqs' | 'quotations' | 'rateComparisons' | 'purchaseOrders'
-  | 'orders' | 'grns' | 'invoices' | 'paymentRequests' | 'payments'
+  | 'orders' | 'grns' | 'invoices' | 'vendorInvoices' | 'paymentRequests' | 'payments'
   | 'budgetRevisions' | 'clients' | 'vendors' | 'employees' | 'items'
   | 'onAccountPayments' | 'onAccountTransfers' | 'budgetTransfers'
   | 'utilityBills' | 'utilityAllocations' | 'salaryDisbursements' 
   | 'salaryAllocations' | 'accountingInvoices' | 'creditNotes' 
   | 'debitNotes' | 'workOrders' | 'tasks' | 'alerts' | 'messages' 
   | 'calendarEvents' | 'brands' | 'locations' | 'pmcs' 
-  | 'architects' | 'measurementConversions' | 'designations';
+  | 'architects' | 'measurementConversions' | 'designations'
+  | 'companies' | 'users' | 'projectTeams' | 'tenders'
+  | 'clientBills' | 'clientPayments' | 'bankAccounts'
+  | 'itemCategories' | 'units' | 'departments' | 'roles'
+  | 'salaryAllocations';
 
 export interface BaseRecord {
   id: string;
@@ -165,6 +173,17 @@ export interface ClientRecord extends BaseRecord {}
 export interface VendorRecord extends BaseRecord {}
 export interface EmployeeRecord extends BaseRecord {}
 export interface ItemMasterRecord extends BaseRecord {}
+export interface CompanyRecord extends BaseRecord {}
+export interface UserRecord extends BaseRecord {}
+export interface ProjectTeamRecord extends BaseRecord { siteId?: string; employee?: string; role?: string; }
+export interface TenderRecord extends BaseRecord { siteId?: string; tenderNo?: string; type?: string; }
+export interface ClientBillRecord extends BaseRecord { clientId?: string; siteId?: string; billNo?: string; billAmount?: number; }
+export interface ClientPaymentRecord extends BaseRecord { clientId?: string; siteId?: string; paymentRef?: string; }
+export interface BankAccountRecord extends BaseRecord { companyId?: string; bankName?: string; }
+export interface ItemCategoryRecord extends BaseRecord { code?: string; }
+export interface UnitRecord extends BaseRecord { code?: string; symbol?: string; }
+export interface DepartmentRecord extends BaseRecord { code?: string; head?: string; }
+export interface RoleRecord extends BaseRecord { roleId?: string; roleName?: string; }
 
 export type WorkflowCollections = {
   indents: IndentRecord[];
@@ -175,6 +194,7 @@ export type WorkflowCollections = {
   orders: OrderRecord[];
   grns: GRNRecord[];
   invoices: InvoiceRecord[];
+  vendorInvoices: InvoiceRecord[];
   paymentRequests: PaymentRequestRecord[];
   payments: PaymentRecord[];
   budgetRevisions: BudgetRevisionRecord[];
@@ -203,6 +223,18 @@ export type WorkflowCollections = {
   architects: ArchitectRecord[];
   measurementConversions: MeasurementConversionRecord[];
   designations: DesignationRecord[];
+  // New collections from Stage 7
+  companies: CompanyRecord[];
+  users: UserRecord[];
+  projectTeams: ProjectTeamRecord[];
+  tenders: TenderRecord[];
+  clientBills: ClientBillRecord[];
+  clientPayments: ClientPaymentRecord[];
+  bankAccounts: BankAccountRecord[];
+  itemCategories: ItemCategoryRecord[];
+  units: UnitRecord[];
+  departments: DepartmentRecord[];
+  roles: RoleRecord[];
 };
 
 export interface WorkflowState extends WorkflowCollections {
@@ -262,9 +294,10 @@ export const getCollectionIdFromRoute = (route: string): WorkflowCollectionId =>
     case ROUTES.RFQS: return 'rfqs';
     case ROUTES.RATE_COMPARISON: return 'rateComparisons';
     case ROUTES.PURCHASE_ORDERS: return 'purchaseOrders';
+    case ROUTES.WORK_ORDERS: return 'workOrders';
     case ROUTES.ORDERS: return 'orders';
     case ROUTES.GRNS: return 'grns';
-    case ROUTES.INVOICES: return 'invoices';
+    case ROUTES.INVOICES: return 'vendorInvoices';
     case ROUTES.PAYMENT_REQUESTS: return 'paymentRequests';
     case ROUTES.PAYMENTS: return 'payments';
     case ROUTES.PROJECT_BUDGETS: return 'budgetRevisions';
@@ -272,17 +305,33 @@ export const getCollectionIdFromRoute = (route: string): WorkflowCollectionId =>
     case ROUTES.VENDORS: return 'vendors';
     case ROUTES.EMPLOYEES: return 'employees';
     case ROUTES.ITEMS: return 'items';
+    case ROUTES.ITEM_CATEGORIES: return 'itemCategories';
+    case ROUTES.UNITS: return 'units';
+    case ROUTES.COMPANIES: return 'companies';
+    case ROUTES.BANKS: return 'bankAccounts';
+    case ROUTES.DEPARTMENTS: return 'departments';
+    case ROUTES.ROLES_MASTER: return 'roles';
+    case ROUTES.DESIGNATIONS: return 'designations';
     case ROUTES.ON_ACCOUNT_DASHBOARD: return 'onAccountPayments';
     case ROUTES.BUDGET_TRANSFERS: return 'budgetTransfers';
+    case ROUTES.ACCOUNTING_INVOICES: return 'accountingInvoices';
+    case ROUTES.CREDIT_NOTES: return 'creditNotes';
+    case ROUTES.DEBIT_NOTES: return 'debitNotes';
+    case ROUTES.UTILITY_BILLS: return 'utilityBills';
+    case ROUTES.SALARY: return 'salaryDisbursements';
+    case ROUTES.PROJECT_TEAMS: return 'projectTeams';
+    case ROUTES.TENDER_DETAILS: return 'tenders';
     case ROUTES.BRANDS: return 'brands';
     case ROUTES.LOCATIONS: return 'locations';
     case ROUTES.PMC: return 'pmcs';
     case ROUTES.ARCHITECTS: return 'architects';
     case ROUTES.MEASUREMENT_CONVERSIONS: return 'measurementConversions';
-    case ROUTES.DESIGNATIONS: return 'designations';
-    default: return 'indents'; // Safest fallback instead of throwing
+    case ROUTES.USERS: return 'users';
+    case ROUTES.ROLES: return 'roles';
+    default: return 'indents'; // Safest fallback
   }
 };
+
 
 export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const initCollection = <T extends BaseRecord>(route: string): T[] => {
@@ -290,32 +339,52 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const [collections, setCollections] = useState<WorkflowCollections>({
-    indents: initCollection<IndentRecord>(ROUTES.INDENTS),
-    rfqs: initCollection<RFQRecord>(ROUTES.RFQS),
-    quotations: [],
-    rateComparisons: initCollection<RateComparisonRecord>(ROUTES.RATE_COMPARISON),
-    purchaseOrders: initCollection<PurchaseOrderRecord>(ROUTES.PURCHASE_ORDERS),
-    orders: initCollection<OrderRecord>(ROUTES.ORDERS),
-    grns: initCollection<GRNRecord>(ROUTES.GRNS),
-    invoices: initCollection<InvoiceRecord>(ROUTES.INVOICES),
-    paymentRequests: initCollection<PaymentRequestRecord>(ROUTES.PAYMENT_REQUESTS),
-    payments: initCollection<PaymentRecord>(ROUTES.PAYMENTS),
-    budgetRevisions: initCollection<BudgetRevisionRecord>(ROUTES.PROJECT_BUDGETS),
-    clients: initCollection<ClientRecord>(ROUTES.CLIENTS),
-    vendors: initCollection<VendorRecord>(ROUTES.VENDORS),
-    employees: initCollection<EmployeeRecord>(ROUTES.EMPLOYEES),
-    items: initCollection<ItemMasterRecord>(ROUTES.ITEMS),
-    onAccountPayments: initCollection<OnAccountPaymentRecord>(ROUTES.ON_ACCOUNT_DASHBOARD),
-    onAccountTransfers: [],
-    budgetTransfers: initCollection<BudgetTransferRecord>(ROUTES.BUDGET_TRANSFERS),
-    utilityBills: [],
-    utilityAllocations: [],
-    salaryDisbursements: [],
-    salaryAllocations: [],
-    accountingInvoices: [],
-    creditNotes: [],
-    debitNotes: [],
-    workOrders: [],
+    // ── Procurement chain ─────────────────────────────────────────────────────
+    indents: INITIAL_COLLECTIONS.indents as unknown as IndentRecord[],
+    rfqs: INITIAL_COLLECTIONS.rfqs as unknown as RFQRecord[],
+    quotations: INITIAL_COLLECTIONS.quotations as unknown as QuotationRecord[],
+    rateComparisons: INITIAL_COLLECTIONS.rateComparisons as unknown as RateComparisonRecord[],
+    purchaseOrders: INITIAL_COLLECTIONS.purchaseOrders as unknown as PurchaseOrderRecord[],
+    orders: INITIAL_COLLECTIONS.orders as unknown as OrderRecord[],
+    grns: INITIAL_COLLECTIONS.grns as unknown as GRNRecord[],
+    // ── Finance ───────────────────────────────────────────────────────────────
+    invoices: INITIAL_COLLECTIONS.vendorInvoices as unknown as InvoiceRecord[],
+    vendorInvoices: INITIAL_COLLECTIONS.vendorInvoices as unknown as InvoiceRecord[],
+    paymentRequests: INITIAL_COLLECTIONS.paymentRequests as unknown as PaymentRequestRecord[],
+    payments: INITIAL_COLLECTIONS.payments as unknown as PaymentRecord[],
+    accountingInvoices: INITIAL_COLLECTIONS.accountingInvoices as unknown as AccountingInvoiceRecord[],
+    creditNotes: INITIAL_COLLECTIONS.creditNotes as unknown as CreditNoteRecord[],
+    debitNotes: INITIAL_COLLECTIONS.debitNotes as unknown as DebitNoteRecord[],
+    onAccountPayments: [
+      ...INITIAL_COLLECTIONS.onAccountPayments,
+      ...INITIAL_COLLECTIONS.onAccountTransfers
+    ] as unknown as OnAccountPaymentRecord[],
+    onAccountTransfers: INITIAL_COLLECTIONS.onAccountTransfers as unknown as OnAccountTransferRecord[],
+    budgetTransfers: INITIAL_COLLECTIONS.budgetTransfers as unknown as BudgetTransferRecord[],
+    budgetRevisions: INITIAL_COLLECTIONS.budgetRevisions as unknown as BudgetRevisionRecord[],
+    utilityBills: INITIAL_COLLECTIONS.utilityBills as unknown as UtilityBillRecord[],
+    utilityAllocations: INITIAL_COLLECTIONS.utilityAllocations as unknown as UtilityAllocationRecord[],
+    salaryDisbursements: INITIAL_COLLECTIONS.salaryDisbursements as unknown as SalaryDisbursementRecord[],
+    salaryAllocations: INITIAL_COLLECTIONS.salaryAllocations as unknown as SalaryAllocationRecord[],
+    clientBills: INITIAL_COLLECTIONS.clientBills as unknown as ClientBillRecord[],
+    clientPayments: INITIAL_COLLECTIONS.clientPayments as unknown as ClientPaymentRecord[],
+    // ── Masters ───────────────────────────────────────────────────────────────
+    clients: INITIAL_COLLECTIONS.clients as unknown as ClientRecord[],
+    vendors: INITIAL_COLLECTIONS.vendors as unknown as VendorRecord[],
+    employees: INITIAL_COLLECTIONS.employees as unknown as EmployeeRecord[],
+    items: INITIAL_COLLECTIONS.items as unknown as ItemMasterRecord[],
+    companies: INITIAL_COLLECTIONS.companies as unknown as CompanyRecord[],
+    users: INITIAL_COLLECTIONS.users as unknown as UserRecord[],
+    bankAccounts: INITIAL_COLLECTIONS.bankAccounts as unknown as BankAccountRecord[],
+    itemCategories: INITIAL_COLLECTIONS.itemCategories as unknown as ItemCategoryRecord[],
+    units: INITIAL_COLLECTIONS.units as unknown as UnitRecord[],
+    departments: INITIAL_COLLECTIONS.departments as unknown as DepartmentRecord[],
+    designations: INITIAL_COLLECTIONS.designations as unknown as DesignationRecord[],
+    roles: INITIAL_COLLECTIONS.roles as unknown as RoleRecord[],
+    // ── Projects & sites ──────────────────────────────────────────────────────
+    projectTeams: INITIAL_COLLECTIONS.projectTeams as unknown as ProjectTeamRecord[],
+    tenders: INITIAL_COLLECTIONS.tenders as unknown as TenderRecord[],
+    workOrders: INITIAL_COLLECTIONS.workOrders as unknown as WorkOrderRecord[],
     tasks: [
       { id: 't-101', taskCode: 'TSK-101', subject: 'Finalize Joinery Vendor Rates for Lobby', description: 'Review quotation matrix for Asian Paints and Century Ply for Nexus Tech Park lobby woodwork.', assignedTo: 'Amit Dev', assignedBy: 'Rajesh Kumar', relatedSite: 'Nexus Tech Park', relatedModule: 'Procurement', relatedRecord: 'RFQ-2026-089', relatedRoute: '/procurement/rfqs', priority: 'high', assignedDate: '2026-07-15', dueDate: '2026-07-22', status: 'overdue', readDate: '2026-07-16' },
       { id: 't-102', taskCode: 'TSK-102', subject: 'Verify Material GRN PO-2026-089', description: 'Inspect 500 Pcs 18mm Plywood delivered at Grand Hyatt Goa site.', assignedTo: 'Amit Dev', assignedBy: 'Anita Rao', relatedSite: 'Grand Hyatt Goa', relatedModule: 'GRN', relatedRecord: 'GRN-2026-014', relatedRoute: '/procurement/grns', priority: 'medium', assignedDate: '2026-07-20', dueDate: '2026-07-28', status: 'in_progress', readDate: '2026-07-21' },
@@ -386,8 +455,10 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     pmcs: initCollection<PMCRecord>(ROUTES.PMC),
     architects: initCollection<ArchitectRecord>(ROUTES.ARCHITECTS),
     measurementConversions: initCollection<MeasurementConversionRecord>(ROUTES.MEASUREMENT_CONVERSIONS),
-    designations: initCollection<DesignationRecord>(ROUTES.DESIGNATIONS)
   });
+
+  // Run referential integrity validation once on mount (dev only)
+  useEffect(() => { validateDemoData(); }, []);
 
   const getCollection = (id: WorkflowCollectionId) => collections[id] || [];
 
