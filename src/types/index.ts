@@ -262,3 +262,51 @@ export interface SiteDocument {
   type: string;
   size: string;
 }
+
+// ==========================================
+// 8. On-Account Balance & Transaction Types
+// ==========================================
+
+export interface VendorOnAccountBalance {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  siteId: string;
+  siteName: string;
+  originalAmount: number;
+  allocatedToInvoices: number;
+  transferredAmount: number;
+  availableBalance: number;
+  lastTransactionDate: string;
+  status: 'active' | 'fully_allocated' | 'closed';
+}
+
+export interface SiteOnAccountBalance {
+  id: string;
+  siteId: string;
+  siteName: string;
+  receivedAmount: number;
+  allocatedToInvoices: number;
+  transferredIn: number;
+  transferredOut: number;
+  availableBalance: number;
+  lastUpdatedDate: string;
+}
+
+export interface OnAccountTransaction {
+  id: string;
+  transactionReference: string;
+  transactionDate: string;
+  transactionType: 'receipt' | 'invoice_allocation' | 'inter_site_transfer' | 'vendor_transfer';
+  sourceSiteId?: string;
+  sourceSiteName?: string;
+  destinationSiteId?: string;
+  destinationSiteName?: string;
+  vendorId?: string;
+  vendorName?: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  amount: number;
+  status: 'draft' | 'pending_approval' | 'approved' | 'processed';
+}
+

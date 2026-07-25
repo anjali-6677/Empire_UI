@@ -1024,54 +1024,169 @@ export const CLIENT_PAYMENTS: ClientPaymentRecord[] = [
   { id: 'cp-5', paymentRef: 'CPR-2026-005', clientId: 'cl-3', clientName: 'Imperial Realty Holdings', projectId: 'p-3', siteId: 'site-3', site: 'Imperial Heights', billId: 'cb-6', bankAccountId: 'bnk-2', paymentDate: '2026-06-25', amount: 9000000, mode: 'Bank Transfer / RTGS', status: 'processed' }
 ];
 
-// ─── ON-ACCOUNT PAYMENTS ─────────────────────────────────────────────────────
+// ─── ON-ACCOUNT BALANCES & TRANSACTIONS ──────────────────────────────────────
 
-export interface OnAccountPaymentRecord {
+export interface VendorOnAccountBalance {
   id: string;
-  referenceNo: string;
   vendorId: string;
-  vendor: string;
+  vendorName: string;
   siteId: string;
-  site: string;
-  tab: string;
-  opening: number;
-  allocated: number;
-  balance: number;
-  date: string;
-  status: string;
+  siteName: string;
+  originalAmount: number;
+  allocatedToInvoices: number;
+  transferredAmount: number;
+  availableBalance: number;
+  lastTransactionDate: string;
+  status: 'active' | 'fully_allocated' | 'closed';
 }
 
-export const ON_ACCOUNT_PAYMENTS: OnAccountPaymentRecord[] = [
-  { id: 'oap-v1', referenceNo: 'OAP-V-2026-001', vendorId: 'v-1', vendor: 'Century Plyboards India Ltd', siteId: 'site-1', site: 'Nexus Tech Park', tab: 'vendors', opening: 500000, allocated: 300000, balance: 200000, date: '2026-07-10', status: 'active' },
-  { id: 'oap-v2', referenceNo: 'OAP-V-2026-002', vendorId: 'v-7', vendor: 'Unique Carpentry Services', siteId: 'site-1', site: 'Nexus Tech Park', tab: 'vendors', opening: 1275000, allocated: 1275000, balance: 0, date: '2026-07-15', status: 'completed' },
-  { id: 'oap-s1', referenceNo: 'OAP-S-2026-001', vendorId: '', vendor: '', siteId: 'site-1', site: 'Nexus Tech Park', tab: 'sites', opening: 3000000, allocated: 0, balance: 3000000, date: '2026-07-01', status: 'healthy' },
-  { id: 'oap-s2', referenceNo: 'OAP-S-2026-002', vendorId: '', vendor: '', siteId: 'site-2', site: 'Grand Hyatt Goa', tab: 'sites', opening: 1500000, allocated: 0, balance: 1600000, date: '2026-07-05', status: 'healthy' }
+export const VENDOR_ON_ACCOUNT_BALANCES: VendorOnAccountBalance[] = [
+  {
+    id: 'vob-1',
+    vendorId: 'v-2',
+    vendorName: 'Century Plyboards India Ltd',
+    siteId: 'site-1',
+    siteName: 'Nexus Tech Park',
+    originalAmount: 500000,
+    allocatedToInvoices: 300000,
+    transferredAmount: 0,
+    availableBalance: 200000,
+    lastTransactionDate: '2026-07-24',
+    status: 'active'
+  },
+  {
+    id: 'vob-2',
+    vendorId: 'v-1',
+    vendorName: 'Asian Paints Ltd',
+    siteId: 'site-2',
+    siteName: 'Grand Hyatt Goa',
+    originalAmount: 400000,
+    allocatedToInvoices: 250000,
+    transferredAmount: 0,
+    availableBalance: 150000,
+    lastTransactionDate: '2026-07-22',
+    status: 'active'
+  },
+  {
+    id: 'vob-3',
+    vendorId: 'v-3',
+    vendorName: 'Saint-Gobain India Pvt Ltd',
+    siteId: 'site-3',
+    siteName: 'Imperial Heights',
+    originalAmount: 300000,
+    allocatedToInvoices: 100000,
+    transferredAmount: 0,
+    availableBalance: 200000,
+    lastTransactionDate: '2026-07-20',
+    status: 'active'
+  }
 ];
 
-// ─── ON-ACCOUNT TRANSFERS ────────────────────────────────────────────────────
-
-export interface OnAccountTransferRecord {
+export interface SiteOnAccountBalance {
   id: string;
-  referenceNo: string;
-  date: string;
-  type: string;
-  source: string;
-  sourceSiteId: string;
-  destination: string;
-  destinationSiteId: string;
-  onAccountPaymentId: string;
-  invoiceId: string;
-  vendorId: string;
-  amount: number;
-  status: string;
-  tab: string;
+  siteId: string;
+  siteName: string;
+  receivedAmount: number;
+  allocatedToInvoices: number;
+  transferredIn: number;
+  transferredOut: number;
+  availableBalance: number;
+  lastUpdatedDate: string;
 }
 
-export const ON_ACCOUNT_TRANSFERS: OnAccountTransferRecord[] = [
-  { id: 'oat-1', referenceNo: 'OAT-2026-001', date: '2026-07-12', type: 'Invoice Allocation', source: 'Nexus On-Account (Century Ply)', sourceSiteId: 'site-1', destination: 'INV-VND-2026-001', destinationSiteId: 'site-1', onAccountPaymentId: 'oap-v1', invoiceId: 'inv-1', vendorId: 'v-1', amount: 300000, status: 'processed', tab: 'transactions' },
-  { id: 'oat-2', referenceNo: 'OAT-2026-002', date: '2026-07-16', type: 'Site Transfer', source: 'Nexus Tech Park', sourceSiteId: 'site-1', destination: 'Grand Hyatt Goa', destinationSiteId: 'site-2', onAccountPaymentId: '', invoiceId: '', vendorId: '', amount: 100000, status: 'processed', tab: 'transactions' },
-  { id: 'oat-3', referenceNo: 'OAT-2026-003', date: '2026-07-15', type: 'Payment', source: 'HDFC Bank', sourceSiteId: '', destination: 'Unique Carpentry Services', destinationSiteId: 'site-1', onAccountPaymentId: 'oap-v2', invoiceId: '', vendorId: 'v-7', amount: 1275000, status: 'processed', tab: 'transactions' },
-  { id: 'oat-4', referenceNo: 'OAT-2026-004', date: '2026-07-20', type: 'Site Transfer', source: 'Grand Hyatt Goa', sourceSiteId: 'site-2', destination: 'Nexus Tech Park', destinationSiteId: 'site-1', onAccountPaymentId: '', invoiceId: '', vendorId: '', amount: 200000, status: 'pending', tab: 'transactions' }
+export const SITE_ON_ACCOUNT_BALANCES: SiteOnAccountBalance[] = [
+  {
+    id: 'sob-1',
+    siteId: 'site-1',
+    siteName: 'Nexus Tech Park',
+    receivedAmount: 500000,
+    allocatedToInvoices: 300000,
+    transferredIn: 0,
+    transferredOut: 100000,
+    availableBalance: 100000,
+    lastUpdatedDate: '2026-07-24'
+  },
+  {
+    id: 'sob-2',
+    siteId: 'site-2',
+    siteName: 'Grand Hyatt Goa',
+    receivedAmount: 400000,
+    allocatedToInvoices: 250000,
+    transferredIn: 100000,
+    transferredOut: 0,
+    availableBalance: 250000,
+    lastUpdatedDate: '2026-07-23'
+  },
+  {
+    id: 'sob-3',
+    siteId: 'site-3',
+    siteName: 'Imperial Heights',
+    receivedAmount: 300000,
+    allocatedToInvoices: 100000,
+    transferredIn: 0,
+    transferredOut: 0,
+    availableBalance: 200000,
+    lastUpdatedDate: '2026-07-20'
+  }
+];
+
+export interface OnAccountTransaction {
+  id: string;
+  transactionReference: string;
+  transactionDate: string;
+  transactionType: 'receipt' | 'invoice_allocation' | 'inter_site_transfer' | 'vendor_transfer';
+  sourceSiteId?: string;
+  sourceSiteName?: string;
+  destinationSiteId?: string;
+  destinationSiteName?: string;
+  vendorId?: string;
+  vendorName?: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  amount: number;
+  status: 'draft' | 'pending_approval' | 'approved' | 'processed';
+}
+
+export const ON_ACCOUNT_TRANSACTIONS: OnAccountTransaction[] = [
+  {
+    id: 'oat-1',
+    transactionReference: 'OAT-2026-001',
+    transactionDate: '2026-07-24',
+    transactionType: 'invoice_allocation',
+    vendorId: 'v-2',
+    vendorName: 'Century Plyboards India Ltd',
+    invoiceId: 'inv-1',
+    invoiceNumber: 'INV-2026-041',
+    destinationSiteName: 'INV-2026-041',
+    amount: 300000,
+    status: 'processed'
+  },
+  {
+    id: 'oat-2',
+    transactionReference: 'OAT-2026-002',
+    transactionDate: '2026-07-23',
+    transactionType: 'inter_site_transfer',
+    sourceSiteId: 'site-1',
+    sourceSiteName: 'Nexus Tech Park',
+    destinationSiteId: 'site-2',
+    destinationSiteName: 'Grand Hyatt Goa',
+    vendorId: 'v-2',
+    vendorName: 'Century Plyboards India Ltd',
+    amount: 100000,
+    status: 'processed'
+  },
+  {
+    id: 'oat-3',
+    transactionReference: 'OAT-2026-003',
+    transactionDate: '2026-07-22',
+    transactionType: 'receipt',
+    destinationSiteId: 'site-2',
+    destinationSiteName: 'Grand Hyatt Goa',
+    vendorId: 'v-1',
+    vendorName: 'Asian Paints Ltd',
+    amount: 400000,
+    status: 'approved'
+  }
 ];
 
 // ─── BUDGET TRANSFERS ────────────────────────────────────────────────────────
@@ -1338,8 +1453,11 @@ export const INITIAL_COLLECTIONS = {
   accountingInvoices: ACCOUNTING_INVOICES,
   creditNotes: CREDIT_NOTES,
   debitNotes: DEBIT_NOTES,
-  onAccountPayments: ON_ACCOUNT_PAYMENTS,
-  onAccountTransfers: ON_ACCOUNT_TRANSFERS,
+  onAccountPayments: VENDOR_ON_ACCOUNT_BALANCES,
+  onAccountTransfers: ON_ACCOUNT_TRANSACTIONS,
+  vendorOnAccountBalances: VENDOR_ON_ACCOUNT_BALANCES,
+  siteOnAccountBalances: SITE_ON_ACCOUNT_BALANCES,
+  onAccountTransactions: ON_ACCOUNT_TRANSACTIONS,
   budgetTransfers: BUDGET_TRANSFERS,
   budgetRevisions: BUDGET_REVISIONS,
   utilityBills: UTILITY_BILLS,

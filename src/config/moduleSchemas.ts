@@ -505,7 +505,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
         title: 'Empanelled Vendor On-Account Balances',
         description: 'Vendor advance receipts, invoice allocations, transfers, and available net balances.',
         columns: [
-          { key: 'vendorName', label: 'Vendor Supplier', type: 'text' },
+          { key: 'vendorName', label: 'Vendor', type: 'text' },
           { key: 'siteName', label: 'Project Site', type: 'text' },
           { key: 'originalAmount', label: 'Original On-Account', type: 'currency', align: 'right' },
           { key: 'allocatedToInvoices', label: 'Allocated To Invoices', type: 'currency', align: 'right' },
@@ -515,9 +515,9 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
           { key: 'status', label: 'Status', type: 'badge' }
         ],
         mockRows: [
-          { id: 'vob-1', vendorName: 'Century Plyboards India Ltd', vendor: 'Century Plyboards India Ltd', siteName: 'Nexus Tech Park', site: 'Nexus Tech Park', originalAmount: 500000, allocatedToInvoices: 300000, transferredAmount: 0, availableBalance: 200000, lastTransactionDate: '2026-07-24', status: 'active' },
-          { id: 'vob-2', vendorName: 'Asian Paints Ltd', vendor: 'Asian Paints Ltd', siteName: 'Grand Hyatt Goa', site: 'Grand Hyatt Goa', originalAmount: 400000, allocatedToInvoices: 250000, transferredAmount: 0, availableBalance: 150000, lastTransactionDate: '2026-07-22', status: 'active' },
-          { id: 'vob-3', vendorName: 'Saint-Gobain India Pvt Ltd', vendor: 'Saint-Gobain India Pvt Ltd', siteName: 'Imperial Heights', site: 'Imperial Heights', originalAmount: 300000, allocatedToInvoices: 100000, transferredAmount: 0, availableBalance: 200000, lastTransactionDate: '2026-07-20', status: 'active' }
+          { id: 'vob-1', vendorId: 'v-2', vendorName: 'Century Plyboards India Ltd', vendor: 'Century Plyboards India Ltd', siteId: 'site-1', siteName: 'Nexus Tech Park', site: 'Nexus Tech Park', originalAmount: 500000, allocatedToInvoices: 300000, transferredAmount: 0, availableBalance: 200000, lastTransactionDate: '2026-07-24', status: 'active' },
+          { id: 'vob-2', vendorId: 'v-1', vendorName: 'Asian Paints Ltd', vendor: 'Asian Paints Ltd', siteId: 'site-2', siteName: 'Grand Hyatt Goa', site: 'Grand Hyatt Goa', originalAmount: 400000, allocatedToInvoices: 250000, transferredAmount: 0, availableBalance: 150000, lastTransactionDate: '2026-07-22', status: 'active' },
+          { id: 'vob-3', vendorId: 'v-3', vendorName: 'Saint-Gobain India Pvt Ltd', vendor: 'Saint-Gobain India Pvt Ltd', siteId: 'site-3', siteName: 'Imperial Heights', site: 'Imperial Heights', originalAmount: 300000, allocatedToInvoices: 100000, transferredAmount: 0, availableBalance: 200000, lastTransactionDate: '2026-07-20', status: 'active' }
         ]
       },
       {
@@ -527,7 +527,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
         description: 'Site-wise advance funds received, invoice allocations, and net transfers.',
         columns: [
           { key: 'siteName', label: 'Project Site', type: 'text' },
-          { key: 'receivedAmount', label: 'Received Amount', type: 'currency', align: 'right' },
+          { key: 'receivedAmount', label: 'Received', type: 'currency', align: 'right' },
           { key: 'allocatedToInvoices', label: 'Allocated To Invoices', type: 'currency', align: 'right' },
           { key: 'transferredIn', label: 'Transferred In', type: 'currency', align: 'right' },
           { key: 'transferredOut', label: 'Transferred Out', type: 'currency', align: 'right' },
@@ -535,9 +535,9 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
           { key: 'lastUpdatedDate', label: 'Last Updated', type: 'date' }
         ],
         mockRows: [
-          { id: 'sob-1', siteName: 'Nexus Tech Park', site: 'Nexus Tech Park', receivedAmount: 500000, allocatedToInvoices: 300000, transferredIn: 0, transferredOut: 100000, availableBalance: 100000, lastUpdatedDate: '2026-07-24' },
-          { id: 'sob-2', siteName: 'Grand Hyatt Goa', site: 'Grand Hyatt Goa', receivedAmount: 400000, allocatedToInvoices: 250000, transferredIn: 100000, transferredOut: 0, availableBalance: 250000, lastUpdatedDate: '2026-07-23' },
-          { id: 'sob-3', siteName: 'Imperial Heights', site: 'Imperial Heights', receivedAmount: 300000, allocatedToInvoices: 100000, transferredIn: 0, transferredOut: 0, availableBalance: 200000, lastUpdatedDate: '2026-07-20' }
+          { id: 'sob-1', siteId: 'site-1', siteName: 'Nexus Tech Park', site: 'Nexus Tech Park', receivedAmount: 500000, allocatedToInvoices: 300000, transferredIn: 0, transferredOut: 100000, availableBalance: 100000, lastUpdatedDate: '2026-07-24' },
+          { id: 'sob-2', siteId: 'site-2', siteName: 'Grand Hyatt Goa', site: 'Grand Hyatt Goa', receivedAmount: 400000, allocatedToInvoices: 250000, transferredIn: 100000, transferredOut: 0, availableBalance: 250000, lastUpdatedDate: '2026-07-23' },
+          { id: 'sob-3', siteId: 'site-3', siteName: 'Imperial Heights', site: 'Imperial Heights', receivedAmount: 300000, allocatedToInvoices: 100000, transferredIn: 0, transferredOut: 0, availableBalance: 200000, lastUpdatedDate: '2026-07-20' }
         ]
       },
       {
@@ -546,19 +546,19 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
         title: 'On-Account Advance Transaction History',
         description: 'Chronological ledger of receipts, invoice allocations, and inter-site transfers.',
         columns: [
-          { key: 'transactionReference', label: 'Transaction Ref', type: 'mono' },
+          { key: 'transactionReference', label: 'Transaction Reference', type: 'mono' },
           { key: 'transactionDate', label: 'Date', type: 'date' },
           { key: 'type', label: 'Transaction Type', type: 'text' },
           { key: 'sourceSiteName', label: 'Source', type: 'text' },
-          { key: 'destinationSiteName', label: 'Destination / Invoice', type: 'text' },
+          { key: 'destinationSiteName', label: 'Destination or Invoice', type: 'text' },
           { key: 'vendorName', label: 'Vendor', type: 'text' },
           { key: 'amount', label: 'Amount', type: 'currency', align: 'right' },
           { key: 'status', label: 'Status', type: 'badge' }
         ],
         mockRows: [
-          { id: 'oat-1', transactionReference: 'OAT-2026-001', transactionDate: '2026-07-24', transactionType: 'invoice_allocation', type: 'Invoice Allocation', vendorName: 'Century Plyboards India Ltd', vendor: 'Century Plyboards India Ltd', destinationSiteName: 'INV-VND-2026-001', amount: 300000, status: 'processed' },
-          { id: 'oat-2', transactionReference: 'OAT-2026-002', transactionDate: '2026-07-23', transactionType: 'inter_site_transfer', type: 'Inter-Site Transfer', sourceSiteName: 'Nexus Tech Park', source: 'Nexus Tech Park', destinationSiteName: 'Grand Hyatt Goa', destination: 'Grand Hyatt Goa', vendorName: 'Century Plyboards India Ltd', vendor: 'Century Plyboards India Ltd', amount: 100000, status: 'processed' },
-          { id: 'oat-3', transactionReference: 'OAT-2026-003', transactionDate: '2026-07-22', transactionType: 'receipt', type: 'On-Account Receipt', sourceSiteName: 'Grand Hyatt Goa', source: 'Grand Hyatt Goa', vendorName: 'Asian Paints Ltd', vendor: 'Asian Paints Ltd', amount: 400000, status: 'approved' }
+          { id: 'oat-1', transactionReference: 'OAT-2026-001', transactionDate: '2026-07-24', transactionType: 'invoice_allocation', type: 'Invoice Allocation', vendorId: 'v-2', vendorName: 'Century Plyboards India Ltd', vendor: 'Century Plyboards India Ltd', invoiceId: 'inv-1', invoiceNumber: 'INV-2026-041', destinationSiteName: 'INV-2026-041', amount: 300000, status: 'processed' },
+          { id: 'oat-2', transactionReference: 'OAT-2026-002', transactionDate: '2026-07-23', transactionType: 'inter_site_transfer', type: 'Inter-Site Transfer', sourceSiteId: 'site-1', sourceSiteName: 'Nexus Tech Park', source: 'Nexus Tech Park', destinationSiteId: 'site-2', destinationSiteName: 'Grand Hyatt Goa', destination: 'Grand Hyatt Goa', vendorId: 'v-2', vendorName: 'Century Plyboards India Ltd', vendor: 'Century Plyboards India Ltd', amount: 100000, status: 'processed' },
+          { id: 'oat-3', transactionReference: 'OAT-2026-003', transactionDate: '2026-07-22', transactionType: 'receipt', type: 'On-Account Receipt', destinationSiteId: 'site-2', destinationSiteName: 'Grand Hyatt Goa', destination: 'Grand Hyatt Goa', vendorId: 'v-1', vendorName: 'Asian Paints Ltd', vendor: 'Asian Paints Ltd', amount: 400000, status: 'approved' }
         ]
       }
     ]

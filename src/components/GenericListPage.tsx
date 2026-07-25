@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { ModuleSchema } from '../config/moduleSchemas';
 import { StatusBadge } from './StatusBadge';
-import { safeFormatCurrency, safeFormatText } from '../utils/formatStatus';
+import { safeFormatCurrency, safeFormatText, toSafeNumber } from '../utils/formatStatus';
 import { useWorkflow, getCollectionIdFromRoute } from '../context/WorkflowContext';
 
 interface GenericListPageProps {
@@ -30,8 +30,22 @@ interface GenericListPageProps {
 export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
   const navigate = useNavigate();
   const [search, setSearch] = React.useState('');
-  const [activeTab, setActiveTab] = React.useState('all');
+  
+  const initialTab = React.useMemo(() => {
+    if (schema.tabs && schema.tabs.length > 0) {
+      return schema.tabs[0].id;
+    }
+    return 'all';
+  }, [schema.tabs]);
+
+  const [activeTab, setActiveTab] = React.useState(initialTab);
   const [toast, setToast] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (schema.tabs && schema.tabs.length > 0 && !schema.tabs.some((t) => t.id === activeTab)) {
+      setActiveTab(schema.tabs[0].id);
+    }
+  }, [schema.tabs, activeTab]);
 
   // Local mutable dataset state
   const { getCollection, addRecord, updateRecord, duplicateRecord: duplicateWorkflowRecord } = useWorkflow();
@@ -100,7 +114,6 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
     if (!isFormValid) return;
     setModalError(null);
 
-    // Trim text inputs and validate email format if present
     const trimmedData: Record<string, any> = {};
     for (const [key, value] of Object.entries(modalFormData)) {
       if (typeof value === 'string') {
@@ -164,6 +177,36 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
   const displayDescription = (activeTabConfig as any)?.description || schema.description;
   const displaySummaryCards = (activeTabConfig as any)?.summaryCards || schema.summaryCards;
 
+  const isOnAccountPage = schema.route === '/finance/on-account' || schema.id === 'finance-on-account';
+
+  const calculatedSummaryCards = React.useMemo(() => {
+    if (isOnAccountPage && schema.tabs) {
+      const vendorTab = schema.tabs.find(t => t.id === 'vendor_balances');
+      const siteTab = schema.tabs.find(t => t.id === 'site_balances');
+      const txnTab = schema.tabs.find(t => t.id === 'recent_transactions');
+
+      const vendorRows = vendorTab?.mockRows || [];
+      const siteRows = siteTab?.mockRows || [];
+      const txnRows = txnTab?.mockRows || [];
+
+      const totalVendorBal = vendorRows.reduce((acc: number, r: any) => acc + (toSafeNumber(r.availableBalance)), 0);
+      const totalSiteBal = siteRows.reduce((acc: number, r: any) => acc + (toSafeNumber(r.availableBalance)), 0);
+
+      const transfersCount = txnRows.filter((r: any) => {
+        const isTransfer = r.transactionType === 'inter_site_transfer' || r.transactionType === 'vendor_transfer' || String(r.type || '').toLowerCase().includes('transfer');
+        const isOk = r.status === 'approved' || r.status === 'processed';
+        return isTransfer && isOk;
+      }).length;
+
+      return [
+        { id: '1', label: 'Total Vendor Available Balance', value: totalVendorBal, isCurrency: true, color: 'text-brand-700' },
+        { id: '2', label: 'Total Site Available Balance', value: totalSiteBal, isCurrency: true, color: 'text-brand-700' },
+        { id: '3', label: 'Transfers This Month', value: transfersCount, color: 'text-gray-900' }
+      ];
+    }
+    return displaySummaryCards;
+  }, [isOnAccountPage, schema.tabs, displaySummaryCards]);
+
   const filteredData = React.useMemo(() => {
     // Priority 1: Check if the tab itself has its own mock rows (Specialized Reports)
     if (activeTabConfig && (activeTabConfig as any).mockRows) {
@@ -188,8 +231,8 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
     const headers = activeColumns.map(c => c.label).join(',');
     const rows = filteredData.map((row: any) => 
       activeColumns.map(c => `"${String(row[c.key] || '').replace(/"/g, '""')}"`).join(',')
-    ).join('\\n');
-    const csv = `${headers}\\n${rows}`;
+    ).join('\n');
+    const csv = `${headers}\n${rows}`;
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a'); 
@@ -255,10 +298,10 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
       </div>
 
       {/* Summary Cards */}
-      {displaySummaryCards && (
+      {calculatedSummaryCards && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {displaySummaryCards.map((card: any, idx: number) => {
-            const cardValue = idx === 0 && schema.createFields && !activeTabConfig?.summaryCards ? localRows.length : card.value;
+          {calculatedSummaryCards.map((card: any, idx: number) => {
+            const cardValue = idx === 0 && schema.createFields && !activeTabConfig?.summaryCards && !isOnAccountPage ? localRows.length : card.value;
             return (
               <div key={card.id} className="p-3.5 border border-gray-150 rounded bg-white shadow-sm space-y-1">
                 <span className="text-[9.5px] uppercase font-bold text-gray-400 block">{card.label}</span>
@@ -329,7 +372,12 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
               {filteredData.length === 0 ? (
                 <tr>
                   <td colSpan={activeColumns.length + 1} className="p-12 text-center text-gray-400">
-                    {localRows.length === 0 ? (
+                    {isOnAccountPage ? (
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-gray-600">No on-account records are available for this view.</p>
+                        <p className="text-xs text-gray-400 font-medium">Adjust search filters or select another tab to view on-account fund balances.</p>
+                      </div>
+                    ) : localRows.length === 0 ? (
                       <div className="flex flex-col items-center justify-center gap-3">
                         <p className="text-sm font-bold text-gray-600">No {displayTitle.toLowerCase()} have been added yet.</p>
                         <p className="text-xs text-gray-400">Use the primary action button below or in the page header to create the first record.</p>
@@ -383,37 +431,128 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                           </DropdownMenu.Trigger>
                           <DropdownMenu.Portal>
                             <DropdownMenu.Content 
-                              className="bg-white border border-gray-150 rounded shadow-lg z-[1000] p-1 font-sans text-xs min-w-[150px] space-y-0.5 animate-scale-in"
+                              className="bg-white border border-gray-150 rounded shadow-lg z-[1000] p-1 font-sans text-xs min-w-[170px] space-y-0.5 animate-scale-in"
                               sideOffset={4}
                               align="end"
                             >
-                              <DropdownMenu.Item 
-                                onClick={() => navigate(`${schema.route}/${row.id || '1'}`)}
-                                className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                              >
-                                <Eye className="h-3.5 w-3.5 text-gray-400" /> View Details
-                              </DropdownMenu.Item>
-                              <DropdownMenu.Item 
-                                onClick={() => handleDuplicateRow(row)}
-                                className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                              >
-                                <Copy className="h-3.5 w-3.5 text-gray-400" /> Duplicate
-                              </DropdownMenu.Item>
-                              {(schema.route === '/finance/utility-bills' || schema.id === 'finance-utility-bills') && (
-                                <DropdownMenu.Item 
-                                  onClick={() => navigate('/finance/utility-bills/new')}
-                                  className="px-2.5 py-1.5 hover:bg-brand-50 text-brand-700 rounded flex items-center gap-1.5 cursor-pointer font-bold outline-none"
-                                >
-                                  <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> Split Bill
-                                </DropdownMenu.Item>
+                              {isOnAccountPage ? (
+                                <>
+                                  {activeTab === 'vendor_balances' && (
+                                    <>
+                                      <DropdownMenu.Item
+                                        onClick={() => triggerToast(`Vendor Balance: ${row.vendorName || row.vendor} — Available: ${safeFormatCurrency(row.availableBalance)}`)}
+                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                      >
+                                        <Eye className="h-3.5 w-3.5 text-brand-600" /> View Balance
+                                      </DropdownMenu.Item>
+                                      <DropdownMenu.Item
+                                        onClick={() => triggerToast(`Initiated invoice allocation for ${row.vendorName || row.vendor}`)}
+                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                      >
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Allocate To Invoice
+                                      </DropdownMenu.Item>
+                                      <DropdownMenu.Item
+                                        onClick={() => triggerToast(`Initiated balance transfer for ${row.vendorName || row.vendor}`)}
+                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                      >
+                                        <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> Transfer Balance
+                                      </DropdownMenu.Item>
+                                      <DropdownMenu.Item
+                                        onClick={() => {
+                                          setActiveTab('recent_transactions');
+                                          setSearch(row.vendorName || row.vendor || '');
+                                        }}
+                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                      >
+                                        <Search className="h-3.5 w-3.5 text-gray-400" /> View Transactions
+                                      </DropdownMenu.Item>
+                                    </>
+                                  )}
+                                  {activeTab === 'site_balances' && (
+                                    <>
+                                      <DropdownMenu.Item
+                                        onClick={() => triggerToast(`Site Fund Balance: ${row.siteName || row.site} — Available: ${safeFormatCurrency(row.availableBalance)}`)}
+                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                      >
+                                        <Eye className="h-3.5 w-3.5 text-brand-600" /> View Balance
+                                      </DropdownMenu.Item>
+                                      <DropdownMenu.Item
+                                        onClick={() => triggerToast(`Initiated inter-site fund transfer from ${row.siteName || row.site}`)}
+                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                      >
+                                        <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> Transfer To Site
+                                      </DropdownMenu.Item>
+                                      <DropdownMenu.Item
+                                        onClick={() => {
+                                          setActiveTab('recent_transactions');
+                                          setSearch(row.siteName || row.site || '');
+                                        }}
+                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                      >
+                                        <Search className="h-3.5 w-3.5 text-gray-400" /> View Transactions
+                                      </DropdownMenu.Item>
+                                    </>
+                                  )}
+                                  {activeTab === 'recent_transactions' && (
+                                    <>
+                                      <DropdownMenu.Item
+                                        onClick={() => triggerToast(`Transaction Ref: ${row.transactionReference || row.referenceNo || row.id} (${row.type || row.transactionType})`)}
+                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                      >
+                                        <Eye className="h-3.5 w-3.5 text-brand-600" /> View Transaction
+                                      </DropdownMenu.Item>
+                                      <DropdownMenu.Item
+                                        onClick={() => {
+                                          if (row.invoiceNumber || row.invoiceId) {
+                                            navigate('/finance/invoices');
+                                          } else {
+                                            triggerToast(`Linked Invoice: ${row.destinationSiteName || row.destination || 'N/A'}`);
+                                          }
+                                        }}
+                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                      >
+                                        <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> View Linked Invoice
+                                      </DropdownMenu.Item>
+                                      <DropdownMenu.Item
+                                        onClick={() => triggerToast(`Source: ${row.sourceSiteName || row.source || 'Central Fund'} ➔ Destination: ${row.destinationSiteName || row.destination || 'Vendor Fund'}`)}
+                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                      >
+                                        <Search className="h-3.5 w-3.5 text-gray-400" /> View Source & Destination
+                                      </DropdownMenu.Item>
+                                    </>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <DropdownMenu.Item 
+                                    onClick={() => navigate(`${schema.route}/${row.id || '1'}`)}
+                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                  >
+                                    <Eye className="h-3.5 w-3.5 text-gray-400" /> View Details
+                                  </DropdownMenu.Item>
+                                  <DropdownMenu.Item 
+                                    onClick={() => handleDuplicateRow(row)}
+                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                  >
+                                    <Copy className="h-3.5 w-3.5 text-gray-400" /> Duplicate
+                                  </DropdownMenu.Item>
+                                  {(schema.route === '/finance/utility-bills' || schema.id === 'finance-utility-bills') && (
+                                    <DropdownMenu.Item 
+                                      onClick={() => navigate('/finance/utility-bills/new')}
+                                      className="px-2.5 py-1.5 hover:bg-brand-50 text-brand-700 rounded flex items-center gap-1.5 cursor-pointer font-bold outline-none"
+                                    >
+                                      <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> Split Bill
+                                    </DropdownMenu.Item>
+                                  )}
+                                  <DropdownMenu.Item 
+                                    onClick={() => handleToggleRowStatus(row.id)}
+                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
+                                  >
+                                    <Power className="h-3.5 w-3.5 text-gray-400" />
+                                    {row.status === 'active' || row.status === 'empanelled' ? 'Deactivate' : 'Activate'}
+                                  </DropdownMenu.Item>
+                                </>
                               )}
-                              <DropdownMenu.Item 
-                                onClick={() => handleToggleRowStatus(row.id)}
-                                className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                              >
-                                <Power className="h-3.5 w-3.5 text-gray-400" />
-                                {row.status === 'active' || row.status === 'empanelled' ? 'Deactivate' : 'Activate'}
-                              </DropdownMenu.Item>
                             </DropdownMenu.Content>
                           </DropdownMenu.Portal>
                         </DropdownMenu.Root>
