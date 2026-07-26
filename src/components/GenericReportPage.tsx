@@ -4,6 +4,8 @@ import {
   ResponsiveContainer, 
   BarChart, 
   Bar, 
+  LineChart,
+  Line,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -17,12 +19,20 @@ import {
   Printer, 
   CheckCircle2,
   Search,
-  Filter
+  Filter,
+  BarChart2,
+  AlertCircle
 } from 'lucide-react';
 import { ModuleSchema } from '../config/moduleSchemas';
 import { StatusBadge } from './StatusBadge';
 import { safeFormatCurrency, safeFormatText, formatStatusLabel } from '../utils/formatStatus';
 import { useSites } from '../context/SitesContext';
+import { 
+  getReportChartConfig, 
+  formatTooltipValue, 
+  formatYAxisTick, 
+  toFiniteNumber 
+} from '../utils/reportChartAdapter';
 
 interface GenericReportPageProps {
   schema: ModuleSchema;
@@ -88,7 +98,9 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
       const matchSite = !selectedSite || (
         r.siteId === selectedSite ||
         (r.site && String(r.site).toLowerCase().includes(selectedSite.toLowerCase())) ||
-        (r.siteName && String(r.siteName).toLowerCase().includes(selectedSite.toLowerCase()))
+        (r.siteName && String(r.siteName).toLowerCase().includes(selectedSite.toLowerCase())) ||
+        (r.destinationSite && String(r.destinationSite).toLowerCase().includes(selectedSite.toLowerCase())) ||
+        (r.relatedSite && String(r.relatedSite).toLowerCase().includes(selectedSite.toLowerCase()))
       );
       
       // ISO Date filtering
@@ -102,94 +114,221 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
     });
   }, [rawRows, search, selectedSite, fromDate, toDate]);
 
+  // Compute explicit chart configuration from activeTab, schema, and filteredRows
+  const chartConfig = React.useMemo(() => {
+    return getReportChartConfig(activeTab.id || schema.id, schema.id, filteredRows);
+  }, [activeTab.id, schema.id, filteredRows]);
+
+  // Check if chart has non-zero finite numeric data
+  const hasChartData = React.useMemo(() => {
+    if (!chartConfig.data || chartConfig.data.length === 0 || chartConfig.series.length === 0) {
+      return false;
+    }
+    return chartConfig.data.some((row) =>
+      chartConfig.series.some((s) => {
+        const val = toFiniteNumber(row[s.key]);
+        return val !== 0;
+      })
+    );
+  }, [chartConfig]);
+
   // Dynamic Chart Renderer
   const renderAnalyticsChart = () => {
-    if (filteredRows.length === 0) {
+    if (!hasChartData) {
       return (
-        <div className="h-[200px] w-full flex items-center justify-center text-gray-400 text-xs italic bg-gray-50/50 rounded border border-dashed border-gray-200">
-          No data available for chart rendering under current filters.
+        <div className="h-[340px] w-full flex flex-col items-center justify-center gap-3 text-gray-500 bg-gray-50/60 rounded-lg border border-dashed border-gray-250 p-6 text-center">
+          <AlertCircle className="h-8 w-8 text-amber-500/80" />
+          <div className="space-y-1">
+            <p className="font-bold text-xs text-gray-800">
+              No chart data is available for the selected site and date range.
+            </p>
+            <p className="text-[11px] text-gray-500">
+              Try adjusting your filter criteria or site selection to view graphical analytics.
+            </p>
+          </div>
+          {(search || selectedSite || fromDate !== '2026-01-01' || toDate !== '2026-12-31') && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setSelectedSite('');
+                setFromDate('2026-01-01');
+                setToDate('2026-12-31');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 rounded text-xs font-bold text-gray-700 shadow-sm transition-colors cursor-pointer"
+            >
+              <Filter className="h-3.5 w-3.5 text-gray-500" /> Reset Filters
+            </button>
+          )}
         </div>
       );
     }
 
-    const firstRow = filteredRows[0];
-    const xKey = firstRow.site ? 'site' : firstRow.vendor ? 'vendor' : firstRow.item ? 'item' : firstRow.month ? 'month' : firstRow.userName ? 'userName' : firstRow.user ? 'user' : 'id';
+    const { type, series, data, yAxisUnit } = chartConfig;
 
-    if (firstRow.sessionDurationMinutes !== undefined) {
-      const sorted = [...filteredRows].sort((a, b) => (b.sessionDurationMinutes || 0) - (a.sessionDurationMinutes || 0));
+    // Line Chart
+    if (type === 'line') {
       return (
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={sorted} margin={{ top: 10, right: 20, left: 10, bottom: 25 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-            <XAxis dataKey="userName" tick={{ fontSize: 9 }} interval={0} angle={-15} textAnchor="end" />
-            <YAxis 
-              tick={{ fontSize: 9 }} 
-              tickFormatter={(val) => typeof val === 'number' ? `${Math.floor(val / 60)}h ${val % 60}m` : String(val)} 
+        <ResponsiveContainer width="100%" height={340}>
+          <LineChart data={data} margin={{ top: 15, right: 30, left: 15, bottom: 40 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 10, fill: '#64748b' }}
+              interval={0}
+              angle={-20}
+              textAnchor="end"
             />
-            <Tooltip 
-              formatter={(val: any) => [
-                typeof val === 'number' ? `${val} Mins (${Math.floor(val / 60)}h ${val % 60}m)` : val, 
-                'Session Duration'
-              ]}
-              labelFormatter={(label, payload) => {
-                const item = payload?.[0]?.payload;
-                return item ? `${item.userName || label} (${item.designation || 'Staff'})` : label;
+            <YAxis
+              tick={{ fontSize: 10, fill: '#64748b' }}
+              tickFormatter={(val) => formatYAxisTick(val, yAxisUnit)}
+            />
+            <Tooltip
+              content={({ active, payload, label }) => {
+                if (!active || !payload || !payload.length) return null;
+                return (
+                  <div className="bg-gray-900 text-white p-2.5 rounded shadow-lg text-xs space-y-1 border border-gray-700 z-50">
+                    <p className="font-bold border-b border-gray-700 pb-1 text-amber-400">{label}</p>
+                    {payload.map((entry: any, i: number) => {
+                      const matchingSeries = series.find((s) => s.key === entry.dataKey);
+                      const unit = matchingSeries?.unit || yAxisUnit;
+                      return (
+                        <div key={i} className="flex items-center justify-between gap-4">
+                          <span className="flex items-center gap-1.5 text-gray-300">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                            {entry.name}:
+                          </span>
+                          <span className="font-mono font-bold text-white">
+                            {formatTooltipValue(entry.value, unit)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
               }}
             />
-            <Bar dataKey="sessionDurationMinutes" name="Session Duration" fill="#10b981" radius={[4, 4, 0, 0]} />
+            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+            {series.map((s) => (
+              <Line
+                key={s.key}
+                type="monotone"
+                dataKey={s.key}
+                name={s.label}
+                stroke={s.color}
+                strokeWidth={2.5}
+                dot={{ r: 4, fill: s.color }}
+                activeDot={{ r: 6 }}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    // Horizontal Bar Chart
+    if (type === 'horizontal_bar') {
+      return (
+        <ResponsiveContainer width="100%" height={Math.max(340, data.length * 48)}>
+          <BarChart data={data} layout="vertical" margin={{ top: 15, right: 30, left: 30, bottom: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+            <XAxis
+              type="number"
+              tick={{ fontSize: 10, fill: '#64748b' }}
+              tickFormatter={(val) => formatYAxisTick(val, yAxisUnit)}
+            />
+            <YAxis
+              type="category"
+              dataKey="label"
+              tick={{ fontSize: 10, fill: '#475569' }}
+              width={140}
+            />
+            <Tooltip
+              content={({ active, payload, label }) => {
+                if (!active || !payload || !payload.length) return null;
+                return (
+                  <div className="bg-gray-900 text-white p-2.5 rounded shadow-lg text-xs space-y-1 border border-gray-700 z-50">
+                    <p className="font-bold border-b border-gray-700 pb-1 text-amber-400">{label}</p>
+                    {payload.map((entry: any, i: number) => {
+                      const matchingSeries = series.find((s) => s.key === entry.dataKey);
+                      const unit = matchingSeries?.unit || yAxisUnit;
+                      return (
+                        <div key={i} className="flex items-center justify-between gap-4">
+                          <span className="flex items-center gap-1.5 text-gray-300">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                            {entry.name}:
+                          </span>
+                          <span className="font-mono font-bold text-white">
+                            {formatTooltipValue(entry.value, unit)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+            {series.map((s) => (
+              <Bar key={s.key} dataKey={s.key} name={s.label} fill={s.color} radius={[0, 4, 4, 0]} barSize={16} />
+            ))}
           </BarChart>
         </ResponsiveContainer>
       );
     }
 
+    // Default Grouped / Stacked Vertical Bar Chart
     return (
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={filteredRows} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-          <XAxis dataKey={xKey} tick={{ fontSize: 9 }} interval={0} angle={-15} textAnchor="end" />
-          <YAxis tick={{ fontSize: 9 }} tickFormatter={(val) => typeof val === 'number' && val >= 100000 ? `₹${(val / 100000).toFixed(0)}L` : String(val)} />
-          <Tooltip formatter={(val: any) => [typeof val === 'number' ? safeFormatCurrency(val) : val, 'Value']} />
-          <Legend wrapperStyle={{ fontSize: '10px' }} />
-          
-          {firstRow.orderedValue !== undefined ? (
-            <>
-              <Bar dataKey="orderedValue" name="Ordered Value" fill="#ab9570" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="receivedValue" name="Received Outlay" fill="#10b981" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="pendingValue" name="Pending Balance" fill="#f43f5e" radius={[2, 2, 0, 0]} />
-            </>
-          ) : firstRow.appBudget !== undefined ? (
-            <>
-              <Bar dataKey="appBudget" name="Approved Budget" fill="#ab9570" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="actualSpend" name="Actual Outlay" fill="#1e293b" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="available" name="Available Balance" fill="#10b981" radius={[2, 2, 0, 0]} />
-            </>
-          ) : firstRow.totalBilled !== undefined ? (
-            <>
-              <Bar dataKey="totalCertified" name="Certified Bills" fill="#ab9570" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="totalPaid" name="Settled Payments" fill="#10b981" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="outstanding" name="Outstanding Balance" fill="#f43f5e" radius={[2, 2, 0, 0]} />
-            </>
-          ) : firstRow.clientReceipts !== undefined ? (
-            <>
-              <Bar dataKey="clientReceipts" name="Client Inflows" fill="#10b981" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="vendorPayments" name="Vendor Outflows" fill="#f43f5e" radius={[2, 2, 0, 0]} />
-            </>
-          ) : (
+      <ResponsiveContainer width="100%" height={340}>
+        <BarChart data={data} margin={{ top: 15, right: 20, left: 15, bottom: 45 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 10, fill: '#64748b' }}
+            interval={0}
+            angle={-20}
+            textAnchor="end"
+          />
+          <YAxis
+            tick={{ fontSize: 10, fill: '#64748b' }}
+            tickFormatter={(val) => formatYAxisTick(val, yAxisUnit)}
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload || !payload.length) return null;
+              return (
+                <div className="bg-gray-900 text-white p-2.5 rounded shadow-lg text-xs space-y-1 border border-gray-700 z-50">
+                  <p className="font-bold border-b border-gray-700 pb-1 text-amber-400">{label}</p>
+                  {payload.map((entry: any, i: number) => {
+                    const matchingSeries = series.find((s) => s.key === entry.dataKey);
+                    const unit = matchingSeries?.unit || yAxisUnit;
+                    return (
+                      <div key={i} className="flex items-center justify-between gap-4">
+                        <span className="flex items-center gap-1.5 text-gray-300">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                          {entry.name}:
+                        </span>
+                        <span className="font-mono font-bold text-white">
+                          {formatTooltipValue(entry.value, unit)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+          {series.map((s) => (
             <Bar
-              dataKey={
-                firstRow.purchaseValue !== undefined ? 'purchaseValue' :
-                firstRow.finalAmount !== undefined ? 'finalAmount' :
-                firstRow.grossAmount !== undefined ? 'grossAmount' :
-                firstRow.paidAmount !== undefined ? 'paidAmount' :
-                firstRow.contractValue !== undefined ? 'contractValue' :
-                firstRow.appAllocation !== undefined ? 'appAllocation' :
-                firstRow.estimatedAmt !== undefined ? 'estimatedAmt' : 'id'
-              }
-              name="Report Metric Value"
-              fill="#ab9570"
-              radius={[2, 2, 0, 0]}
+              key={s.key}
+              dataKey={s.key}
+              name={s.label}
+              fill={s.color}
+              stackId={type === 'stacked_bar' ? 'stack' : undefined}
+              radius={type === 'stacked_bar' ? [0, 0, 0, 0] : [3, 3, 0, 0]}
+              maxBarSize={40}
             />
-          )}
+          ))}
         </BarChart>
       </ResponsiveContainer>
     );
@@ -211,12 +350,10 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
           let val = row[col.key];
           if (val === null || val === undefined) return '""';
           
-          // Format numeric values cleanly as raw numbers without ₹ or currency suffixes
           if (typeof val === 'number') {
             return String(val);
           }
 
-          // Convert numeric strings or raw currency strings if col type is currency
           if (col.type === 'currency' && typeof val === 'string') {
             const numericOnly = val.replace(/[^0-9.-]/g, '');
             if (numericOnly && !isNaN(Number(numericOnly))) {
@@ -224,16 +361,13 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
             }
           }
 
-          // Format status enum codes to clean human-readable labels
           if (col.type === 'badge' || typeof val === 'string') {
             const rawStr = String(val).trim();
-            // Check if matches known status enum format
             if (/^[a-z0-9_]+$/.test(rawStr) && (col.type === 'badge' || rawStr.includes('_') || ['pending', 'completed', 'active', 'inactive', 'draft', 'closed'].includes(rawStr))) {
               val = formatStatusLabel(rawStr);
             }
           }
 
-          // Format ISO Dates strictly as YYYY-MM-DD
           if (col.type === 'date' && typeof val === 'string' && val.includes('T')) {
             val = val.split('T')[0];
           }
@@ -435,9 +569,17 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
       )}
 
       {/* Recharts Analytics Section */}
-      <div className="p-4 bg-white border border-gray-150 rounded-lg shadow-sm space-y-2 no-print">
-        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Report Analytics Visualization</h4>
-        <div className="h-[220px] w-full">
+      <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm space-y-3 no-print">
+        <div className="flex items-center justify-between border-b border-gray-150 pb-2.5">
+          <h4 className="font-extrabold text-xs text-gray-900 tracking-tight flex items-center gap-2">
+            <BarChart2 className="h-4 w-4 text-brand-600" />
+            {chartConfig.title}
+          </h4>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
+            {filteredRows.length} {filteredRows.length === 1 ? 'Record' : 'Records'} Plotted
+          </span>
+        </div>
+        <div className="min-h-[340px] w-full">
           {renderAnalyticsChart()}
         </div>
       </div>
