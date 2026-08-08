@@ -1,9 +1,8 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ChevronsUpDown, 
-  Briefcase, 
   Check, 
   Search, 
   Bell, 
@@ -17,10 +16,10 @@ import {
   X 
 } from 'lucide-react';
 import { cn } from '../utils/cn';
-import { NAVIGATION_CONFIG } from '../config/navigation';
+import { NAVIGATION_CONFIG, getProjectContextForPath } from '../config/navigation';
 import { mockApprovals } from '../data/mockData';
 import { formatIndianCurrency } from '../utils/format';
-import { useSites } from '../context/SitesContext';
+import { useProjectContext } from '../context/ProjectContext';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -35,13 +34,13 @@ interface HeaderProps {
 // ==========================================
 
 export const ProjectSwitcher: React.FC = () => {
-  const { sites, selectedSiteId, setSelectedSiteId } = useSites();
+  const { projects, selectedProjectId, setSelectedProjectId } = useProjectContext();
   const [isOpen, setIsOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [position, setPosition] = React.useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 240 });
 
-  const activeSite = selectedSiteId === 'all' ? null : (sites.find((s) => s.id === selectedSiteId) || null);
+  const activeProject = selectedProjectId === 'all' ? null : (projects.find((p) => p.id === selectedProjectId || p.projectCode === selectedProjectId) || projects[0] || null);
 
   const updatePosition = React.useCallback(() => {
     if (triggerRef.current) {
@@ -107,19 +106,19 @@ export const ProjectSwitcher: React.FC = () => {
       <button
         ref={triggerRef}
         onClick={handleOpenToggle}
-        className="flex items-center gap-1.5 px-2 py-1.5 border border-gray-200 rounded bg-white hover:bg-gray-50 transition-all select-none text-left w-[180px] sm:w-[240px] max-w-[calc(100vw-60px)] justify-between cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-500/50"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 border border-slate-200 rounded bg-white hover:bg-slate-50 transition-all select-none text-left w-[190px] sm:w-[260px] max-w-[calc(100vw-60px)] justify-between cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-400"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
         <div className="truncate pr-1">
-          <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-bold truncate">
-            Active Site
+          <span className="text-[9px] uppercase tracking-wider text-slate-400 block font-bold truncate">
+            Active Project
           </span>
-          <span className="font-semibold text-gray-700 truncate block text-[11px] leading-tight">
-            {selectedSiteId === 'all' ? 'ALL — All Project Sites' : activeSite ? `${activeSite.code} - ${activeSite.name}` : 'Select Site'}
+          <span className="font-semibold text-slate-800 truncate block text-[11px] leading-tight">
+            {selectedProjectId === 'all' ? 'ALL — All Projects' : activeProject ? `${activeProject.projectCode} - ${activeProject.projectName}` : 'PRJ-2026-001 - Nouveau Penthouse'}
           </span>
         </div>
-        <ChevronsUpDown className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+        <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
       </button>
 
       {isOpen && createPortal(
@@ -133,45 +132,44 @@ export const ProjectSwitcher: React.FC = () => {
             maxHeight: 'min(420px, calc(100vh - 100px))',
             zIndex: 99999
           }}
-          className="bg-white border border-gray-200 rounded-lg shadow-2xl py-1.5 focus:outline-none overflow-y-auto font-sans text-xs"
+          className="bg-white border border-slate-200 rounded-lg shadow-xl py-1.5 focus:outline-none overflow-y-auto font-sans text-xs"
         >
-          <div className="px-3 pb-1.5 mb-1 border-b border-gray-100 sticky top-0 bg-white z-10 flex items-center justify-between">
-            <span className="font-bold text-[9.5px] text-gray-400 uppercase tracking-widest block">Project Sites</span>
-            <span className="text-[9.5px] font-semibold text-brand-650 bg-brand-50 px-1.5 py-0.25 rounded">{sites.length} Sites</span>
+          <div className="px-3 pb-1.5 mb-1 border-b border-slate-100 sticky top-0 bg-white z-10 flex items-center justify-between">
+            <span className="font-bold text-[9.5px] text-slate-400 uppercase tracking-widest block">Active Projects</span>
+            <span className="text-[9.5px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.25 rounded">{projects.length} Projects</span>
           </div>
 
-          {/* All Project Sites option */}
           <button
             key="all"
             onClick={() => {
-              setSelectedSiteId('all');
+              setSelectedProjectId('all');
               handleClose();
             }}
-            className={`w-full text-left px-3 py-2 border-b border-gray-100 hover:bg-brand-50/50 flex items-center justify-between text-[11px] font-bold transition-colors cursor-pointer ${selectedSiteId === 'all' ? 'bg-brand-50/40 text-brand-700' : 'text-gray-700'}`}
+            className={`w-full text-left px-3 py-2 border-b border-slate-100 hover:bg-slate-50 flex items-center justify-between text-[11px] font-bold transition-colors cursor-pointer ${selectedProjectId === 'all' ? 'bg-slate-100 text-slate-900' : 'text-slate-700'}`}
           >
-            <div className="flex items-center gap-2 truncate pr-2">
-              <Briefcase className={`h-3.5 w-3.5 shrink-0 ${selectedSiteId === 'all' ? 'text-brand-600' : 'text-gray-400'}`} />
-              <span className="truncate">ALL — All Project Sites (Portfolio View)</span>
-            </div>
-            {selectedSiteId === 'all' && <Check className="h-3.5 w-3.5 text-brand-600 shrink-0" />}
+            <span>ALL — All Active Projects</span>
+            {selectedProjectId === 'all' && <Check className="h-3.5 w-3.5 text-slate-800" />}
           </button>
 
-          {sites.map((site) => (
-            <button
-              key={site.id}
-              onClick={() => {
-                setSelectedSiteId(site.id);
-                handleClose();
-              }}
-              className={`w-full text-left px-3 py-2 hover:bg-brand-50/50 flex items-center justify-between text-[11px] font-medium transition-colors cursor-pointer ${selectedSiteId === site.id ? 'bg-brand-50/40 text-brand-700 font-bold' : 'text-gray-700'}`}
-            >
-              <div className="flex items-center gap-2 truncate pr-2">
-                <Briefcase className={`h-3.5 w-3.5 shrink-0 ${selectedSiteId === site.id ? 'text-brand-600' : 'text-gray-400'}`} />
-                <span className="truncate" title={`${site.code} - ${site.name}`}>{site.code} - {site.name}</span>
-              </div>
-              {selectedSiteId === site.id && <Check className="h-3.5 w-3.5 text-brand-600 shrink-0" />}
-            </button>
-          ))}
+          {projects.map((p) => {
+            const isSelected = selectedProjectId === p.id || selectedProjectId === p.projectCode;
+            return (
+              <button
+                key={p.id}
+                onClick={() => {
+                  setSelectedProjectId(p.id);
+                  handleClose();
+                }}
+                className={`w-full text-left px-3 py-2 border-b border-slate-50 hover:bg-slate-50 flex items-center justify-between text-[11px] transition-colors cursor-pointer ${isSelected ? 'bg-slate-100 text-slate-900 font-bold' : 'text-slate-700'}`}
+              >
+                <div>
+                  <div className="font-semibold text-slate-900 text-[11px]">{p.projectCode} - {p.projectName}</div>
+                  <div className="text-[10px] text-slate-500">{p.clientName}</div>
+                </div>
+                {isSelected && <Check className="h-3.5 w-3.5 text-slate-800 shrink-0 ml-2" />}
+              </button>
+            );
+          })}
         </div>,
         document.body
       )}
@@ -202,7 +200,7 @@ export const GlobalSearch: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
       grp.items.forEach(itm => {
         list.push({
           title: itm.label,
-          route: itm.path,
+          route: itm.path || '/',
           group: grp.label
         });
       });
@@ -258,7 +256,7 @@ export const GlobalSearch: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
           setIsOpen(true);
         }}
         onFocus={() => setIsOpen(true)}
-        placeholder="Search ERP (e.g. Indents, Vendors, Budgets)..."
+        placeholder="Search projects, indents, RFQs, vendors, BOQ items..."
         className={cn(
           "pl-8 pr-3 py-1.5 text-[11px] font-sans border border-gray-200 rounded bg-gray-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition-all font-medium text-gray-700",
           classes
@@ -299,7 +297,7 @@ export const GlobalSearch: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Enter path name (e.g. Budgets, RFQs)..."
+                  placeholder="Search projects, indents, RFQs, vendors, BOQ items..."
                   className="w-full pl-9 pr-3 py-2 text-[12px] border border-gray-200 bg-gray-50 rounded focus:outline-none focus:ring-1 focus:ring-brand-500/50 text-gray-700"
                 />
               </div>
@@ -546,6 +544,10 @@ export const Header: React.FC<HeaderProps> = ({
   collapsed,
   setCollapsed 
 }) => {
+  const location = useLocation();
+  const projectReq = getProjectContextForPath(location.pathname);
+  const showProjectSwitcher = projectReq !== 'none';
+
   return (
     <header className="h-[52px] bg-white border-b border-gray-150 flex items-center px-4 justify-between gap-4 font-sans select-none shrink-0 sticky top-0 z-30">
       
@@ -571,7 +573,14 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </button>
 
-        <ProjectSwitcher />
+        {showProjectSwitcher ? (
+          <ProjectSwitcher />
+        ) : (
+          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-zinc-100/80 border border-zinc-200 text-[11px] font-semibold text-zinc-600">
+            <span className="h-2 w-2 rounded-full bg-brand-500"></span>
+            <span>Empire Corporate HQ</span>
+          </div>
+        )}
       </div>
 
       {/* Right controls: Global Search & Alerts & Profile info */}

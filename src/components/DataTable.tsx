@@ -99,7 +99,7 @@ export function DataTable<TData>({
       <div className="bg-white border border-gray-150 rounded-lg shadow-sm overflow-hidden select-none">
         <div ref={scrollContainerRef} className="w-full overflow-x-auto scrollbar-thin">
           <table className="w-full border-collapse text-left text-xs text-gray-600 font-sans min-w-[500px]">
-            <thead className="bg-gray-50 border-b border-gray-150 text-gray-700 font-bold uppercase tracking-wider text-[9.5px]">
+            <thead className="bg-white border-b border-gray-200 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -108,14 +108,14 @@ export function DataTable<TData>({
                       <th
                         key={header.id}
                         className={cn(
-                          'py-3.5 px-4 font-bold select-none',
-                          isSortable && 'cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-colors'
+                          'py-3 px-4 font-semibold select-none text-slate-500 text-[11px]',
+                          isSortable && 'cursor-pointer hover:bg-gray-50 hover:text-slate-900 transition-colors'
                         )}
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         <div className="flex items-center gap-1">
                           {flexRender(header.column.columnDef.header, header.getContext())}
-                          {isSortable && <ArrowUpDown className="h-3 w-3 text-gray-400" />}
+                          {isSortable && <ArrowUpDown className="h-3 w-3 text-slate-400" />}
                         </div>
                       </th>
                     );
@@ -123,9 +123,9 @@ export function DataTable<TData>({
                   {actions && (
                     <th
                       className={cn(
-                        'py-3.5 px-4 font-bold text-right',
+                        'py-3 px-4 font-semibold text-slate-500 text-[11px] text-right',
                         stickyActions
-                          ? 'sticky right-0 z-20 bg-gray-50 border-l border-gray-150 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)] pr-5'
+                          ? 'sticky right-0 z-20 bg-white border-l border-gray-200 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)] pr-5'
                           : 'w-16'
                       )}
                     >

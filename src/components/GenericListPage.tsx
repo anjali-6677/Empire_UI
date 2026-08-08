@@ -1,12 +1,9 @@
 import * as React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { 
   Plus, 
-  Search, 
   MoreVertical, 
-  Home, 
-  ChevronRight, 
   CheckCircle2, 
   Eye, 
   Copy,
@@ -22,12 +19,13 @@ import { safeFormatCurrency, safeFormatText, toSafeNumber } from '../utils/forma
 import { useWorkflow, getCollectionIdFromRoute } from '../context/WorkflowContext';
 import { useSites } from '../context/SitesContext';
 import { filterBySiteScope, SiteScopeMode } from '../utils/siteScope';
+import { ListPageLayout } from './common/ListPageLayout';
+import { FilterToolbar } from './common/FilterToolbar';
+import { PageHeader } from './common/PageHeader';
 
 interface GenericListPageProps {
   schema: ModuleSchema;
 }
-
-
 
 export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
   const navigate = useNavigate();
@@ -206,7 +204,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
       const outOfStockCount = siteFilteredRows.filter((r: any) => r.healthStatus === 'out_of_stock').length;
 
       return [
-        { id: '1', label: 'Total In-Stock Value', value: totalStockValue, isCurrency: true, color: 'text-brand-700' },
+        { id: '1', label: 'Total In-Stock Value', value: totalStockValue, isCurrency: true, color: 'text-slate-900' },
         { id: '2', label: 'Low Stock Alerts', value: lowStockAlerts, color: 'text-amber-600' },
         { id: '3', label: 'Out of Stock Items', value: outOfStockCount, color: 'text-rose-600' }
       ];
@@ -231,9 +229,9 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
       }).length;
 
       return [
-        { id: '1', label: 'Total Vendor Available Balance', value: totalVendorBal, isCurrency: true, color: 'text-brand-700' },
-        { id: '2', label: 'Total Site Available Balance', value: totalSiteBal, isCurrency: true, color: 'text-brand-700' },
-        { id: '3', label: 'Transfers This Month', value: transfersCount, color: 'text-gray-900' }
+        { id: '1', label: 'Total Vendor Available Balance', value: totalVendorBal, isCurrency: true, color: 'text-slate-900' },
+        { id: '2', label: 'Total Site Available Balance', value: totalSiteBal, isCurrency: true, color: 'text-slate-900' },
+        { id: '3', label: 'Transfers This Month', value: transfersCount, color: 'text-slate-900' }
       ];
     }
     return displaySummaryCards;
@@ -269,57 +267,45 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
   };
 
   return (
-    <div className="flex flex-col gap-5 w-full font-sans text-xs pb-12 select-none relative">
+    <ListPageLayout>
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-4 right-4 z-[1100] bg-brand-650 border border-brand-700 text-white px-4 py-2 rounded shadow-lg font-bold text-xs flex items-center gap-2 animate-slide-in">
-          <CheckCircle2 className="h-4 w-4 text-brand-200" />
+        <div className="fixed top-4 right-4 z-[1100] bg-slate-900 border border-slate-800 text-white px-4 py-2 rounded-xl shadow-lg font-bold text-xs flex items-center gap-2 animate-slide-in">
+          <CheckCircle2 className="h-4 w-4 text-[#AB9570]" />
           {toast}
         </div>
       )}
 
-      {/* Breadcrumbs */}
-      <nav className="flex items-center gap-1.5 text-[10px] font-bold tracking-tight text-gray-400 uppercase">
-        <Link to="/" className="hover:text-brand-600 transition-colors flex items-center justify-center p-0.5 rounded">
-          <Home className="h-3.5 w-3.5" />
-        </Link>
-        {schema.breadcrumbs.map((crumb, idx) => (
-          <React.Fragment key={idx}>
-            <ChevronRight className="h-3 w-3 text-gray-300" />
-            <span className={idx === schema.breadcrumbs.length - 1 ? 'text-gray-650 font-bold' : 'cursor-pointer'}>{crumb}</span>
-          </React.Fragment>
-        ))}
-      </nav>
-
-      {/* Header & Primary Action */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-150 pb-4">
-        <div className="space-y-0.5">
-          <h1 className="text-lg md:text-xl font-extrabold text-gray-900 tracking-tight">{displayTitle}</h1>
-          {displayDescription && <p className="text-[10.5px] text-gray-400 font-medium">{displayDescription}</p>}
-        </div>
-
-        {schema.primaryAction && (
-          <button
-            ref={triggerButtonRef}
-            onClick={handleOpenCreateModal}
-            className="inline-flex items-center gap-1 px-3.5 py-2 text-[10.5px] font-bold rounded shadow-sm transition-all bg-brand-500 hover:bg-brand-600 text-white cursor-pointer shrink-0 print:hidden"
-          >
-            <Plus className="h-4 w-4" />
-            {schema.primaryAction.label}
-          </button>
-        )}
-
-        {schema.pageType === 'report' && (
-          <div className="flex gap-2 shrink-0 print:hidden mt-2 md:mt-0">
-             <button onClick={handleExportCSV} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-brand-200 bg-brand-50 text-brand-700 font-bold rounded shadow-sm hover:bg-brand-100 text-xs cursor-pointer">
-               <Download className="h-3.5 w-3.5" /> Export Data
-             </button>
-             <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-250 bg-white text-gray-700 font-bold rounded shadow-sm hover:bg-gray-50 text-xs cursor-pointer">
-               <Printer className="h-3.5 w-3.5" /> Print PDF
-             </button>
+      {/* Header */}
+      <PageHeader
+        title={displayTitle}
+        subtitle={displayDescription}
+        breadcrumbs={schema.breadcrumbs.map((b) => ({ label: b }))}
+        actions={
+          <div className="flex items-center gap-2">
+            {schema.primaryAction && (
+              <button
+                ref={triggerButtonRef}
+                onClick={handleOpenCreateModal}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl shadow-xs transition-all bg-[#AB9570] hover:bg-[#927D5E] text-slate-950 cursor-pointer shrink-0 print:hidden"
+              >
+                <Plus className="h-4 w-4 stroke-[2.5]" />
+                {schema.primaryAction.label}
+              </button>
+            )}
+            {schema.pageType === 'report' && (
+              <div className="flex gap-2 shrink-0 print:hidden">
+                <button onClick={handleExportCSV} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 bg-white text-slate-800 font-bold rounded-xl shadow-2xs hover:bg-slate-50 text-xs cursor-pointer">
+                  <Download className="h-3.5 w-3.5" /> Export Data
+                </button>
+                <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 bg-white text-slate-800 font-bold rounded-xl shadow-2xs hover:bg-slate-50 text-xs cursor-pointer">
+                  <Printer className="h-3.5 w-3.5" /> Print PDF
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        }
+      />
 
       {/* Summary Cards */}
       {calculatedSummaryCards && (
@@ -327,9 +313,9 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
           {calculatedSummaryCards.map((card: any, idx: number) => {
             const cardValue = idx === 0 && schema.createFields && !activeTabConfig?.summaryCards && !isOnAccountPage ? localRows.length : card.value;
             return (
-              <div key={card.id} className="p-3.5 border border-gray-150 rounded bg-white shadow-sm space-y-1">
-                <span className="text-[9.5px] uppercase font-bold text-gray-400 block">{card.label}</span>
-                <span className={`font-extrabold text-base block ${card.color || 'text-gray-900'}`}>
+              <div key={card.id} className="p-3.5 border border-[#E2E6EC] rounded-xl bg-white shadow-2xs space-y-1">
+                <span className="text-[9.5px] uppercase font-bold text-slate-400 block">{card.label}</span>
+                <span className={`font-extrabold text-base block ${card.color || 'text-slate-900'}`}>
                   {card.isCurrency ? safeFormatCurrency(cardValue) : cardValue}
                 </span>
               </div>
@@ -340,15 +326,15 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
 
       {/* Status Tabs */}
       {schema.tabs && (
-        <div className="flex items-center gap-1 border-b border-gray-200 overflow-x-auto scrollbar-none pb-0.5">
+        <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto scrollbar-none pb-0.5">
           {schema.tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 text-[11px] font-bold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-bold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === tab.id
-                  ? 'border-brand-600 text-brand-700 bg-brand-50/40 rounded-t'
-                  : 'border-transparent text-gray-400 hover:text-gray-700'
+                  ? 'border-[#AB9570] text-[#AB9570] bg-[#AB9570]/5 rounded-t-lg'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
               {tab.label}
@@ -357,102 +343,66 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
         </div>
       )}
 
-      {/* Search Bar */}
-      <div className="flex items-center gap-2 bg-white p-2 border border-gray-150 rounded-lg shadow-sm print:hidden">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Filter listed table rows by keyword or reference code..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-brand-500 font-sans"
-          />
-        </div>
-        {search && (
-          <button onClick={() => setSearch('')} className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded cursor-pointer transition-colors border border-transparent">
-            Clear Filters
-          </button>
-        )}
-      </div>
+      {/* Search & Filter Toolbar */}
+      <FilterToolbar
+        searchQuery={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={`Filter ${displayTitle.toLowerCase()} by keyword or code...`}
+      />
 
       {/* Data Table */}
-      <div className="bg-white border border-gray-150 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto min-w-full">
-          <table className="w-full text-left text-xs divide-y divide-gray-150 min-w-[700px]">
-            <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
+      <div className="bg-white border border-[#E2E6EC] rounded-xl shadow-2xs overflow-hidden w-full">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left text-xs divide-y divide-slate-200">
+            <thead className="bg-white border-b border-slate-200 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
               <tr>
                 {activeColumns.map((col) => (
-                  <th key={col.key} className={`p-3 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
+                  <th key={col.key} className={`px-3.5 py-3 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
                     {col.label}
                   </th>
                 ))}
                 {schema.pageType !== 'report' && (
-                  <th className="p-3 text-right print:hidden">Actions</th>
+                  <th className="px-3.5 py-3 text-right print:hidden">Actions</th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+            <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={activeColumns.length + 1} className="p-12 text-center text-gray-400">
+                  <td colSpan={activeColumns.length + 1} className="p-12 text-center text-slate-400">
                     {search.trim() !== '' ? (
                       <div className="space-y-1">
-                        <p className="text-sm font-bold text-gray-600">No records match your search.</p>
-                        <p className="text-xs text-gray-400 font-medium">Clear search query "{search}" to view available records.</p>
+                        <p className="text-sm font-bold text-slate-700">No records match your search.</p>
+                        <p className="text-xs text-slate-400 font-medium">Clear search query "{search}" to view available records.</p>
                       </div>
                     ) : activeTab !== 'all' && siteFilteredRows.length > 0 ? (
                       <div className="space-y-1">
-                        <p className="text-sm font-bold text-gray-600">No records match the selected filters.</p>
-                        <p className="text-xs text-gray-400 font-medium">Switch status tabs or adjust filter selections to view available records.</p>
+                        <p className="text-sm font-bold text-slate-700">No records match the selected filters.</p>
+                        <p className="text-xs text-slate-400 font-medium">Switch status tabs or adjust filter selections to view available records.</p>
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        {schema.id === 'finance-utility-bills' ? (
-                          <>
-                            <p className="text-sm font-bold text-gray-600">No utility bills have been logged for {selectedSite ? selectedSite.name : 'this site'}.</p>
-                            <p className="text-xs text-gray-400 font-medium">Utility bill logging will commence when operational site activity begins.</p>
-                          </>
-                        ) : schema.id === 'finance-salary' ? (
-                          <>
-                            <p className="text-sm font-bold text-gray-600">Payroll allocation has not started for {selectedSite ? selectedSite.name : 'this site'}.</p>
-                            <p className="text-xs text-gray-400 font-medium">Staff salary allocations will be registered once site mobilization begins.</p>
-                          </>
-                        ) : schema.id === 'finance-budget-transfers' ? (
-                          <>
-                            <p className="text-sm font-bold text-gray-600">No budget transfers involve {selectedSite ? selectedSite.name : 'this site'}.</p>
-                            <p className="text-xs text-gray-400 font-medium">Inter-site fund reallocations will appear here when transfers occur.</p>
-                          </>
-                        ) : schema.id === 'finance-budgets' ? (
-                          <>
-                            <p className="text-sm font-bold text-gray-600">No budget records registered for {selectedSite ? selectedSite.name : 'this site'}.</p>
-                            <p className="text-xs text-gray-400 font-medium">Budget allocations will be initialized upon project registration.</p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-sm font-bold text-gray-600">No {displayTitle.toLowerCase()} available for {selectedSite ? selectedSite.name : 'this view'}.</p>
-                            <p className="text-xs text-gray-400 font-medium">Use the primary action button to register the first record.</p>
-                          </>
-                        )}
+                        <p className="text-sm font-bold text-slate-700">No {displayTitle.toLowerCase()} available for {selectedSite ? selectedSite.name : 'this view'}.</p>
+                        <p className="text-xs text-slate-400 font-medium">Use the primary action button to register the first record.</p>
                       </div>
                     )}
                   </td>
                 </tr>
               ) : (
                 filteredData.map((row: any) => (
-                  <tr key={row.id} className="hover:bg-gray-50/60 transition-colors">
+                  <tr key={row.id} className="hover:bg-slate-50/80 transition-colors h-14">
                     {activeColumns.map((col) => {
                       const val = row[col.key as keyof typeof row];
                       return (
-                        <td key={col.key} className={`p-3 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
+                        <td key={col.key} className={`px-3.5 py-3 align-middle ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
                           {col.type === 'currency' ? (
-                            <span className="font-mono font-bold text-gray-900">{safeFormatCurrency(val)}</span>
+                            <span className="font-mono font-bold text-slate-900">{safeFormatCurrency(val)}</span>
                           ) : col.type === 'badge' ? (
                             <StatusBadge status={String(val || 'active')} />
                           ) : col.type === 'mono' ? (
-                            <span className="font-mono font-bold text-brand-700 bg-brand-50 border border-brand-150 px-1.5 py-0.5 rounded">{safeFormatText(val)}</span>
+                            <span className="font-mono font-bold text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">{safeFormatText(val)}</span>
                           ) : col.type === 'date' ? (
-                            <span className="font-mono text-gray-600">{safeFormatText(val)}</span>
+                            <span className="font-mono text-slate-600">{safeFormatText(val)}</span>
                           ) : (
                             <span>{safeFormatText(val)}</span>
                           )}
@@ -461,176 +411,38 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                     })}
 
                     {schema.pageType !== 'report' && (
-                      <td className="p-3 text-right print:hidden">
+                      <td className="px-3.5 py-3 text-right align-middle print:hidden">
                         <DropdownMenu.Root>
                           <DropdownMenu.Trigger asChild>
-                            <button className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer focus:outline-none">
+                            <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 cursor-pointer focus:outline-hidden">
                               <MoreVertical className="h-4 w-4" />
                             </button>
                           </DropdownMenu.Trigger>
                           <DropdownMenu.Portal>
                             <DropdownMenu.Content 
-                              className="bg-white border border-gray-150 rounded shadow-lg z-[1000] p-1 font-sans text-xs min-w-[170px] space-y-0.5 animate-scale-in"
+                              className="bg-white border border-slate-200 rounded-xl shadow-lg z-[1000] p-1 font-sans text-xs min-w-[170px] space-y-0.5"
                               sideOffset={4}
                               align="end"
                             >
-                              {isOnAccountPage ? (
-                                <>
-                                  {activeTab === 'vendor_balances' && (
-                                    <>
-                                      <DropdownMenu.Item
-                                        onClick={() => triggerToast(`Vendor Balance: ${row.vendorName || row.vendor} — Available: ${safeFormatCurrency(row.availableBalance)}`)}
-                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                      >
-                                        <Eye className="h-3.5 w-3.5 text-brand-600" /> View Balance
-                                      </DropdownMenu.Item>
-                                      <DropdownMenu.Item
-                                        onClick={() => triggerToast(`Initiated invoice allocation for ${row.vendorName || row.vendor}`)}
-                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                      >
-                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Allocate To Invoice
-                                      </DropdownMenu.Item>
-                                      <DropdownMenu.Item
-                                        onClick={() => triggerToast(`Initiated balance transfer for ${row.vendorName || row.vendor}`)}
-                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                      >
-                                        <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> Transfer Balance
-                                      </DropdownMenu.Item>
-                                      <DropdownMenu.Item
-                                        onClick={() => {
-                                          setActiveTab('recent_transactions');
-                                          setSearch(row.vendorName || row.vendor || '');
-                                        }}
-                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                      >
-                                        <Search className="h-3.5 w-3.5 text-gray-400" /> View Transactions
-                                      </DropdownMenu.Item>
-                                    </>
-                                  )}
-                                  {activeTab === 'site_balances' && (
-                                    <>
-                                      <DropdownMenu.Item
-                                        onClick={() => triggerToast(`Site Fund Balance: ${row.siteName || row.site} — Available: ${safeFormatCurrency(row.availableBalance)}`)}
-                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                      >
-                                        <Eye className="h-3.5 w-3.5 text-brand-600" /> View Balance
-                                      </DropdownMenu.Item>
-                                      <DropdownMenu.Item
-                                        onClick={() => triggerToast(`Initiated inter-site fund transfer from ${row.siteName || row.site}`)}
-                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                      >
-                                        <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> Transfer To Site
-                                      </DropdownMenu.Item>
-                                      <DropdownMenu.Item
-                                        onClick={() => {
-                                          setActiveTab('recent_transactions');
-                                          setSearch(row.siteName || row.site || '');
-                                        }}
-                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                      >
-                                        <Search className="h-3.5 w-3.5 text-gray-400" /> View Transactions
-                                      </DropdownMenu.Item>
-                                    </>
-                                  )}
-                                  {activeTab === 'recent_transactions' && (
-                                    <>
-                                      <DropdownMenu.Item
-                                        onClick={() => triggerToast(`Transaction Ref: ${row.transactionReference || row.referenceNo || row.id} (${row.type || row.transactionType})`)}
-                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                      >
-                                        <Eye className="h-3.5 w-3.5 text-brand-600" /> View Transaction
-                                      </DropdownMenu.Item>
-                                      <DropdownMenu.Item
-                                        onClick={() => {
-                                          if (row.invoiceNumber || row.invoiceId) {
-                                            navigate('/finance/invoices');
-                                          } else {
-                                            triggerToast(`Linked Invoice: ${row.destinationSiteName || row.destination || 'N/A'}`);
-                                          }
-                                        }}
-                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                      >
-                                        <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> View Linked Invoice
-                                      </DropdownMenu.Item>
-                                      <DropdownMenu.Item
-                                        onClick={() => triggerToast(`Source: ${row.sourceSiteName || row.source || 'Central Fund'} ➔ Destination: ${row.destinationSiteName || row.destination || 'Vendor Fund'}`)}
-                                        className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                      >
-                                        <Search className="h-3.5 w-3.5 text-gray-400" /> View Source & Destination
-                                      </DropdownMenu.Item>
-                                    </>
-                                  )}
-                                </>
-                              ) : isInventoryPage ? (
-                                <>
-                                  <DropdownMenu.Item 
-                                    onClick={() => triggerToast(`Stock Details: ${row.itemCode || ''} - ${row.itemName || ''} (${row.availableQuantity || 0} ${row.unitSymbol || ''} available)`)}
-                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                  >
-                                    <Eye className="h-3.5 w-3.5 text-brand-600" /> View Stock Details
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Item 
-                                    onClick={() => navigate('/masters/items')}
-                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                  >
-                                    <Search className="h-3.5 w-3.5 text-gray-400" /> View Item Master
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Item 
-                                    onClick={() => navigate('/procurement/grns')}
-                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                  >
-                                    <ChevronRight className="h-3.5 w-3.5 text-gray-400" /> View GRN History
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Item 
-                                    onClick={() => triggerToast(`Consumption History: ${row.itemCode} at ${row.siteName}`)}
-                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                  >
-                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> View Consumption
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Item 
-                                    onClick={() => triggerToast(`Initiated stock transfer request for ${row.itemCode}`)}
-                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                  >
-                                    <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> Transfer Stock
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Item 
-                                    onClick={() => triggerToast(`Material issue recorded for ${row.itemCode}`)}
-                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                  >
-                                    <Plus className="h-3.5 w-3.5 text-brand-600" /> Record Material Issue
-                                  </DropdownMenu.Item>
-                                </>
-                              ) : (
-                                <>
-                                  <DropdownMenu.Item 
-                                    onClick={() => navigate(`${schema.route}/${row.id || '1'}`)}
-                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                  >
-                                    <Eye className="h-3.5 w-3.5 text-gray-400" /> View Details
-                                  </DropdownMenu.Item>
-                                  <DropdownMenu.Item 
-                                    onClick={() => handleDuplicateRow(row)}
-                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                  >
-                                    <Copy className="h-3.5 w-3.5 text-gray-400" /> Duplicate
-                                  </DropdownMenu.Item>
-                                  {(schema.route === '/finance/utility-bills' || schema.id === 'finance-utility-bills') && (
-                                    <DropdownMenu.Item 
-                                      onClick={() => navigate('/finance/utility-bills/new')}
-                                      className="px-2.5 py-1.5 hover:bg-brand-50 text-brand-700 rounded flex items-center gap-1.5 cursor-pointer font-bold outline-none"
-                                    >
-                                      <ChevronRight className="h-3.5 w-3.5 text-brand-600" /> Split Bill
-                                    </DropdownMenu.Item>
-                                  )}
-                                  <DropdownMenu.Item 
-                                    onClick={() => handleToggleRowStatus(row.id)}
-                                    className="px-2.5 py-1.5 hover:bg-gray-50 rounded flex items-center gap-1.5 cursor-pointer font-bold text-gray-700 outline-none"
-                                  >
-                                    <Power className="h-3.5 w-3.5 text-gray-400" />
-                                    {row.status === 'active' || row.status === 'empanelled' ? 'Deactivate' : 'Activate'}
-                                  </DropdownMenu.Item>
-                                </>
-                              )}
+                              <DropdownMenu.Item 
+                                onClick={() => navigate(`${schema.route}/${row.id || '1'}`)}
+                                className="px-3 py-2 hover:bg-slate-50 rounded-lg flex items-center gap-2 cursor-pointer font-bold text-slate-700 outline-hidden"
+                              >
+                                <Eye className="h-3.5 w-3.5 text-slate-400" /> View Details
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item 
+                                onClick={() => handleDuplicateRow(row)}
+                                className="px-3 py-2 hover:bg-slate-50 rounded-lg flex items-center gap-2 cursor-pointer font-bold text-slate-700 outline-hidden"
+                              >
+                                <Copy className="h-3.5 w-3.5 text-slate-400" /> Duplicate
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item 
+                                onClick={() => handleToggleRowStatus(row.id)}
+                                className="px-3 py-2 hover:bg-slate-50 rounded-lg flex items-center gap-2 cursor-pointer font-bold text-slate-700 outline-hidden"
+                              >
+                                <Power className="h-3.5 w-3.5 text-slate-400" />
+                                {row.status === 'active' || row.status === 'empanelled' ? 'Deactivate' : 'Activate'}
+                              </DropdownMenu.Item>
                             </DropdownMenu.Content>
                           </DropdownMenu.Portal>
                         </DropdownMenu.Root>
@@ -646,12 +458,12 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
 
       {/* Schema-Driven Modal Form for Master Create Actions */}
       {isModalOpen && schema.createFields && (
-        <div className="fixed inset-0 z-[1200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white border border-gray-150 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-4 border-b border-gray-150 flex items-center justify-between bg-gray-50">
+        <div className="fixed inset-0 z-[1200] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div>
-                <h3 className="font-extrabold text-sm text-gray-900 tracking-tight">{schema.primaryAction?.label || 'Create New Record'}</h3>
-                <p className="text-[10.5px] text-gray-400 font-medium">Enter required details to save into local master ledger.</p>
+                <h3 className="font-extrabold text-sm text-slate-900 tracking-tight">{schema.primaryAction?.label || 'Create New Record'}</h3>
+                <p className="text-[10.5px] text-slate-500 font-medium">Enter required details to save into local master ledger.</p>
               </div>
               <button
                 type="button"
@@ -659,7 +471,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                   setIsModalOpen(false);
                   triggerButtonRef.current?.focus();
                 }}
-                className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-200 cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-200 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -669,7 +481,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {schema.createFields.map((field) => (
                   <div key={field.name} className={field.colSpan === 2 ? 'col-span-1 sm:col-span-2' : ''}>
-                    <label className="block text-gray-700 font-bold mb-1 uppercase text-[9px] tracking-wider">
+                    <label className="block text-slate-700 font-bold mb-1 uppercase text-[9px] tracking-wider">
                       {field.label} {field.required && <span className="text-rose-500">*</span>}
                     </label>
 
@@ -677,7 +489,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                       <select
                         value={modalFormData[field.name] || ''}
                         onChange={(e) => handleFormChange(field.name, e.target.value)}
-                        className="w-full border border-gray-250 rounded p-2 focus:outline-none focus:border-brand-500 bg-white font-medium text-xs text-gray-800"
+                        className="w-full border border-slate-200 rounded-lg p-2 focus:outline-hidden focus:border-[#AB9570] bg-white font-medium text-xs text-slate-800"
                         required={field.required}
                       >
                         <option value="">Select option...</option>
@@ -691,7 +503,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                         value={modalFormData[field.name] || ''}
                         onChange={(e) => handleFormChange(field.name, e.target.value)}
                         placeholder={field.placeholder}
-                        className="w-full border border-gray-250 rounded p-2 focus:outline-none focus:border-brand-500 bg-white font-medium text-xs text-gray-800"
+                        className="w-full border border-slate-200 rounded-lg p-2 focus:outline-hidden focus:border-[#AB9570] bg-white font-medium text-xs text-slate-800"
                         required={field.required}
                       />
                     ) : (
@@ -700,7 +512,7 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
                         value={modalFormData[field.name] || ''}
                         onChange={(e) => handleFormChange(field.name, e.target.value)}
                         placeholder={field.placeholder}
-                        className="w-full border border-gray-250 rounded p-2 focus:outline-none focus:border-brand-500 bg-white font-medium text-xs text-gray-800"
+                        className="w-full border border-slate-200 rounded-lg p-2 focus:outline-hidden focus:border-[#AB9570] bg-white font-medium text-xs text-slate-800"
                         required={field.required}
                       />
                     )}
@@ -709,27 +521,27 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
               </div>
 
               {modalError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded text-rose-700 text-xs font-medium flex items-center gap-2">
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-medium flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
                   <span>{modalError}</span>
                 </div>
               )}
 
-              <div className="pt-4 border-t border-gray-150 flex items-center justify-end gap-2">
+              <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setIsModalOpen(false);
                     triggerButtonRef.current?.focus();
                   }}
-                  className="px-4 py-2 border border-gray-250 rounded font-bold text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                  className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-700 bg-white hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!isFormValid}
-                  className="px-5 py-2 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-bold shadow-sm cursor-pointer"
+                  className="px-5 py-2 bg-[#AB9570] hover:bg-[#927D5E] disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 rounded-xl font-bold shadow-xs cursor-pointer"
                 >
                   Save Record
                 </button>
@@ -738,6 +550,6 @@ export const GenericListPage: React.FC<GenericListPageProps> = ({ schema }) => {
           </div>
         </div>
       )}
-    </div>
+    </ListPageLayout>
   );
 };

@@ -1,0 +1,36 @@
+﻿src/pages/procurement/PurchaseOrderDetailsPage.tsx(167,21): error TS2532: Object is possibly 'undefined'.
+src/pages/procurement/PurchaseOrderListPage.tsx(15,3): error TS6133: 'ShoppingBag' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(17,3): error TS6133: 'Building2' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(18,3): error TS6133: 'Calendar' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(19,3): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(20,3): error TS6133: 'FileText' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(22,3): error TS6133: 'Users' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(28,3): error TS6133: 'MoreVertical' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(29,3): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(30,3): error TS6133: 'XCircle' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(31,3): error TS6133: 'BellRing' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(32,3): error TS6133: 'MessageSquare' is declared but its value is never read.
+src/pages/procurement/RFQDetailsPage.tsx(405,70): error TS2339: Property 'actionName' does not exist on type 'AuditEvent'.
+src/pages/procurement/RFQDetailsPage.tsx(406,66): error TS2339: Property 'actorName' does not exist on type 'AuditEvent'.
+src/pages/procurement/RFQDetailsPage.tsx(406,84): error TS2339: Property 'timestamp' does not exist on type 'AuditEvent'.
+src/pages/procurement/RFQDetailsPage.tsx(407,24): error TS2339: Property 'comments' does not exist on type 'AuditEvent'.
+src/pages/procurement/RFQDetailsPage.tsx(407,80): error TS2339: Property 'comments' does not exist on type 'AuditEvent'.
+src/pages/projects/ProjectActivationPage.tsx(14,3): error TS6133: 'Calendar' is declared but its value is never read.
+src/pages/projects/workspace/AcceptedProjectBOQTab.tsx(7,19): error TS6133: 'ProjectBOQLine' is declared but its value is never read.
+src/pages/projects/workspace/AcceptedProjectBOQTab.tsx(10,16): error TS6133: 'Layers' is declared but its value is never read.
+src/pages/projects/workspace/AcceptedProjectBOQTab.tsx(10,24): error TS6133: 'Download' is declared but its value is never read.
+src/pages/projects/workspace/AcceptedProjectBOQTab.tsx(10,42): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/pages/projects/workspace/AcceptedProjectBOQTab.tsx(30,9): error TS6133: 'totalIndentedVal' is declared but its value is never read.
+src/pages/projects/workspace/ProjectActivityTab.tsx(10,34): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/projects/workspace/ProjectActivityTab.tsx(62,69): error TS2339: Property 'module' does not exist on type 'AuditEvent'.
+src/pages/projects/workspace/ProjectMilestonesTab.tsx(10,18): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/pages/projects/workspace/ProjectMilestonesTab.tsx(10,32): error TS6133: 'Circle' is declared but its value is never read.
+src/pages/projects/workspace/ProjectMilestonesTab.tsx(10,40): error TS6133: 'DollarSign' is declared but its value is never read.
+src/pages/projects/workspace/ProjectMilestonesTab.tsx(57,21): error TS18048: 'ms.amount' is possibly 'undefined'.
+src/pages/projects/workspace/ProjectOverviewTab.tsx(19,9): error TS6133: 'marginEst' is declared but its value is never read.
+src/pages/projects/workspace/ProjectScheduleTab.tsx(10,20): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/projects/workspace/ProjectScheduleTab.tsx(10,27): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/pages/projects/workspace/ProjectScheduleTab.tsx(10,41): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/pages/projects/workspace/ProjectTeamTab.tsx(9,24): error TS6133: 'ShieldAlert' is declared but its value is never read.
+src/pages/projects/workspace/ProjectTeamTab.tsx(9,44): error TS6133: 'Plus' is declared but its value is never read.
+src/pages/projects/workspace/ProjectTeamTab.tsx(9,50): error TS6133: 'CheckCircle' is declared but its value is never read.

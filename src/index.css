@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-brand: #AB9570;
+  --color-brand-hover: #927D5E;
+  --color-brand-subtle: #EFE9DE;
+  --color-ink: #121214;
+  --color-sidebar: #121214;
+  --color-page: #f9fafb;
+  --color-surface: #ffffff;
+  --color-border: #e4e4e7;
+  --color-text: #121214;
+  --color-text-muted: #71717a;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
+  /* Empire Gold & Black Theme System */
+  --empire-gold: #AB9570;
+  --empire-gold-dark: #927D5E;
+  --empire-gold-light: #EFE9DE;
+  --empire-black: #121214;
+  --empire-white: #FFFFFF;
+}
+
 @layer base {
   body {
     @apply text-gray-900 bg-gray-50 antialiased font-sans select-none;

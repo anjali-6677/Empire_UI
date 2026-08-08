@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { ErrorBoundary } from './ErrorBoundary';
 import { cn } from '../utils/cn';
 
 export const AppLayout: React.FC = () => {
@@ -49,7 +50,9 @@ export const AppLayout: React.FC = () => {
         
         {/* Core page scroll window */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto max-w-full">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

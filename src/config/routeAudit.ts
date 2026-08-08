@@ -15,7 +15,7 @@ export function runRouteAudit(): RouteAuditResult {
   
   NAVIGATION_CONFIG.forEach((group) => {
     group.items.forEach((item) => {
-      navPaths.push(item.path);
+      if (item.path) navPaths.push(item.path);
     });
   });
 
@@ -27,7 +27,7 @@ export function runRouteAudit(): RouteAuditResult {
   const unknownPageTypes: string[] = [];
 
   // Special routes handled by dedicated custom components
-  const customRoutes = [ROUTES.DASHBOARD, ROUTES.SITES, ROUTES.CREATE_SITE, ROUTES.PROJECT_MAP];
+  const customRoutes = [ROUTES.OVERVIEW, ROUTES.PROJECTS, ROUTES.PROJECTS_MAP];
 
   navPaths.forEach((path) => {
     if (!customRoutes.includes(path as any) && !MODULE_SCHEMAS[path]) {

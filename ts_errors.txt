@@ -1,5 +1,188 @@
-src/components/GenericDetailsPage.tsx(266,9): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/GenericListPage.tsx(55,35): error TS2345: Argument of type 'string' is not assignable to parameter of type 'WorkflowCollectionId'.
-src/components/GenericListPage.tsx(123,15): error TS2345: Argument of type 'string' is not assignable to parameter of type 'WorkflowCollectionId'.
-src/components/GenericListPage.tsx(134,18): error TS2345: Argument of type 'string' is not assignable to parameter of type 'WorkflowCollectionId'.
-src/components/GenericListPage.tsx(139,29): error TS2345: Argument of type 'string' is not assignable to parameter of type 'WorkflowCollectionId'.
+﻿src/components/crm/ActivityTimeline.tsx(2,33): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/components/crm/ClientDecisionModal.tsx(2,54): error TS6133: 'DollarSign' is declared but its value is never read.
+src/components/crm/ClientDecisionModal.tsx(2,66): error TS6133: 'FileText' is declared but its value is never read.
+src/components/crm/EnquiriesTable.tsx(3,29): error TS6133: 'Edit' is declared but its value is never read.
+src/components/crm/EnquiriesTable.tsx(3,47): error TS6133: 'FileText' is declared but its value is never read.
+src/components/crm/EnquiriesTable.tsx(3,71): error TS6133: 'Copy' is declared but its value is never read.
+src/components/crm/EnquiryFilters.tsx(4,28): error TS6133: 'CRMEnquiryStatus' is declared but its value is never read.
+src/components/crm/PricingFactorsForm.tsx(2,31): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/components/crm/PricingFactorsForm.tsx(25,3): error TS6133: 'boqSections' is declared but its value is never read.
+src/components/crm/ProductSelector.tsx(21,3): error TS6133: 'categories' is declared but its value is never read.
+src/components/crm/ProductSelector.tsx(22,3): error TS6133: 'units' is declared but its value is never read.
+src/components/crm/RevisionHistoryTable.tsx(3,44): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/components/projects/wizard/Step6ReviewCreate.tsx(70,84): error TS2339: Property 'startDate' does not exist on type 'Step2Data'.
+src/components/projects/wizard/Step6ReviewCreate.tsx(71,91): error TS2339: Property 'targetCompletionDate' does not exist on type 'Step2Data'.
+src/config/navigation.ts(12,3): error TS6133: 'FileSearch' is declared but its value is never read.
+src/config/navigation.ts(14,3): error TS6133: 'GitBranch' is declared but its value is never read.
+src/config/navigation.ts(17,3): error TS6133: 'Layers' is declared but its value is never read.
+src/config/navigation.ts(18,3): error TS6133: 'Users' is declared but its value is never read.
+src/config/navigation.ts(19,3): error TS6133: 'FileSpreadsheet' is declared but its value is never read.
+src/config/navigation.ts(21,3): error TS6133: 'Flag' is declared but its value is never read.
+src/data/canonicalSeedData.ts(17,5): error TS2739: Type '{ id: string; code: string; name: string; calculationType: "percentage"; defaultValue: number; basis: "materialCost"; isActive: true; effectiveDate: string; displayOrder: number; }' is missing the following properties from type 'PricingFactor': companyDefaultValue, estimateValue, amount, overridden
+src/data/canonicalSeedData.ts(18,5): error TS2739: Type '{ id: string; code: string; name: string; calculationType: "percentage"; defaultValue: number; basis: "materialCost"; isActive: true; effectiveDate: string; displayOrder: number; }' is missing the following properties from type 'PricingFactor': companyDefaultValue, estimateValue, amount, overridden
+src/data/canonicalSeedData.ts(19,5): error TS2739: Type '{ id: string; code: string; name: string; calculationType: "percentage"; defaultValue: number; basis: "materialCost"; isActive: true; effectiveDate: string; displayOrder: number; }' is missing the following properties from type 'PricingFactor': companyDefaultValue, estimateValue, amount, overridden
+src/data/canonicalSeedData.ts(20,5): error TS2739: Type '{ id: string; code: string; name: string; calculationType: "percentage"; defaultValue: number; basis: "subtotal"; isActive: true; effectiveDate: string; displayOrder: number; }' is missing the following properties from type 'PricingFactor': companyDefaultValue, estimateValue, amount, overridden
+src/data/canonicalSeedData.ts(76,7): error TS2322: Type '"submitted"' is not assignable to type 'CRMEnquiryStatus'.
+src/data/canonicalSeedData.ts(94,7): error TS2322: Type '"submitted"' is not assignable to type 'CRMEstimateStatus'.
+src/domain/calculations.ts(6,25): error TS2305: Module '"./types"' has no exported member 'EstimateFactorOverride'.
+src/domain/calculations.ts(6,49): error TS2305: Module '"./types"' has no exported member 'EstimateMaterial'.
+src/domain/selectors.ts(16,3): error TS2305: Module '"./types"' has no exported member 'EstimateVersion'.
+src/domain/selectors.ts(128,7): error TS18048: 'indent.lines' is possibly 'undefined'.
+src/domain/selectors.ts(169,105): error TS2339: Property 'currentEstimateId' does not exist on type 'Estimate'.
+src/domain/selectors.ts(173,13): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/domain/selectors.ts(173,43): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/domain/selectors.ts(174,23): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/domain/selectors.ts(174,38): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/domain/selectors.ts(188,46): error TS2367: This comparison appears to be unintentional because the types '"rejected" | "draft" | "revision_requested" | "superseded" | "quotation_ready" | "sent_to_client"' and '"won"' have no overlap.
+src/domain/selectors.ts(213,20): error TS2367: This comparison appears to be unintentional because the types '"rejected" | "draft" | "revision_requested" | "superseded" | "quotation_ready" | "sent_to_client"' and '"accepted"' have no overlap.
+src/pages/crm/CreateEnquiryPage.tsx(51,29): error TS6133: 'setExpectedStartDate' is declared but its value is never read.
+src/pages/crm/CRMWorkspacePage.tsx(6,3): error TS6133: 'Filter' is declared but its value is never read.
+src/pages/crm/CRMWorkspacePage.tsx(8,3): error TS6133: 'FileSpreadsheet' is declared but its value is never read.
+src/pages/crm/CRMWorkspacePage.tsx(11,3): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/pages/crm/CRMWorkspacePage.tsx(15,3): error TS6133: 'RotateCcw' is declared but its value is never read.
+src/pages/crm/CRMWorkspacePage.tsx(16,3): error TS6133: 'XCircle' is declared but its value is never read.
+src/pages/crm/CRMWorkspacePage.tsx(17,3): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/crm/CRMWorkspacePage.tsx(18,3): error TS6133: 'ArrowRight' is declared but its value is never read.
+src/pages/crm/CRMWorkspacePage.tsx(62,48): error TS2367: This comparison appears to be unintentional because the types 'CRMEnquiryStatus' and '"estimation_in_progress"' have no overlap.
+src/pages/crm/CRMWorkspacePage.tsx(104,18): error TS2339: Property 'enquiryId' does not exist on type 'Project'.
+src/pages/crm/CRMWorkspacePage.tsx(104,99): error TS2339: Property 'projectId' does not exist on type 'Enquiry'.
+src/pages/crm/CRMWorkspacePage.tsx(176,63): error TS2345: Argument of type '<K extends keyof ERPCollections>(key: K, id: string, updatedFields: Partial<ERPCollections[K][number]>) => void' is not assignable to parameter of type '(collection: string, id: string, patch: any) => void'.
+  Types of parameters 'key' and 'collection' are incompatible.
+    Type 'string' is not assignable to type 'keyof ERPCollections'.
+src/pages/crm/CRMWorkspacePage.tsx(530,44): error TS2322: Type 'string' is not assignable to type 'CRMEstimateStatus'.
+src/pages/crm/CRMWorkspacePage.tsx(558,59): error TS2367: This comparison appears to be unintentional because the types '"estimating" | "won" | "lost" | "revision_requested" | "cancelled" | "quotation_ready" | "sent_to_client"' and '"estimation_in_progress"' have no overlap.
+src/pages/crm/EnquiriesPage.tsx(26,7): error TS2353: Object literal may only specify known properties, and 'documentNumber' does not exist in type 'Enquiry'.
+src/pages/crm/EnquiriesPage.tsx(46,34): error TS2339: Property 'documentNumber' does not exist on type 'Enquiry'.
+src/pages/crm/EnquiriesPage.tsx(63,12): error TS2678: Type '"submitted"' is not comparable to type 'CRMEnquiryStatus'.
+src/pages/crm/EnquiriesPage.tsx(100,24): error TS2339: Property 'documentNumber' does not exist on type 'Enquiry'.
+src/pages/crm/EnquiriesPage.tsx(104,76): error TS2339: Property 'title' does not exist on type 'Enquiry'.
+src/pages/crm/EnquiriesPage.tsx(106,92): error TS2551: Property 'siteLocation' does not exist on type 'Enquiry'. Did you mean 'location'?
+src/pages/crm/EnquiriesPage.tsx(111,69): error TS2339: Property 'targetSubmissionDate' does not exist on type 'Enquiry'.
+src/pages/crm/EnquiriesPage.tsx(115,73): error TS2339: Property 'estimatedBudget' does not exist on type 'Enquiry'.
+src/pages/crm/EnquiryOverviewPage.tsx(259,23): error TS2339: Property 'enquiryId' does not exist on type 'Project'.
+src/pages/crm/EnquiryOverviewPage.tsx(261,38): error TS2339: Property 'projectId' does not exist on type 'Enquiry'.
+src/pages/crm/EnquiryOverviewPage.tsx(269,125): error TS2339: Property 'code' does not exist on type 'Project'.
+src/pages/crm/EnquiryOverviewPage.tsx(269,181): error TS2339: Property 'projectStatus' does not exist on type 'Project'.
+src/pages/crm/EnquiryOverviewPage.tsx(286,35): error TS2304: Cannot find name 'createProjectFromAcceptedCRM'.
+src/pages/crm/EstimateBuilderPage.tsx(16,3): error TS6133: 'DollarSign' is declared but its value is never read.
+src/pages/crm/EstimateBuilderPage.tsx(17,3): error TS6133: 'User' is declared but its value is never read.
+src/pages/crm/EstimateBuilderPage.tsx(52,49): error TS2339: Property 'companyPricingFactors' does not exist on type 'ERPCollections'.
+src/pages/crm/EstimateBuilderPage.tsx(52,80): error TS2339: Property 'companyPricingFactors' does not exist on type 'ERPCollections'.
+src/pages/crm/EstimateBuilderPage.tsx(53,13): error TS2339: Property 'companyPricingFactors' does not exist on type 'ERPCollections'.
+src/pages/crm/EstimateBuilderPage.tsx(53,39): error TS7006: Parameter 'f' implicitly has an 'any' type.
+src/pages/crm/EstimateBuilderPage.tsx(76,5): error TS2345: Argument of type 'ScheduleItem[] | { id: string; workSection: string; description: string; startAfterDays: number; duration: number; durationUnit: "days"; }[]' is not assignable to parameter of type 'ScheduleItem[] | (() => ScheduleItem[])'.
+  Type '{ id: string; workSection: string; description: string; startAfterDays: number; duration: number; durationUnit: "days"; }[]' is not assignable to type 'ScheduleItem[] | (() => ScheduleItem[])'.
+    Type '{ id: string; workSection: string; description: string; startAfterDays: number; duration: number; durationUnit: "days"; }[]' is not assignable to type 'ScheduleItem[]'.
+      Type '{ id: string; workSection: string; description: string; startAfterDays: number; duration: number; durationUnit: "days"; }' is missing the following properties from type 'ScheduleItem': expectedStart, expectedCompletion
+src/pages/crm/EstimateBuilderPage.tsx(137,7): error TS2561: Object literal may only specify known properties, but 'profitMarginAmount' does not exist in type 'CostSummary'. Did you mean to write 'profitAmount'?
+src/pages/crm/EstimateBuilderPage.tsx(182,7): error TS2322: Type '"draft" | "pending_approval"' is not assignable to type 'CRMEstimateStatus'.
+  Type '"pending_approval"' is not assignable to type 'CRMEstimateStatus'.
+src/pages/crm/EstimateBuilderPage.tsx(190,7): error TS2322: Type 'string[]' is not assignable to type 'string'.
+src/pages/crm/EstimateBuilderPage.tsx(426,13): error TS2322: Type 'never[]' is not assignable to type 'string'.
+src/pages/crm/EstimateBuilderPage.tsx(489,11): error TS2322: Type 'never[]' is not assignable to type 'string'.
+src/pages/crm/EstimateVersionsPage.tsx(3,10): error TS2305: Module '"../../domain/types"' has no exported member 'EstimateVersion'.
+src/pages/crm/EstimateVersionsPage.tsx(16,39): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(16,60): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(17,42): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(29,45): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(31,7): error TS2353: Object literal may only specify known properties, and 'versions' does not exist in type 'Partial<Estimate>'.
+src/pages/crm/EstimateVersionsPage.tsx(40,35): error TS2339: Property 'documentNumber' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(66,86): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(81,20): error TS2339: Property 'documentNumber' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(81,43): error TS2339: Property 'projectName' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(92,94): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(94,26): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(94,40): error TS7006: Parameter 'ver' implicitly has an 'any' type.
+src/pages/crm/EstimateVersionsPage.tsx(98,42): error TS2339: Property 'currentVersionId' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(135,68): error TS2339: Property 'documentNumber' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(135,116): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(146,28): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(146,49): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/EstimateVersionsPage.tsx(146,82): error TS7006: Parameter 'line' implicitly has an 'any' type.
+src/pages/crm/LostOpportunitiesPage.tsx(3,19): error TS6133: 'ArrowLeft' is declared but its value is never read.
+src/pages/crm/PricingFactorsPage.tsx(2,27): error TS6133: 'Plus' is declared but its value is never read.
+src/pages/crm/PricingFactorsPage.tsx(2,41): error TS6133: 'RefreshCw' is declared but its value is never read.
+src/pages/crm/PricingFactorsPage.tsx(6,1): error TS6133: 'formatIndianCurrency' is declared but its value is never read.
+src/pages/crm/PricingFactorsPage.tsx(10,18): error TS2339: Property 'setCompanyPricingFactors' does not exist on type 'ERPStoreContextType'.
+src/pages/crm/PricingFactorsPage.tsx(13,11): error TS2339: Property 'companyPricingFactors' does not exist on type 'ERPCollections'.
+src/pages/crm/PricingFactorsPage.tsx(13,42): error TS2339: Property 'companyPricingFactors' does not exist on type 'ERPCollections'.
+src/pages/crm/PricingFactorsPage.tsx(14,15): error TS2339: Property 'companyPricingFactors' does not exist on type 'ERPCollections'.
+src/pages/crm/PricingFactorsPage.tsx(101,93): error TS2339: Property 'appliesToCostBasis' does not exist on type 'PricingFactor'.
+src/pages/crm/TenderDecisionsPage.tsx(18,34): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/TenderDecisionsPage.tsx(18,55): error TS2339: Property 'versions' does not exist on type 'Estimate'.
+src/pages/crm/TenderDecisionsPage.tsx(60,95): error TS2339: Property 'documentNumber' does not exist on type 'Estimate'.
+src/pages/crm/TenderDecisionsPage.tsx(100,26): error TS2339: Property 'documentNumber' does not exist on type 'Estimate'.
+src/pages/crm/TenderDecisionsPage.tsx(100,49): error TS2339: Property 'projectName' does not exist on type 'Estimate'.
+src/pages/crm/TenderDecisionsPage.tsx(196,79): error TS2339: Property 'documentNumber' does not exist on type 'Estimate'.
+src/pages/crm/TenderDecisionsPage.tsx(204,71): error TS2339: Property 'projectName' does not exist on type 'Estimate'.
+src/pages/crm/WonOpportunitiesPage.tsx(20,75): error TS2345: Argument of type '<K extends keyof ERPCollections>(key: K, id: string, updatedFields: Partial<ERPCollections[K][number]>) => void' is not assignable to parameter of type '(collection: string, id: string, patch: any) => void'.
+  Types of parameters 'key' and 'collection' are incompatible.
+    Type 'string' is not assignable to type 'keyof ERPCollections'.
+src/pages/crm/WonOpportunitiesPage.tsx(77,23): error TS2339: Property 'enquiryId' does not exist on type 'Project'.
+src/pages/crm/WonOpportunitiesPage.tsx(79,34): error TS2339: Property 'projectId' does not exist on type 'Enquiry'.
+src/pages/crm/WonOpportunitiesPage.tsx(111,74): error TS2339: Property 'code' does not exist on type 'Project'.
+src/pages/masters/CategoriesFactorsPage.tsx(248,13): error TS2739: Type '{ id: string; code: string; name: string; calculationType: "fixed" | "percentage"; defaultValue: number; basis: "materialCost"; isActive: true; effectiveDate: string; displayOrder: number; }' is missing the following properties from type 'PricingFactor': companyDefaultValue, estimateValue, amount, overridden
+src/pages/procurement/CreateRFQPage.tsx(41,5): error TS18048: 'currentIndent.lines' is possibly 'undefined'.
+src/pages/procurement/CreateRFQPage.tsx(149,47): error TS18048: 'ind.lines' is possibly 'undefined'.
+src/pages/procurement/CreateRFQPage.tsx(155,64): error TS18048: 'ind.lines' is possibly 'undefined'.
+src/pages/procurement/CreateRFQPage.tsx(228,16): error TS18048: 'currentIndent.lines' is possibly 'undefined'.
+src/pages/procurement/IndentApprovalsInboxPage.tsx(107,30): error TS18048: 'indent.lines' is possibly 'undefined'.
+src/pages/procurement/IndentApprovalsInboxPage.tsx(150,24): error TS18048: 'indent.lines' is possibly 'undefined'.
+src/pages/procurement/MaterialIndentDetailsPage.tsx(4,74): error TS6133: 'Building' is declared but its value is never read.
+src/pages/procurement/MaterialIndentDetailsPage.tsx(4,84): error TS6133: 'Calendar' is declared but its value is never read.
+src/pages/procurement/MaterialIndentDetailsPage.tsx(4,94): error TS6133: 'MapPin' is declared but its value is never read.
+src/pages/procurement/MaterialIndentListPage.tsx(4,52): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/pages/procurement/MaterialIndentListPage.tsx(4,66): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/projects/CreateProjectPage.tsx(3,33): error TS6133: 'Check' is declared but its value is never read.
+src/pages/projects/CreateProjectPage.tsx(58,17): error TS6133: 'setStep3' is declared but its value is never read.
+src/pages/projects/CreateProjectPage.tsx(216,7): error TS2820: Type '"Approved"' is not assignable to type 'BOQStatus | undefined'. Did you mean '"approved"'?
+src/pages/projects/CreateProjectPage.tsx(258,27): error TS2345: Argument of type 'Partial<Project> & Record<string, any>' is not assignable to parameter of type 'Project'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/pages/projects/ProjectActivationPage.tsx(33,73): error TS2339: Property 'projectName' does not exist on type 'Estimate'.
+src/pages/projects/ProjectActivationPage.tsx(34,62): error TS2339: Property 'siteLocation' does not exist on type 'Estimate'.
+src/pages/projects/ProjectActivationPage.tsx(70,58): error TS2345: Argument of type '{ projectName: string; projectCode: string; clientId: string; clientName: string; sourceEstimateId: string; acceptedBOQSnapshot: any; projectDirectorId: string; projectSupervisorId: string; startDate: string; targetCompletionDate: string; activities: { ...; }[]; }' is not assignable to parameter of type 'Partial<Project> & Record<string, any>'.
+  Type '{ projectName: string; projectCode: string; clientId: string; clientName: string; sourceEstimateId: string; acceptedBOQSnapshot: any; projectDirectorId: string; projectSupervisorId: string; startDate: string; targetCompletionDate: string; activities: { ...; }[]; }' is not assignable to type 'Partial<Project>'.
+    Types of property 'activities' are incompatible.
+      Type '{ id: string; activityName: string; startDate: string; endDate: string; responsibleEmployeeId: string; responsibleEmployeeName: string; status: string; delayDays: number; completionPercentage: number; }[]' is not assignable to type 'ProjectActivity[]'.
+        Type '{ id: string; activityName: string; startDate: string; endDate: string; responsibleEmployeeId: string; responsibleEmployeeName: string; status: string; delayDays: number; completionPercentage: number; }' is missing the following properties from type 'ProjectActivity': projectId, performedBy, timestamp
+src/pages/projects/ProjectActivationPage.tsx(72,9): error TS6133: 'handleAddTeamMember' is declared but its value is never read.
+src/pages/projects/ProjectActivationPage.tsx(88,9): error TS6133: 'handleRemoveTeamMember' is declared but its value is never read.
+src/pages/projects/ProjectActivationPage.tsx(215,70): error TS2339: Property 'documentNumber' does not exist on type 'Estimate'.
+src/pages/projects/workspace/ProjectBillingTab.tsx(2,22): error TS6133: 'FileText' is declared but its value is never read.
+src/pages/projects/workspace/ProjectBillingTab.tsx(2,32): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/pages/projects/workspace/ProjectBillingTab.tsx(2,46): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/pages/projects/workspace/ProjectBillingTab.tsx(11,31): error TS2339: Property 'contractValue' does not exist on type 'Project'.
+src/pages/projects/workspace/ProjectBillingTab.tsx(53,29): error TS2339: Property 'paymentTerms' does not exist on type 'Project'.
+src/pages/projects/workspace/ProjectBillingTab.tsx(54,25): error TS2339: Property 'paymentTerms' does not exist on type 'Project'.
+src/pages/projects/workspace/ProjectDetailsTab.tsx(2,20): error TS6133: 'MapPin' is declared but its value is never read.
+src/pages/projects/workspace/ProjectDetailsTab.tsx(2,28): error TS6133: 'Calendar' is declared but its value is never read.
+src/pages/projects/workspace/ProjectDetailsTab.tsx(2,44): error TS6133: 'User' is declared but its value is never read.
+src/pages/projects/workspace/ProjectDetailsTab.tsx(59,45): error TS2339: Property 'contractValue' does not exist on type 'Project'.
+src/pages/projects/workspace/ProjectDocumentsTab.tsx(2,36): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/router.tsx(33,1): error TS6133: 'CRMDashboardPage' is declared but its value is never read.
+src/router.tsx(34,1): error TS6133: 'EnquiriesListPage' is declared but its value is never read.
+src/router.tsx(37,1): error TS6133: 'EstimatesListPage' is declared but its value is never read.
+src/store/ERPStoreContext.tsx(60,59): error TS2536: Type 'number' cannot be used to index type 'ERPCollections[K]'.
+src/store/ERPStoreContext.tsx(61,91): error TS2536: Type 'number' cannot be used to index type 'ERPCollections[K]'.
+src/store/ERPStoreContext.tsx(162,66): error TS2536: Type 'number' cannot be used to index type 'ERPCollections[K]'.
+src/store/ERPStoreContext.tsx(172,98): error TS2536: Type 'number' cannot be used to index type 'ERPCollections[K]'.
+src/store/ERPStoreContext.tsx(415,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/store/ERPStoreContext.tsx(440,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/store/ERPStoreContext.tsx(473,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/store/ERPStoreContext.tsx(502,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/store/ERPStoreContext.tsx(531,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/utils/crmProjectHandoff.ts(63,50): error TS2339: Property 'sectionName' does not exist on type 'BOQSection'.
+src/utils/crmProjectHandoff.ts(66,40): error TS2339: Property 'internalTotalCost' does not exist on type 'BOQItem'.
+src/utils/crmProjectHandoff.ts(66,66): error TS2339: Property 'amount' does not exist on type 'BOQItem'.
+src/utils/crmProjectHandoff.ts(66,98): error TS2339: Property 'unitRate' does not exist on type 'BOQItem'.
+src/utils/crmProjectHandoff.ts(122,26): error TS2339: Property 'clientGstin' does not exist on type 'Enquiry'.
+src/utils/crmProjectHandoff.ts(144,5): error TS2820: Type '"Approved"' is not assignable to type 'BOQStatus | undefined'. Did you mean '"approved"'?
+src/utils/crmProjectHandoff.ts(183,42): error TS2339: Property 'clientReferenceNo' does not exist on type 'ClientDecision'.
+src/utils/crmProjectHandoff.ts(186,39): error TS2551: Property 'decisionNotes' does not exist on type 'ClientDecision'. Did you mean 'decisionDate'?

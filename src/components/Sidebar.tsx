@@ -15,15 +15,20 @@ const SidebarBrand: React.FC<{ isCollapsed: boolean; onCloseMobile: () => void }
   isCollapsed,
   onCloseMobile
 }) => (
-  <div className="h-16 flex items-center justify-between px-6 border-b border-zinc-850 shrink-0">
-    <Link to="/" className="flex items-center gap-2 focus:outline-none" onClick={onCloseMobile}>
-      <div className="h-8 w-8 rounded bg-brand-500 flex items-center justify-center text-white font-bold text-base shrink-0">
-        E
-      </div>
-      {!isCollapsed && (
-        <span className="font-bold text-sm text-gray-100 tracking-wider">
-          EMPIRE <span className="text-brand-500 font-semibold">INTERIOR</span>
-        </span>
+  <div className="h-[72px] flex items-center px-5 border-b border-zinc-800/60 shrink-0">
+    <Link to="/" className="flex items-center focus:outline-none overflow-hidden w-full" onClick={onCloseMobile}>
+      {isCollapsed ? (
+        <img 
+          src="/flutebyte-mark.png" 
+          alt="Flutebyte" 
+          className="h-8 w-auto object-contain mx-auto shrink-0" 
+        />
+      ) : (
+        <img 
+          src="/flutebyte-logo.png" 
+          alt="Flutebyte Technologies" 
+          className="w-[175px] max-w-full h-auto object-contain shrink-0" 
+        />
       )}
     </Link>
   </div>
@@ -92,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <li key={item.id} className="relative group/item">
               <Link
-                to={item.path}
+                to={item.path || '#'}
                 onClick={onCloseMobile}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded text-xs transition-all duration-150 font-sans focus:outline-none focus:ring-1 focus:ring-brand-500/50',

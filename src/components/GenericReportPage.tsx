@@ -37,13 +37,14 @@ import {
   formatYAxisTick, 
   toFiniteNumber 
 } from '../utils/reportChartAdapter';
+import { getReportFilterConfig } from '../config/reportFilterConfig';
 
 interface GenericReportPageProps {
   schema: ModuleSchema;
 }
 
 export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) => {
-  const { sites, selectedSiteId: headerSiteId } = useSites();
+  const { sites } = useSites();
   const [toast, setToast] = React.useState<string | null>(null);
   
   // Tab Management
@@ -52,7 +53,7 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
 
   // Basic Filter States
   const [search, setSearch] = React.useState('');
-  const [selectedSite, setSelectedSite] = React.useState('');
+  const [selectedSite, setSelectedSite] = React.useState('all');
   const [fromDate, setFromDate] = React.useState('2026-01-01');
   const [toDate, setToDate] = React.useState('2026-12-31');
 
@@ -76,7 +77,7 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
   // Reset filter values & pagination when switching sub-tabs or routes
   React.useEffect(() => {
     setSearch('');
-    setSelectedSite('');
+    setSelectedSite('all');
     setFromDate('2026-01-01');
     setToDate('2026-12-31');
     setAdvancedStatus('all');
@@ -120,105 +121,107 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
     return activeTab.mockRows || [];
   }, [activeTab.mockRows]);
 
-  // Effective Site Context Precedence:
-  // Explicit report site filter overrides header site; if report site is empty (''), fallback to headerSiteId (if not 'all').
-  const effectiveSiteId = React.useMemo(() => {
-    if (selectedSite) return selectedSite;
-    if (headerSiteId && headerSiteId !== 'all') return headerSiteId;
-    return '';
-  }, [selectedSite, headerSiteId]);
-
-  const effectiveSiteObj = React.useMemo(() => {
-    if (!effectiveSiteId) return null;
-    return sites.find((s) => s.id === effectiveSiteId || s.code === effectiveSiteId) || null;
-  }, [sites, effectiveSiteId]);
+  // Fetch Tab-Specific Report Filter Configuration
+  const filterConfig = React.useMemo(() => {
+    return getReportFilterConfig(activeTab.id || schema.id, schema.id);
+  }, [activeTab.id, schema.id]);
 
   // Date Range Validation Check
   const isDateRangeInvalid = React.useMemo(() => {
-    return Boolean(fromDate && toDate && fromDate > toDate);
-  }, [fromDate, toDate]);
+    return Boolean(filterConfig.supportsDateFilter && fromDate && toDate && fromDate > toDate);
+  }, [fromDate, toDate, filterConfig.supportsDateFilter]);
 
   // Active Advanced Filter Count Badge Calculation
   const activeFilterCount = React.useMemo(() => {
     let count = 0;
-    if (selectedSite) count++;
-    if (fromDate !== '2026-01-01') count++;
-    if (toDate !== '2026-12-31') count++;
+    if (selectedSite && selectedSite !== 'all') count++;
+    if (filterConfig.supportsDateFilter && (fromDate !== '2026-01-01' || toDate !== '2026-12-31')) count++;
     if (search.trim()) count++;
     if (advancedStatus !== 'all') count++;
     if (advancedVendor.trim()) count++;
     if (advancedCategory.trim()) count++;
     return count;
-  }, [selectedSite, fromDate, toDate, search, advancedStatus, advancedVendor, advancedCategory]);
+  }, [selectedSite, fromDate, toDate, search, advancedStatus, advancedVendor, advancedCategory, filterConfig.supportsDateFilter]);
 
-  // Unified Filtered Rows Engine
+  // Safe Per-Report Filter Pipeline
   const filteredRows = React.useMemo(() => {
-    if (isDateRangeInvalid) return [];
+    let result = [...rawRows];
 
+    // 1. Site Filter (only if tab supports site filtering and an explicit site ID is selected)
+    if (filterConfig.supportsSiteFilter && selectedSite && selectedSite !== 'all') {
+      const selectedSiteObj = sites.find((s) => s.id === selectedSite);
+      result = result.filter((row) => {
+        if (!filterConfig.getSiteIds) return true;
+        const siteVals = filterConfig.getSiteIds(row);
+        if (!siteVals || siteVals.length === 0) return true;
+
+        return siteVals.some((val) => {
+          const v = String(val).toLowerCase();
+          if (v === selectedSite.toLowerCase()) return true;
+          if (selectedSiteObj) {
+            if (v.includes(selectedSiteObj.name.toLowerCase())) return true;
+            if (v.includes(selectedSiteObj.code.toLowerCase())) return true;
+            if (selectedSiteObj.name.toLowerCase().includes(v)) return true;
+          }
+          return false;
+        });
+      });
+    }
+
+    // 2. Date Filter (only if tab supports date filtering and dates are defined)
+    if (filterConfig.supportsDateFilter && filterConfig.getDate) {
+      if (isDateRangeInvalid) {
+        return [];
+      }
+      result = result.filter((row) => {
+        const rowDateStr = filterConfig.getDate!(row);
+        if (!rowDateStr) return true; // keep row if no date value on row
+        const isoDate = String(rowDateStr).split(' ')[0];
+        if (/^\d{4}-\d{2}-\d{2}/.test(isoDate)) {
+          if (fromDate && isoDate < fromDate) return false;
+          if (toDate && isoDate > toDate) return false;
+        }
+        return true;
+      });
+    }
+
+    // 3. Keyword Search (Trimmed, Case-Insensitive, Searchable Text)
     const normalizedSearch = search.trim().toLowerCase();
+    if (normalizedSearch) {
+      result = result.filter((row) => {
+        const text = filterConfig.getSearchableText(row).toLowerCase();
+        return text.includes(normalizedSearch);
+      });
+    }
+
+    // 4. Advanced Status Filter
+    if (advancedStatus !== 'all' && filterConfig.supportsStatusFilter && filterConfig.getStatus) {
+      result = result.filter((row) => {
+        const status = String(filterConfig.getStatus!(row) || '').toLowerCase();
+        return status.includes(advancedStatus.toLowerCase());
+      });
+    }
+
+    // 5. Advanced Vendor Filter
     const normalizedVendor = advancedVendor.trim().toLowerCase();
+    if (normalizedVendor && filterConfig.supportsVendorFilter && filterConfig.getVendor) {
+      result = result.filter((row) => {
+        const vendor = String(filterConfig.getVendor!(row) || '').toLowerCase();
+        return vendor.includes(normalizedVendor);
+      });
+    }
+
+    // 6. Advanced Category Filter
     const normalizedCategory = advancedCategory.trim().toLowerCase();
+    if (normalizedCategory && filterConfig.supportsCategoryFilter && filterConfig.getCategory) {
+      result = result.filter((row) => {
+        const category = String(filterConfig.getCategory!(row) || '').toLowerCase();
+        return category.includes(normalizedCategory);
+      });
+    }
 
-    return rawRows.filter((r: any) => {
-      // 1. Site Precedence & Matching (ID primary, name/code secondary)
-      let matchSite = true;
-      if (effectiveSiteId) {
-        matchSite = Boolean(
-          r.siteId === effectiveSiteId ||
-          (r.site && String(r.site).toLowerCase().includes(effectiveSiteId.toLowerCase())) ||
-          (r.siteName && String(r.siteName).toLowerCase().includes(effectiveSiteId.toLowerCase())) ||
-          (r.destinationSite && String(r.destinationSite).toLowerCase().includes(effectiveSiteId.toLowerCase())) ||
-          (r.relatedSite && String(r.relatedSite).toLowerCase().includes(effectiveSiteId.toLowerCase())) ||
-          (effectiveSiteObj && (
-            (r.site && String(r.site).toLowerCase().includes(effectiveSiteObj.name.toLowerCase())) ||
-            (r.siteName && String(r.siteName).toLowerCase().includes(effectiveSiteObj.name.toLowerCase())) ||
-            (r.site && String(r.site).toLowerCase().includes(effectiveSiteObj.code.toLowerCase()))
-          ))
-        );
-      }
-
-      // 2. ISO Date Range Filtering (Inclusive)
-      const rowDate = r.poDate || r.date || r.invoiceDate || r.paymentDate || r.loginDate || r.lastContactDate || r.billDate;
-      let matchDate = true;
-      if (rowDate && typeof rowDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(rowDate)) {
-        if (fromDate && rowDate < fromDate) matchDate = false;
-        if (toDate && rowDate > toDate) matchDate = false;
-      }
-
-      // 3. Keyword Search (Trimmed, Case-Insensitive, Field-Specific)
-      let matchSearch = true;
-      if (normalizedSearch) {
-        const searchableText = [
-          r.site, r.siteName, r.vendor, r.vendorName, r.item, r.itemName,
-          r.category, r.itemCategory, r.poNumber, r.invoiceNo, r.paymentRef,
-          r.userName, r.user, r.status, r.deliveryStatus, r.budgetHealth, r.authResult, r.description
-        ].filter(Boolean).join(' ').toLowerCase();
-        
-        matchSearch = searchableText.includes(normalizedSearch);
-      }
-
-      // 4. Advanced Funnel Filters
-      let matchStatus = true;
-      if (advancedStatus !== 'all') {
-        const statusVal = String(r.status || r.deliveryStatus || r.budgetHealth || r.authResult || r.workflowStatus || '').toLowerCase();
-        matchStatus = statusVal.includes(advancedStatus.toLowerCase());
-      }
-
-      let matchVendor = true;
-      if (normalizedVendor) {
-        const vendorVal = String(r.vendor || r.vendorName || '').toLowerCase();
-        matchVendor = vendorVal.includes(normalizedVendor);
-      }
-
-      let matchCategory = true;
-      if (normalizedCategory) {
-        const catVal = String(r.category || r.itemCategory || r.item || '').toLowerCase();
-        matchCategory = catVal.includes(normalizedCategory);
-      }
-
-      return matchSite && matchDate && matchSearch && matchStatus && matchVendor && matchCategory;
-    });
-  }, [rawRows, effectiveSiteId, effectiveSiteObj, fromDate, toDate, search, isDateRangeInvalid, advancedStatus, advancedVendor, advancedCategory]);
+    return result;
+  }, [rawRows, filterConfig, selectedSite, sites, fromDate, toDate, search, isDateRangeInvalid, advancedStatus, advancedVendor, advancedCategory]);
 
   // Reset Pagination when filters or rawRows change
   React.useEffect(() => {
@@ -265,7 +268,7 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
       } else if (activeTab.id === 'bill-payment') {
         if (card.label.toLowerCase().includes('certified')) {
           cardVal = filteredRows.reduce((acc, r) => acc + toFiniteNumber(r.totalCertified), 0);
-        } else if (card.label.toLowerCase().includes('settled') || card.label.toLowerCase().includes('payments')) {
+        } else if (card.label.toLowerCase().includes('settled') || card.label.toLowerCase().includes('disbursed')) {
           cardVal = filteredRows.reduce((acc, r) => acc + toFiniteNumber(r.totalPaid), 0);
         } else if (card.label.toLowerCase().includes('outstanding') || card.label.toLowerCase().includes('creditor')) {
           cardVal = filteredRows.reduce((acc, r) => acc + toFiniteNumber(r.outstanding), 0);
@@ -299,14 +302,14 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
 
   const handleResetFilters = () => {
     setSearch('');
-    setSelectedSite('');
+    setSelectedSite('all');
     setFromDate('2026-01-01');
     setToDate('2026-12-31');
     setAdvancedStatus('all');
     setAdvancedVendor('');
     setAdvancedCategory('');
     setCurrentPage(1);
-    triggerToast('Filters reset to default range');
+    triggerToast('Filters reset to default state');
   };
 
   // Dynamic Chart Renderer
@@ -333,10 +336,10 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
           <AlertCircle className="h-8 w-8 text-amber-500/80" />
           <div className="space-y-1">
             <p className="font-bold text-xs text-gray-800">
-              No report data is available for the selected site, date range, and search criteria.
+              No report data matches the selected filter criteria.
             </p>
             <p className="text-[11px] text-gray-500">
-              Try adjusting your filter criteria or site selection to view graphical analytics.
+              Try adjusting your site, date, or search parameters to display graphical analytics.
             </p>
           </div>
           {activeFilterCount > 0 && (
@@ -571,11 +574,12 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
         .join(',');
     });
 
+    const targetSiteObj = sites.find(s => s.id === selectedSite);
     const metadataHeader = [
       `# Empire ERP Report Export: ${activeTab.title || schema.title}`,
       `# Export Date: ${new Date().toISOString()}`,
-      `# Filter Site: ${effectiveSiteObj ? effectiveSiteObj.name : 'All Project Sites'}`,
-      `# Date Range: ${fromDate} to ${toDate}`,
+      `# Filter Site: ${selectedSite === 'all' ? 'All Project Sites' : targetSiteObj ? targetSiteObj.name : selectedSite}`,
+      `# Date Range: ${filterConfig.supportsDateFilter ? `${fromDate} to ${toDate}` : 'N/A (All Periods)'}`,
       `# Search Query: ${search ? `"${search}"` : 'None'}`,
       `# Total Filtered Rows: ${filteredRows.length}`,
       ''
@@ -692,9 +696,13 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
           <select
             value={selectedSite}
             onChange={(e) => setSelectedSite(e.target.value)}
-            className="w-full border border-gray-250 rounded p-1.5 bg-white text-xs text-gray-800 font-medium cursor-pointer"
+            disabled={!filterConfig.supportsSiteFilter}
+            className={`w-full border border-gray-250 rounded p-1.5 bg-white text-xs text-gray-800 font-medium ${
+              !filterConfig.supportsSiteFilter ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer'
+            }`}
+            title={!filterConfig.supportsSiteFilter ? 'Site filter not applicable for this report' : 'Filter by site'}
           >
-            <option value="">All Project Sites {headerSiteId && headerSiteId !== 'all' ? `(Header Active: ${sites.find(s=>s.id===headerSiteId)?.code || headerSiteId})` : ''}</option>
+            <option value="all">All Project Sites</option>
             {sites.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.code} - {s.name}
@@ -708,7 +716,15 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            className={`w-full border rounded p-1.5 bg-white text-xs font-mono ${isDateRangeInvalid ? 'border-red-500 text-red-600 bg-red-50/30' : 'border-gray-250'}`}
+            disabled={!filterConfig.supportsDateFilter}
+            className={`w-full border rounded p-1.5 bg-white text-xs font-mono ${
+              !filterConfig.supportsDateFilter
+                ? 'opacity-50 cursor-not-allowed bg-gray-50 border-gray-200'
+                : isDateRangeInvalid
+                ? 'border-red-500 text-red-600 bg-red-50/30'
+                : 'border-gray-250'
+            }`}
+            title={!filterConfig.supportsDateFilter ? 'Date filter not applicable for this report' : 'From Date'}
           />
         </div>
         <div>
@@ -717,7 +733,15 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            className={`w-full border rounded p-1.5 bg-white text-xs font-mono ${isDateRangeInvalid ? 'border-red-500 text-red-600 bg-red-50/30' : 'border-gray-250'}`}
+            disabled={!filterConfig.supportsDateFilter}
+            className={`w-full border rounded p-1.5 bg-white text-xs font-mono ${
+              !filterConfig.supportsDateFilter
+                ? 'opacity-50 cursor-not-allowed bg-gray-50 border-gray-200'
+                : isDateRangeInvalid
+                ? 'border-red-500 text-red-600 bg-red-50/30'
+                : 'border-gray-250'
+            }`}
+            title={!filterConfig.supportsDateFilter ? 'Date filter not applicable for this report' : 'To Date'}
           />
         </div>
         <div>
@@ -811,7 +835,8 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
               <select
                 value={advancedStatus}
                 onChange={(e) => setAdvancedStatus(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-white font-medium focus:ring-1 focus:ring-amber-400"
+                disabled={!filterConfig.supportsStatusFilter}
+                className="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-white font-medium focus:ring-1 focus:ring-amber-400 disabled:opacity-50"
               >
                 <option value="all">All Statuses</option>
                 <option value="completed">Completed / Settled</option>
@@ -827,10 +852,11 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
               <label className="block text-slate-400 text-[9px] uppercase font-bold mb-1">Vendor / Partner Filter:</label>
               <input
                 type="text"
-                placeholder="Filter by vendor name..."
+                placeholder={filterConfig.supportsVendorFilter ? 'Filter by vendor name...' : 'N/A for this tab'}
                 value={advancedVendor}
                 onChange={(e) => setAdvancedVendor(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-white placeholder-slate-500 font-medium focus:ring-1 focus:ring-amber-400"
+                disabled={!filterConfig.supportsVendorFilter}
+                className="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-white placeholder-slate-500 font-medium focus:ring-1 focus:ring-amber-400 disabled:opacity-50"
               />
             </div>
 
@@ -838,10 +864,11 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
               <label className="block text-slate-400 text-[9px] uppercase font-bold mb-1">Category / Item Filter:</label>
               <input
                 type="text"
-                placeholder="Filter by category or item..."
+                placeholder={filterConfig.supportsCategoryFilter ? 'Filter by category...' : 'N/A for this tab'}
                 value={advancedCategory}
                 onChange={(e) => setAdvancedCategory(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-white placeholder-slate-500 font-medium focus:ring-1 focus:ring-amber-400"
+                disabled={!filterConfig.supportsCategoryFilter}
+                className="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-white placeholder-slate-500 font-medium focus:ring-1 focus:ring-amber-400 disabled:opacity-50"
               />
             </div>
           </div>

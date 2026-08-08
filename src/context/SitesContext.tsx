@@ -1,6 +1,54 @@
 import * as React from 'react';
 import { SiteSchema, SiteApprovalRole, ApprovalDecisionStatus } from '../types';
-import { mockSites } from '../data/mockData';
+import { useERPStore } from '../store/ERPStoreContext';
+import { Project } from '../domain/types';
+
+// Helper to convert unified Project model to legacy SiteSchema for backward compatibility
+export function projectToSiteSchema(project: Project): SiteSchema {
+  const workflowStatus =
+    project.boqStatus === 'approved'
+      ? 'approved'
+      : project.boqStatus === 'pending_approval'
+      ? 'pending_approval'
+      : project.boqStatus === 'rejected'
+      ? 'rejected'
+      : project.status === 'draft'
+      ? 'draft'
+      : 'approved';
+
+  const executionStatus =
+    project.status === 'active'
+      ? 'active'
+      : project.status === 'on_hold'
+      ? 'on_hold'
+      : project.status === 'completed'
+      ? 'completed'
+      : 'not_started';
+
+  return {
+    id: project.id,
+    code: project.projectCode,
+    name: project.projectName,
+    category: project.category || 'General Fitout',
+    client: project.clientName,
+    city: project.city,
+    manager: project.projectHead || project.projectDirectorName,
+    startDate: project.startDate,
+    targetCompletion: project.targetCompletionDate,
+    budget: project.currentBOQValue || project.budgetBaseline,
+    progress: project.progress || 0,
+    workflowStatus,
+    executionStatus,
+    company: project.companyName,
+    projectHead: project.projectHead || project.projectDirectorName,
+    address: project.siteAddress,
+    projectArea: project.projectArea,
+    projectAreaUnit: project.projectAreaUnit,
+    noteToApprover: project.noteToApprover,
+    rejectionComment: project.rejectionComment,
+    rejectedBy: project.rejectedBy,
+  };
+}
 
 interface SitesContextValue {
   sites: SiteSchema[];
@@ -20,199 +68,112 @@ interface SitesContextValue {
 const SitesContext = React.createContext<SitesContextValue | undefined>(undefined);
 
 export const SitesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [sites, setSites] = React.useState<SiteSchema[]>(() => {
-    return [...mockSites];
-  });
+  const { state, addItem, updateItem } = useERPStore();
   const [selectedSiteId, setSelectedSiteId] = React.useState<string>('site-1');
+
+  const sites = React.useMemo(() => {
+    return state.projects.map(projectToSiteSchema);
+  }, [state.projects]);
 
   const selectedSite = React.useMemo(() => {
     if (selectedSiteId === 'all') return null;
-    return sites.find((s) => s.id === selectedSiteId) || null;
+    return sites.find((s) => s.id === selectedSiteId) || sites[0] || null;
   }, [sites, selectedSiteId]);
 
   const addSite = (site: SiteSchema) => {
-    setSites((prev) => [site, ...prev]);
+    const newProject: Project = {
+      id: site.id || `proj-${Date.now()}`,
+      projectCode: site.code,
+      projectName: site.name,
+      companyName: site.company,
+      category: site.category,
+      clientId: site.client,
+      clientName: site.client,
+      siteAddress: site.address,
+      city: site.city,
+      projectArea: site.projectArea,
+      projectAreaUnit: site.projectAreaUnit,
+      projectDirectorId: 'emp-1',
+      projectDirectorName: site.manager || 'Rajesh Sharma',
+      projectSupervisorId: 'emp-2',
+      projectSupervisorName: 'Amit Verma',
+      projectHead: site.projectHead || site.manager,
+      team: [],
+      isTeamLocked: false,
+      isBOQLocked: false,
+      boqStatus: site.workflowStatus === 'approved' ? 'approved' : 'draft',
+      boqRevisions: [],
+      categoryBudgets: [],
+      currentBOQValue: site.budget,
+      budgetBaseline: site.budget,
+      approvedBudgetLimit: site.budget,
+      committedCost: 0,
+      actualCost: 0,
+      certifiedRevenue: 0,
+      clientReceipts: 0,
+      startDate: site.startDate,
+      targetCompletionDate: site.targetCompletion,
+      progress: site.progress || 0,
+      status: site.executionStatus === 'active' ? 'active' : 'draft',
+      projectStatus: site.executionStatus === 'active' ? 'active' : 'draft',
+      createdAt: new Date().toISOString(),
+      createdBy: 'User',
+      updatedAt: new Date().toISOString(),
+      updatedBy: 'User',
+    };
+    addItem('projects', newProject);
   };
 
   const duplicateSite = (id: string) => {
-    setSites((prev) => {
-      const match = prev.find((s) => s.id === id);
-      if (!match) return prev;
-
-      // Generate unique site code based on the highest numeric suffix in SITE-2026-XXX format
-      const maxCodeNumber = prev.reduce((max, s) => {
-        const parts = s.code.split('-');
-        if (parts.length === 3 && parts[0] === 'SITE' && parts[1] === '2026') {
-          const num = parseInt(parts[2], 10);
-          if (!isNaN(num)) return num > max ? num : max;
-        }
-        return max;
-      }, 0);
-      const nextCode = `SITE-2026-${String(maxCodeNumber + 1).padStart(3, '0')}`;
-
-      const duplicated: SiteSchema = {
-        ...match,
-        id: `site-${Date.now()}`,
-        code: nextCode,
-        name: match.name.endsWith('(Duplicate)') ? match.name : `${match.name} (Duplicate)`,
-        workflowStatus: 'draft',
-        executionStatus: 'not_started',
-        progress: 0,
-        approvalWorkflow: undefined,
-        submissionDate: undefined,
-        approvalRequestDate: undefined,
-        rejectionComment: undefined,
-        rejectedBy: undefined,
-        rejectionDate: undefined,
-        deletedDate: undefined,
-        previousWorkflowStatus: undefined,
-        processStartDate: new Date().toISOString().split('T')[0]
-      };
-
-      return [duplicated, ...prev];
-    });
+    const target = state.projects.find((p) => p.id === id);
+    if (!target) return;
+    const nextCode = `PRJ-2026-${String(state.projects.length + 1).padStart(3, '0')}`;
+    const duplicated: Project = {
+      ...target,
+      id: `proj-${Date.now()}`,
+      projectCode: nextCode,
+      projectName: `${target.projectName} (Duplicate)`,
+      status: 'draft',
+      boqStatus: 'draft',
+      progress: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    addItem('projects', duplicated);
   };
 
   const moveToDeleted = (id: string) => {
-    setSites((prev) =>
-      prev.map((s) =>
-        s.id === id
-          ? {
-              ...s,
-              previousWorkflowStatus: s.workflowStatus,
-              workflowStatus: 'deleted' as const,
-              deletedDate: new Date().toISOString().split('T')[0],
-            }
-          : s
-      )
-    );
+    const target = state.projects.find((p) => p.id === id);
+    if (target) {
+      updateItem('projects', id, { status: 'cancelled' });
+    }
   };
 
   const restoreSite = (id: string) => {
-    setSites((prev) =>
-      prev.map((s) =>
-        s.id === id
-          ? {
-              ...s,
-              workflowStatus: s.previousWorkflowStatus || 'draft',
-              deletedDate: undefined,
-              previousWorkflowStatus: undefined,
-            }
-          : s
-      )
-    );
+    const target = state.projects.find((p) => p.id === id);
+    if (target) {
+      updateItem('projects', id, { status: 'draft' });
+    }
   };
 
   const withdrawApprovalRequest = (id: string) => {
-    setSites((prev) =>
-      prev.map((s) =>
-        s.id === id
-          ? {
-              ...s,
-              workflowStatus: (s.previousWorkflowStatus === 'tender' ? 'tender' : 'draft') as any,
-              approvalWorkflow: undefined,
-              noteToApprover: undefined,
-              approvalRequestDate: undefined,
-            }
-          : s
-      )
-    );
+    updateItem('projects', id, { boqStatus: 'draft' });
   };
 
   const returnToDraft = (id: string) => {
-    setSites((prev) =>
-      prev.map((s) =>
-        s.id === id
-          ? {
-              ...s,
-              previousWorkflowStatus: s.workflowStatus,
-              workflowStatus: 'draft' as const,
-            }
-          : s
-      )
-    );
+    updateItem('projects', id, { boqStatus: 'draft', status: 'draft' });
   };
 
-  const requestApproval = (id: string, approverNames: Record<SiteApprovalRole, string>, note: string) => {
-    setSites((prev) =>
-      prev.map((s) =>
-        s.id === id
-          ? {
-              ...s,
-              workflowStatus: 'pending_approval' as const,
-              approvalRequestDate: new Date().toISOString().split('T')[0],
-              noteToApprover: note,
-              approvalWorkflow: {
-                accountingHead: { approverName: approverNames.accountingHead, status: 'pending' },
-                chairman: { approverName: approverNames.chairman, status: 'pending' },
-                projectHead: { approverName: approverNames.projectHead, status: 'pending' },
-                engineeringHead: { approverName: approverNames.engineeringHead, status: 'pending' },
-              },
-            }
-          : s
-      )
-    );
+  const requestApproval = (id: string, _approverNames: Record<SiteApprovalRole, string>, note: string) => {
+    updateItem('projects', id, { boqStatus: 'pending_approval', noteToApprover: note });
   };
 
-  const processApproval = (id: string, role: SiteApprovalRole, status: ApprovalDecisionStatus, comment?: string) => {
-    setSites((prev) =>
-      prev.map((s) => {
-        if (s.id !== id) return s;
-
-        const actionDate = new Date().toISOString().split('T')[0];
-
-        const currentWorkflow = s.approvalWorkflow || {
-          accountingHead: { approverName: 'Accounting Head', status: 'pending' },
-          chairman: { approverName: 'Chairman', status: 'pending' },
-          projectHead: { approverName: 'Project Head', status: 'pending' },
-          engineeringHead: { approverName: 'Engineering Head', status: 'pending' },
-        };
-
-        const updatedWorkflow = {
-          ...currentWorkflow,
-          [role]: {
-            ...currentWorkflow[role],
-            status,
-            actionDate,
-            comment,
-          },
-        };
-
-        let workflowStatus = s.workflowStatus;
-        let rejectedBy = s.rejectedBy;
-        let rejectionComment = s.rejectionComment;
-        let rejectionDate = s.rejectionDate;
-        let approvedValue = s.approvedValue;
-
-        if (status === 'rejected') {
-          workflowStatus = 'rejected';
-          rejectedBy = currentWorkflow[role].approverName || role;
-          rejectionComment = comment || 'Rejected';
-          rejectionDate = actionDate;
-        } else {
-          const allApproved =
-            updatedWorkflow.accountingHead.status === 'approved' &&
-            updatedWorkflow.chairman.status === 'approved' &&
-            updatedWorkflow.projectHead.status === 'approved' &&
-            updatedWorkflow.engineeringHead.status === 'approved';
-
-          if (allApproved) {
-            workflowStatus = 'approved';
-            approvedValue = s.budget;
-          }
-        }
-
-        return {
-          ...s,
-          workflowStatus,
-          approvalWorkflow: updatedWorkflow,
-          rejectedBy,
-          rejectionComment,
-          rejectionDate,
-          approvedValue,
-        };
-      })
-    );
+  const processApproval = (id: string, _role: SiteApprovalRole, status: ApprovalDecisionStatus, comment?: string) => {
+    if (status === 'rejected') {
+      updateItem('projects', id, { boqStatus: 'rejected', rejectionComment: comment });
+    } else if (status === 'approved') {
+      updateItem('projects', id, { boqStatus: 'approved' });
+    }
   };
 
   return (
