@@ -23,7 +23,10 @@ const getApiBaseUrl = (): string => {
     const cleanUrl = envUrl.trim().replace(/\/+$/, '');
     return cleanUrl.endsWith('/api/auth') ? cleanUrl : `${cleanUrl}/api/auth`;
   }
-  return 'http://localhost:5000/api/auth';
+  if (import.meta.env.DEV) {
+    return 'http://localhost:5000/api/auth';
+  }
+  return '/api/auth';
 };
 
 const API_BASE_URL = getApiBaseUrl();
