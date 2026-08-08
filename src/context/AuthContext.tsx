@@ -16,7 +16,17 @@ interface AuthContextType {
 }
 
 const AUTH_TOKEN_KEY = 'flutebyte_auth_token';
-const API_BASE_URL = 'http://localhost:5000/api/auth';
+
+const getApiBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    const cleanUrl = envUrl.trim().replace(/\/+$/, '');
+    return cleanUrl.endsWith('/api/auth') ? cleanUrl : `${cleanUrl}/api/auth`;
+  }
+  return 'http://localhost:5000/api/auth';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -97,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok && data.success && data.token) {
         localStorage.setItem(AUTH_TOKEN_KEY, data.token);
@@ -107,11 +117,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: true };
       }
 
+      if (response.status === 401) {
+        return {
+          success: false,
+          message: data.message || 'Invalid email or password.',
+        };
+      }
+
+      if (response.status === 500) {
+        return {
+          success: false,
+          message: data.message || 'Authentication service is temporarily unavailable.',
+        };
+      }
+
       return {
         success: false,
-        message: data.message || 'Invalid email or password',
+        message: data.message || `Authentication failed (${response.status}).`,
       };
-    } catch (err) {
+    } catch (err: any) {
       return {
         success: false,
         message: 'Unable to connect to authentication server. Please try again.',

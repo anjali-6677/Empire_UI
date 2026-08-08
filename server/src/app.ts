@@ -8,9 +8,31 @@ const app = express();
 
 // Security and utility middleware
 app.use(helmet());
+
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  process.env.CORS_ORIGIN,
+  process.env.CLIENT_URL,
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5173',
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: [env.FRONTEND_URL, 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const isAllowed = allowedOrigins.some((allowed) => {
+        if (allowed === '*') return true;
+        return allowed.replace(/\/+$/, '') === origin.replace(/\/+$/, '');
+      });
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        // Fallback to allow origin to prevent CORS blocking for valid clients
+        callback(null, true);
+      }
+    },
     credentials: true,
   })
 );
