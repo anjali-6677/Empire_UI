@@ -73,21 +73,19 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
 
       {/* Quotation Document Container (Print-optimized) */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-8 space-y-8 print:border-none print:shadow-none print:p-0">
-        {/* Document Header & Empire Branding */}
+        {/* Document Header & Flutebyte Branding */}
         <div className="flex items-start justify-between border-b-2 border-[#AB9570] pb-6">
           <div>
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-[#121214] flex items-center justify-center text-[#AB9570] font-black text-xl border border-[#AB9570]/50 shadow-sm">
-                E
-              </div>
+              <img src="/flutebyte-logo.png" alt="Flutebyte Technologies" className="h-10 w-auto object-contain" />
               <div>
-                <h1 className="text-lg font-black tracking-tight text-slate-950 uppercase">EMPIRE INTERIOR</h1>
-                <p className="text-[10px] font-bold text-[#AB9570] uppercase tracking-widest">Luxury Commercial & Residential Fitouts</p>
+                <h1 className="text-lg font-black tracking-tight text-slate-950 uppercase">FLUTEBYTE TECHNOLOGIES</h1>
+                <p className="text-[10px] font-bold text-[#AB9570] uppercase tracking-widest">Enterprise Resource Planning & Fitout Solutions</p>
               </div>
             </div>
             <div className="text-[11px] text-slate-500 mt-3 space-y-0.5 font-medium">
-              <p>Empire Interior Pvt Ltd • Worli Sea Face, Mumbai 400018</p>
-              <p>Email: commercial@empireinterior.com • Web: www.empireinterior.com</p>
+              <p>Flutebyte Technologies Pvt Ltd • Worli Sea Face, Mumbai 400018</p>
+              <p>Email: commercial@flutebyte.com • Web: www.flutebyte.com</p>
               <p>GSTIN: 27AAAAA0000A1Z5</p>
             </div>
           </div>
@@ -219,7 +217,7 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
           <div>
             <div className="h-12 flex items-end justify-center font-serif italic text-slate-500">Priya Nair</div>
             <div className="border-t border-slate-300 pt-1 font-bold text-slate-900">Authorized Signatory</div>
-            <div className="text-[10px] text-slate-500">Empire Interior Pvt Ltd</div>
+            <div className="text-[10px] text-slate-500">Flutebyte Technologies Pvt Ltd</div>
           </div>
           <div>
             <div className="h-12 flex items-end justify-center text-slate-300">________________________</div>

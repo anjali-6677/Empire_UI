@@ -877,7 +877,7 @@ export const Sites: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-gray-400 block text-[9.5px]">Company Entity:</span>
-                    <span className="font-bold text-gray-800">{selectedSite.company || 'Empire Interior Pvt Ltd'}</span>
+                    <span className="font-bold text-gray-800">{selectedSite.company || 'Flutebyte Technologies Pvt Ltd'}</span>
                   </div>
                   <div>
                     <span className="text-gray-400 block text-[9.5px]">Client:</span>

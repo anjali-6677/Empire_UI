@@ -69,113 +69,121 @@ import { CreateMaterialReturnPage } from './pages/inventory/CreateMaterialReturn
 import { CreateMaterialConsumptionPage } from './pages/inventory/CreateMaterialConsumptionPage';
 
 import CategoryDetailsPage from './pages/masters/CategoryDetailsPage';
+import { LoginPage } from './pages/auth/LoginPage';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 export const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="sites" element={<Navigate to="/projects" replace />} />
-          <Route path="sites/new" element={<Navigate to="/projects/new" replace />} />
-          <Route path="map" element={<ProjectMapPage />} />
-          <Route path="tasks" element={<MyTasksPage />} />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="calendar" element={<CalendarPage />} />
-          <Route path="messages" element={<MessagesPage />} />
+        {/* Public Authentication Route */}
+        <Route path="/login" element={<LoginPage />} />
 
-          {/* CRM & Commercial Estimation Routes */}
-          <Route path="crm" element={<CRMWorkspacePage />} />
-          <Route path="crm/enquiries" element={<Navigate to="/crm" replace />} />
-          <Route path="crm/enquiries/new" element={<CreateEnquiryPage />} />
-          <Route path="crm/enquiries/:enquiryId" element={<EnquiryOverviewPage />} />
-          <Route path="crm/estimates" element={<Navigate to="/crm" replace />} />
-          <Route path="crm/estimates/:estimateId" element={<EstimateOverviewPage />} />
-          <Route path="crm/estimates/builder/:enquiryId" element={<EstimateBuilderPage />} />
-          <Route path="crm/pricing-factors" element={<PricingFactorsPage />} />
-          <Route path="crm/won" element={<WonOpportunitiesPage />} />
-          <Route path="crm/lost" element={<LostOpportunitiesPage />} />
-          <Route path="crm/revisions/compare/:enquiryId" element={<RevisionComparisonPage />} />
-          <Route path="crm/estimate-versions" element={<Navigate to="/crm" replace />} />
-          <Route path="crm/tender-decisions" element={<WonOpportunitiesPage />} />
+        {/* Protected ERP Application Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<AppLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="sites" element={<Navigate to="/projects" replace />} />
+            <Route path="sites/new" element={<Navigate to="/projects/new" replace />} />
+            <Route path="map" element={<ProjectMapPage />} />
+            <Route path="tasks" element={<MyTasksPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="calendar" element={<CalendarPage />} />
+            <Route path="messages" element={<MessagesPage />} />
 
-          {/* Project Setup & Execution Routes */}
-          <Route path="projects" element={<ProjectsListPage />} />
-          <Route path="projects/map" element={<ProjectMapPage />} />
-          <Route path="projects/new" element={<CreateProjectPage />} />
-          <Route path="projects/activation" element={<ProjectActivationPage />} />
-          <Route path="projects/workspace" element={<ProjectWorkspacePage />} />
-          <Route path="projects/:projectId" element={<ProjectWorkspacePage />} />
+            {/* CRM & Commercial Estimation Routes */}
+            <Route path="crm" element={<CRMWorkspacePage />} />
+            <Route path="crm/enquiries" element={<Navigate to="/crm" replace />} />
+            <Route path="crm/enquiries/new" element={<CreateEnquiryPage />} />
+            <Route path="crm/enquiries/:enquiryId" element={<EnquiryOverviewPage />} />
+            <Route path="crm/estimates" element={<Navigate to="/crm" replace />} />
+            <Route path="crm/estimates/:estimateId" element={<EstimateOverviewPage />} />
+            <Route path="crm/estimates/builder/:enquiryId" element={<EstimateBuilderPage />} />
+            <Route path="crm/pricing-factors" element={<PricingFactorsPage />} />
+            <Route path="crm/won" element={<WonOpportunitiesPage />} />
+            <Route path="crm/lost" element={<LostOpportunitiesPage />} />
+            <Route path="crm/revisions/compare/:enquiryId" element={<RevisionComparisonPage />} />
+            <Route path="crm/estimate-versions" element={<Navigate to="/crm" replace />} />
+            <Route path="crm/tender-decisions" element={<WonOpportunitiesPage />} />
 
-          {/* Procurement & Material Indents Routes */}
-          <Route path="procurement/indents" element={<MaterialIndentListPage />} />
-          <Route path="procurement/indents/new" element={<CreateMaterialIndentPage />} />
-          <Route path="procurement/indents/:indentId" element={<MaterialIndentDetailsPage />} />
-          <Route path="procurement/indent-approvals" element={<IndentApprovalsInboxPage />} />
+            {/* Project Setup & Execution Routes */}
+            <Route path="projects" element={<ProjectsListPage />} />
+            <Route path="projects/map" element={<ProjectMapPage />} />
+            <Route path="projects/new" element={<CreateProjectPage />} />
+            <Route path="projects/activation" element={<ProjectActivationPage />} />
+            <Route path="projects/workspace" element={<ProjectWorkspacePage />} />
+            <Route path="projects/:projectId" element={<ProjectWorkspacePage />} />
 
-          {/* Procurement RFQ, Quotations & Rate Comparison Routes */}
-          <Route path="procurement/rfqs" element={<MaterialRFQsPage />} />
-          <Route path="procurement/rfqs/new" element={<CreateRFQPage />} />
-          <Route path="procurement/rfqs/:rfqId" element={<RFQDetailsPage />} />
-          <Route path="procurement/vendor-quotations" element={<Navigate to="/procurement/rfqs" replace />} />
-          <Route path="procurement/vendor-quotations/new" element={<CreateVendorQuotationPage />} />
-          <Route path="procurement/rate-comparison" element={<Navigate to="/procurement/rfqs" replace />} />
-          <Route path="procurement/rate-comparison/:rfqId" element={<Navigate to="/procurement/rfqs" replace />} />
+            {/* Procurement & Material Indents Routes */}
+            <Route path="procurement/indents" element={<MaterialIndentListPage />} />
+            <Route path="procurement/indents/new" element={<CreateMaterialIndentPage />} />
+            <Route path="procurement/indents/:indentId" element={<MaterialIndentDetailsPage />} />
+            <Route path="procurement/indent-approvals" element={<IndentApprovalsInboxPage />} />
 
-          {/* Purchase Order Routes */}
-          <Route path="procurement/purchase-orders" element={<PurchaseOrderListPage />} />
-          <Route path="procurement/purchase-orders/new" element={<CreatePurchaseOrderPage />} />
-          <Route path="procurement/purchase-orders/:poId" element={<PurchaseOrderDetailsPage />} />
+            {/* Procurement RFQ, Quotations & Rate Comparison Routes */}
+            <Route path="procurement/rfqs" element={<MaterialRFQsPage />} />
+            <Route path="procurement/rfqs/new" element={<CreateRFQPage />} />
+            <Route path="procurement/rfqs/:rfqId" element={<RFQDetailsPage />} />
+            <Route path="procurement/vendor-quotations" element={<Navigate to="/procurement/rfqs" replace />} />
+            <Route path="procurement/vendor-quotations/new" element={<CreateVendorQuotationPage />} />
+            <Route path="procurement/rate-comparison" element={<Navigate to="/procurement/rfqs" replace />} />
+            <Route path="procurement/rate-comparison/:rfqId" element={<Navigate to="/procurement/rfqs" replace />} />
 
-          {/* Goods Received Notes (GRN) Routes */}
-          <Route path="inventory/grns" element={<GRNListPage />} />
-          <Route path="inventory/grns/new" element={<CreateGRNPage />} />
-          <Route path="inventory/grns/:grnId" element={<GRNDetailsPage />} />
+            {/* Purchase Order Routes */}
+            <Route path="procurement/purchase-orders" element={<PurchaseOrderListPage />} />
+            <Route path="procurement/purchase-orders/new" element={<CreatePurchaseOrderPage />} />
+            <Route path="procurement/purchase-orders/:poId" element={<PurchaseOrderDetailsPage />} />
 
-          {/* Stock Ledger & Material Movement Routes */}
-          <Route path="inventory/stock-ledger" element={<StockLedgerPage />} />
-          <Route path="inventory/stock" element={<StockLedgerPage />} />
-          <Route path="inventory/material-movement" element={<MaterialMovementPage />} />
-          <Route path="inventory/material-issues" element={<MaterialMovementPage />} />
-          <Route path="inventory/material-issues/new" element={<CreateMaterialIssuePage />} />
-          <Route path="inventory/material-returns/new" element={<CreateMaterialReturnPage />} />
-          <Route path="inventory/material-consumptions/new" element={<CreateMaterialConsumptionPage />} />
+            {/* Goods Received Notes (GRN) Routes */}
+            <Route path="inventory/grns" element={<GRNListPage />} />
+            <Route path="inventory/grns/new" element={<CreateGRNPage />} />
+            <Route path="inventory/grns/:grnId" element={<GRNDetailsPage />} />
 
-          {/* Master Data Explicit Routes */}
-          <Route path="masters/categories-factors" element={<CategoriesFactorsPage />} />
-          <Route path="masters/categories/:id" element={<CategoryDetailsPage />} />
-          <Route path="masters/uom font" element={<UOMListPage />} />
-          <Route path="masters/uom" element={<UOMListPage />} />
+            {/* Stock Ledger & Material Movement Routes */}
+            <Route path="inventory/stock-ledger" element={<StockLedgerPage />} />
+            <Route path="inventory/stock" element={<StockLedgerPage />} />
+            <Route path="inventory/material-movement" element={<MaterialMovementPage />} />
+            <Route path="inventory/material-issues" element={<MaterialMovementPage />} />
+            <Route path="inventory/material-issues/new" element={<CreateMaterialIssuePage />} />
+            <Route path="inventory/material-returns/new" element={<CreateMaterialReturnPage />} />
+            <Route path="inventory/material-consumptions/new" element={<CreateMaterialConsumptionPage />} />
 
-          <Route path="masters/products" element={<ProductsListPage />} />
-          <Route path="masters/products/new" element={<CreateProductPage />} />
-          <Route path="masters/products/:productId/edit" element={<CreateProductPage />} />
-          <Route path="masters/products/:productId" element={<ProductDetailsPage />} />
+            {/* Master Data Explicit Routes */}
+            <Route path="masters/categories-factors" element={<CategoriesFactorsPage />} />
+            <Route path="masters/categories/:id" element={<CategoryDetailsPage />} />
+            <Route path="masters/uom font" element={<UOMListPage />} />
+            <Route path="masters/uom" element={<UOMListPage />} />
 
-          <Route path="masters/vendors" element={<VendorListPage />} />
-          <Route path="masters/vendors/new" element={<CreateVendorPage />} />
-          <Route path="masters/vendors/:vendorId/edit" element={<CreateVendorPage />} />
-          <Route path="masters/vendors/:vendorId" element={<VendorDetailsPage />} />
+            <Route path="masters/products" element={<ProductsListPage />} />
+            <Route path="masters/products/new" element={<CreateProductPage />} />
+            <Route path="masters/products/:productId/edit" element={<CreateProductPage />} />
+            <Route path="masters/products/:productId" element={<ProductDetailsPage />} />
 
-          <Route path="masters/subcontractors" element={<SubcontractorListPage />} />
-          <Route path="masters/subcontractors/new" element={<CreateSubcontractorPage />} />
-          <Route path="masters/subcontractors/:subcontractorId/edit" element={<CreateSubcontractorPage />} />
-          <Route path="masters/subcontractors/:subcontractorId" element={<SubcontractorDetailsPage />} />
+            <Route path="masters/vendors" element={<VendorListPage />} />
+            <Route path="masters/vendors/new" element={<CreateVendorPage />} />
+            <Route path="masters/vendors/:vendorId/edit" element={<CreateVendorPage />} />
+            <Route path="masters/vendors/:vendorId" element={<VendorDetailsPage />} />
 
-          <Route path="masters/clients" element={<ClientListPage />} />
-          <Route path="masters/clients/new" element={<CreateClientPage />} />
-          <Route path="masters/clients/:clientId/edit" element={<CreateClientPage />} />
-          <Route path="masters/clients/:clientId" element={<ClientDetailsPage />} />
+            <Route path="masters/subcontractors" element={<SubcontractorListPage />} />
+            <Route path="masters/subcontractors/new" element={<CreateSubcontractorPage />} />
+            <Route path="masters/subcontractors/:subcontractorId/edit" element={<CreateSubcontractorPage />} />
+            <Route path="masters/subcontractors/:subcontractorId" element={<SubcontractorDetailsPage />} />
 
-          <Route path="masters/payment-terms" element={<PaymentTermsPage />} />
-          <Route path="masters/taxes" element={<TaxesPage />} />
-          <Route path="masters/stock-locations" element={<StockLocationsPage />} />
-          <Route path="masters/employees" element={<UsersEmployeesPage />} />
-          <Route path="masters/users" element={<UsersEmployeesPage />} />
-          <Route path="masters/categories" element={<CategoriesFactorsPage />} />
+            <Route path="masters/clients" element={<ClientListPage />} />
+            <Route path="masters/clients/new" element={<CreateClientPage />} />
+            <Route path="masters/clients/:clientId/edit" element={<CreateClientPage />} />
+            <Route path="masters/clients/:clientId" element={<ClientDetailsPage />} />
 
-          {/* Legacy / Universal Catch-all Route Handler */}
-          <Route path="*" element={<ModulePageRenderer />} />
+            <Route path="masters/payment-terms" element={<PaymentTermsPage />} />
+            <Route path="masters/taxes" element={<TaxesPage />} />
+            <Route path="masters/stock-locations" element={<StockLocationsPage />} />
+            <Route path="masters/employees" element={<UsersEmployeesPage />} />
+            <Route path="masters/users" element={<UsersEmployeesPage />} />
+            <Route path="masters/categories" element={<CategoriesFactorsPage />} />
+
+            {/* Universal Catch-all Route Handler */}
+            <Route path="*" element={<ModulePageRenderer />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

@@ -416,7 +416,7 @@ export const CRMWorkspacePage: React.FC = () => {
                 <th className="py-3 px-3.5">Current Stage</th>
                 <th className="py-3 px-3.5 text-right">Latest Value</th>
                 <th className="py-3 px-3.5">Last Updated</th>
-                <th className="py-3 px-3.5 text-right w-[170px]">Actions</th>
+                <th className="py-3 px-3.5 text-right w-[190px] min-w-[190px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
@@ -430,6 +430,108 @@ export const CRMWorkspacePage: React.FC = () => {
                 filteredRecords.map((rec) => {
                   const enq = rec.enquiry;
                   const est = rec.estimate;
+
+                  // Helper function to resolve row action based on stage
+                  const getRowAction = () => {
+                    const status = enq.status;
+                    const estStatus = est?.status;
+
+                    if (status === 'lost' || status === 'cancelled' || estStatus === 'rejected') {
+                      return null;
+                    }
+
+                    if (status === 'won' || estStatus === 'accepted') {
+                      const crmState = getCRMProjectState({
+                        enquiry: enq,
+                        estimate: est,
+                        projects,
+                        projectSetupDrafts: state.projectSetupDrafts || [],
+                      });
+
+                      if (crmState.state === 'ACTIVE_PROJECT_EXISTS') {
+                        return {
+                          type: 'open_project',
+                          label: 'Open Project',
+                          className: 'h-[34px] min-w-[118px] px-3.25 bg-white hover:bg-[#FAF8F4] text-[#1F2937] border border-[#D7DEE8] hover:border-[#AB9570] font-semibold text-xs rounded-[7px] transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs',
+                          icon: <ExternalLink className="h-3.5 w-3.5 text-[#AB9570]" />,
+                          route: `/projects/${crmState.projectId}`,
+                        };
+                      } else if (crmState.state === 'DRAFT_EXISTS') {
+                        return {
+                          type: 'continue_setup',
+                          label: 'Continue Setup',
+                          className: 'h-[34px] min-w-[118px] px-3.25 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs rounded-[7px] transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs',
+                          route: `/projects/new?draftId=${crmState.draftId}`,
+                        };
+                      } else {
+                        return {
+                          type: 'create_project',
+                          label: '+ Create Project',
+                          className: 'h-[34px] min-w-[118px] px-3.25 bg-[#AB9570] hover:bg-[#927D5E] text-[#121214] font-semibold text-xs rounded-[7px] transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs',
+                          route: `/projects/new?sourceEstimateRevisionId=${est?.id || enq.id}`,
+                        };
+                      }
+                    }
+
+                    if (status === 'revision_requested' || estStatus === 'revision_requested') {
+                      return {
+                        type: 'create_revision',
+                        label: 'Create Revision',
+                        className: 'h-[34px] min-w-[118px] px-3.25 bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] font-semibold text-xs rounded-[7px] transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs',
+                        route: `/crm/estimates/builder/${enq.id}`,
+                      };
+                    }
+
+                    if (status === 'sent_to_client' || estStatus === 'sent_to_client') {
+                      return {
+                        type: 'record_decision',
+                        label: 'Record Decision',
+                        className: 'h-[34px] min-w-[118px] px-3.25 bg-[#0F766E] hover:bg-[#115E59] text-white font-semibold text-xs rounded-[7px] transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs',
+                        onClick: () => handleOpenDecisionModal(enq, est!),
+                      };
+                    }
+
+                    const s = status as string;
+                    if (s === 'estimating' || s === 'estimation_in_progress' || s === 'in_progress') {
+                      return {
+                        type: 'build_estimate',
+                        label: 'Build Estimate',
+                        className: 'h-[34px] min-w-[118px] px-3.25 bg-[#4338CA] hover:bg-[#3730A3] text-white font-semibold text-xs rounded-[7px] transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs',
+                        route: `/crm/estimates/builder/${enq.id}`,
+                      };
+                    }
+
+                    if (status === 'new' && !est) {
+                      return {
+                        type: 'prepare_estimate',
+                        label: 'Prepare Estimate',
+                        className: 'h-[34px] min-w-[118px] px-3.25 bg-[#121214] hover:bg-[#252529] text-white font-semibold text-xs rounded-[7px] transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs',
+                        route: `/crm/estimates/builder/${enq.id}`,
+                      };
+                    }
+
+                    if (est && (estStatus === 'quotation_ready' || est.status === 'quotation_ready')) {
+                      return {
+                        type: 'review_quotation',
+                        label: 'Review Quotation',
+                        className: 'h-[34px] min-w-[118px] px-3.25 bg-[#475569] hover:bg-[#334155] text-white font-semibold text-xs rounded-[7px] transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs',
+                        route: `/crm/estimates/${est.id}`,
+                      };
+                    }
+
+                    if (est) {
+                      return {
+                        type: 'continue_estimate',
+                        label: 'Continue Estimate',
+                        className: 'h-[34px] min-w-[118px] px-3.25 bg-[#475569] hover:bg-[#334155] text-white font-semibold text-xs rounded-[7px] transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs',
+                        route: `/crm/estimates/builder/${enq.id}`,
+                      };
+                    }
+
+                    return null;
+                  };
+
+                  const action = getRowAction();
 
                   return (
                     <tr key={rec.id} className="hover:bg-slate-50/80 transition-colors h-14">
@@ -496,7 +598,7 @@ export const CRMWorkspacePage: React.FC = () => {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap">
+                      <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap w-[190px] min-w-[190px]">
                         <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
                           <Link
                             to={`/crm/enquiries/${enq.id}`}
@@ -506,75 +608,26 @@ export const CRMWorkspacePage: React.FC = () => {
                             <Eye className="h-4 w-4" />
                           </Link>
 
-                          {/* Prepare / Revision Estimate Action */}
-                          {(!est || enq.status === 'new' || (enq.status as any) === 'estimating' || (enq.status as any) === 'estimation_in_progress' || (enq.status as any) === 'revision_requested') && enq.status !== 'won' && enq.status !== 'lost' && (
-                            <Link
-                              to={`/crm/estimates/builder/${enq.id}`}
-                              className="px-3 py-1.5 bg-[#AB9570] hover:bg-[#927D5E] text-[#121214] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                            >
-                              {(enq.status as any) === 'revision_requested' ? 'Create Revision' : 'Build Estimate'}
-                            </Link>
+                          {action && (
+                            action.onClick ? (
+                              <button
+                                type="button"
+                                onClick={action.onClick}
+                                className={action.className}
+                              >
+                                {action.icon}
+                                {action.label}
+                              </button>
+                            ) : (
+                              <Link
+                                to={action.route!}
+                                className={action.className}
+                              >
+                                {action.icon}
+                                {action.label}
+                              </Link>
+                            )
                           )}
-
-                          {/* Send Quotation Action */}
-                          {est && est.status === 'quotation_ready' && enq.status !== 'won' && enq.status !== 'lost' && (
-                            <Link
-                              to={`/crm/estimates/${est.id}`}
-                              className="px-3 py-1.5 bg-[#AB9570] hover:bg-[#927D5E] text-[#121214] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                            >
-                              Send Quotation
-                            </Link>
-                          )}
-
-                          {/* Record Client Decision Action */}
-                          {est && (est.status === 'sent_to_client' || enq.status === 'sent_to_client') && enq.status !== 'won' && enq.status !== 'lost' && (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenDecisionModal(enq, est)}
-                              className="px-3 py-1.5 bg-[#AB9570] hover:bg-[#927D5E] text-[#121214] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                            >
-                              Record Decision
-                            </button>
-                          )}
-
-                          {/* Project Setup / Open Buttons */}
-                          {(enq.status === 'won' || est?.status === 'accepted') && (() => {
-                            const crmState = getCRMProjectState({
-                              enquiry: enq,
-                              estimate: est,
-                              projects,
-                              projectSetupDrafts: state.projectSetupDrafts || [],
-                            });
-
-                            if (crmState.state === 'ACTIVE_PROJECT_EXISTS') {
-                              return (
-                                <Link
-                                  to={`/projects/${crmState.projectId}`}
-                                  className="px-3 py-1.5 bg-white hover:bg-[#F8F9FB] border border-[#D8DEE8] hover:border-[#AB9570] text-[#1F2937] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                                >
-                                  <ExternalLink className="h-3.5 w-3.5 text-[#AB9570]" /> Open Project
-                                </Link>
-                              );
-                            } else if (crmState.state === 'DRAFT_EXISTS') {
-                              return (
-                                <Link
-                                  to={`/projects/new?draftId=${crmState.draftId}`}
-                                  className="px-3 py-1.5 bg-[#AB9570] hover:bg-[#927D5E] text-[#121214] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                                >
-                                  Continue Setup
-                                </Link>
-                              );
-                            } else {
-                              return (
-                                <Link
-                                  to={`/projects/new?sourceEstimateRevisionId=${est?.id || enq.id}`}
-                                  className="px-3 py-1.5 bg-[#AB9570] hover:bg-[#927D5E] text-[#121214] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                                >
-                                  <Plus className="h-3.5 w-3.5 stroke-[2.5]" /> Create Project
-                                </Link>
-                              );
-                            }
-                          })()}
                         </div>
                       </td>
                     </tr>

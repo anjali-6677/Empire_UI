@@ -16,7 +16,7 @@ export interface Step2Data {
 
 interface Step2ProjectTeamProps {
   data: Step2Data;
-  onChange: (field: keyof Step2Data, value: any) => void;
+  onChange: (fieldOrPatch: keyof Step2Data | Partial<Step2Data>, value?: any) => void;
   onLockTeam?: () => void;
   employees: Employee[];
 }
@@ -26,26 +26,31 @@ export const Step2ProjectTeam: React.FC<Step2ProjectTeamProps> = ({ data, onChan
 
   const handleDirectorSelect = (empId: string) => {
     if (isLocked) return;
-    onChange('projectDirectorId', empId);
     const emp = employees.find((e) => e.id === empId);
-    onChange('projectDirectorName', emp ? emp.name : '');
-    if (emp && !data.projectHead) {
-      onChange('projectHead', emp.name);
-    }
+    const empName = emp ? emp.name : '';
+    onChange({
+      projectDirectorId: empId,
+      projectDirectorName: empName,
+      projectHead: empName || data.projectHead || 'Project Director',
+    });
   };
 
   const handleManagerSelect = (empId: string) => {
     if (isLocked) return;
-    onChange('projectManagerId', empId);
     const emp = employees.find((e) => e.id === empId);
-    onChange('projectManagerName', emp ? emp.name : '');
+    onChange({
+      projectManagerId: empId,
+      projectManagerName: emp ? emp.name : '',
+    });
   };
 
   const handleSupervisorSelect = (empId: string) => {
     if (isLocked) return;
-    onChange('projectSupervisorId', empId);
     const emp = employees.find((e) => e.id === empId);
-    onChange('projectSupervisorName', emp ? emp.name : '');
+    onChange({
+      projectSupervisorId: empId,
+      projectSupervisorName: emp ? emp.name : '',
+    });
   };
 
   const addTeamMember = () => {

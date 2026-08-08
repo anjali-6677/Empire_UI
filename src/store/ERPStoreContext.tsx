@@ -129,7 +129,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         const stored = await repository.loadAll();
 
         // Check demo seed version
-        const DEMO_SEED_VERSION = 'v2';
+        const DEMO_SEED_VERSION = 'v3';
         const storedSeedVersion = localStorage.getItem('flutebyte_demo_seed_version');
 
         if (storedSeedVersion !== DEMO_SEED_VERSION) {
@@ -144,9 +144,9 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
             rfqs: stored.rfqs || [],
             purchaseOrders: stored.purchaseOrders || [],
           };
-          localStorage.setItem('flutebyte_demo_reseed_backup_v1', JSON.stringify(backupData));
+          localStorage.setItem('flutebyte_demo_reseed_backup_v2', JSON.stringify(backupData));
 
-          // Clean reset to v2 CANONICAL_SEED_DATA
+          // Clean reset to v3 CANONICAL_SEED_DATA
           await repository.resetToDefaults(CANONICAL_SEED_DATA);
           localStorage.setItem('flutebyte_demo_seed_version', DEMO_SEED_VERSION);
         }
@@ -158,6 +158,24 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
             merged[key] = freshStored[key] as any;
           }
         });
+
+        // Explicit sanitization to guarantee deleted lost CRM opportunities (ENQ-005/006, EST-005/006) are never re-hydrated
+        const DELETED_ENQUIRY_IDS = new Set(['enq-2026-005', 'enq-2026-006']);
+        const DELETED_ESTIMATE_IDS = new Set(['est-2026-005-r0', 'est-2026-006-r0']);
+        const DELETED_QUOTATION_NUMS = new Set(['EMP-QUOTE-2026-005-R0', 'EMP-QUOTE-2026-006-R0']);
+
+        if (Array.isArray(merged.enquiries)) {
+          merged.enquiries = merged.enquiries.filter(
+            (e) => !DELETED_ENQUIRY_IDS.has(e.id) && !DELETED_ENQUIRY_IDS.has(e.enquiryNumber)
+          );
+          repository.saveCollection('enquiries', merged.enquiries);
+        }
+
+        if (Array.isArray(merged.estimates)) {
+          merged.estimates = merged.estimates.filter(
+            (est) => !DELETED_ESTIMATE_IDS.has(est.id) && !DELETED_QUOTATION_NUMS.has(est.quotationNumber)
+          );
+        }
 
         // Schema version check & normalization
         const CURRENT_SCHEMA_VERSION = '2';

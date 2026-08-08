@@ -64,6 +64,7 @@ export const CreateProjectPage: React.FC = () => {
 
       setDraft(newDraft);
       saveProjectSetupDraft(newDraft);
+      navigate(`/projects/new?draftId=${newDraft.id}`, { replace: true });
       return;
     }
 
@@ -79,7 +80,9 @@ export const CreateProjectPage: React.FC = () => {
     });
 
     setDraft(fallbackDraft);
-  }, [sourceEstimateRevisionId, draftId]);
+    saveProjectSetupDraft(fallbackDraft);
+    navigate(`/projects/new?draftId=${fallbackDraft.id}`, { replace: true });
+  }, [sourceEstimateRevisionId, draftId, state.projectSetupDrafts]);
 
   if (!draft) {
     return (
@@ -90,32 +93,46 @@ export const CreateProjectPage: React.FC = () => {
   }
 
   // Updaters
-  const updateDraft = (patch: Partial<ProjectSetupDraft>) => {
-    const updated = {
-      ...draft,
-      ...patch,
-      updatedAt: new Date().toISOString(),
-    };
-    setDraft(updated);
-    saveProjectSetupDraft(updated);
+  const updateDraft = (patch: Partial<ProjectSetupDraft> | ((prev: ProjectSetupDraft) => Partial<ProjectSetupDraft>)) => {
+    setDraft((prevDraft) => {
+      if (!prevDraft) return prevDraft;
+      const patchObj = typeof patch === 'function' ? patch(prevDraft) : patch;
+      const updated = {
+        ...prevDraft,
+        ...patchObj,
+        updatedAt: new Date().toISOString(),
+      };
+      saveProjectSetupDraft(updated);
+      return updated;
+    });
     if (validationError) setValidationError('');
   };
 
   const updateStep1 = (field: string, val: any) => {
-    updateDraft({
+    updateDraft((prev) => ({
       importedDetails: {
-        ...draft.importedDetails,
+        ...prev.importedDetails,
         [field]: val,
       },
-    });
+    }));
   };
 
-  const updateStep2 = (field: string, val: any) => {
-    updateDraft({
-      teamSetup: {
-        ...draft.teamSetup,
-        [field]: val,
-      },
+  const updateStep2 = (fieldOrPatch: string | Partial<ProjectSetupDraft['teamSetup']>, val?: any) => {
+    updateDraft((prev) => {
+      const currentTeamSetup = prev.teamSetup || {
+        projectDirectorId: 'emp-1',
+        projectDirectorName: 'Rajesh Sharma',
+        projectSupervisorId: 'emp-2',
+        projectSupervisorName: 'Amit Verma',
+        team: [],
+      };
+      const patchObj = typeof fieldOrPatch === 'string' ? { [fieldOrPatch]: val } : fieldOrPatch;
+      return {
+        teamSetup: {
+          ...currentTeamSetup,
+          ...patchObj,
+        },
+      };
     });
   };
 
@@ -296,7 +313,7 @@ export const CreateProjectPage: React.FC = () => {
               clientPhone: draft.importedDetails.phone || '',
               clientEmail: draft.importedDetails.email || '',
               clientGstin: draft.importedDetails.gstin || '',
-              companyName: 'Empire Interior Pvt Ltd',
+              companyName: 'Flutebyte Technologies Pvt Ltd',
               category: draft.importedDetails.projectCategory || 'Commercial',
               city: draft.importedDetails.city,
               state: draft.importedDetails.state || 'Maharashtra',

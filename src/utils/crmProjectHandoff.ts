@@ -266,7 +266,7 @@ export function startProjectSetupFromAcceptedEstimate({
 
   const clientObj = clients.find((c) => c.id === enquiry?.clientId || c.name === enquiry?.clientName) || {
     id: enquiry?.clientId || 'cli-master',
-    name: enquiry?.clientName || 'Empire Commercial Client',
+    name: enquiry?.clientName || 'Flutebyte Commercial Client',
     contactPerson: enquiry?.contactPerson || 'Client Representative',
     phone: enquiry?.phone || '',
     email: enquiry?.email || '',
@@ -439,7 +439,7 @@ export function createActiveProjectFromSetup({
     id: projectId,
     projectCode,
     projectName: importedDetails.projectName,
-    companyName: 'Empire Interior Pvt Ltd',
+    companyName: 'Flutebyte Technologies Pvt Ltd',
     category: importedDetails.projectCategory || 'Commercial',
     projectType: importedDetails.propertyType || 'Commercial',
     

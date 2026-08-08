@@ -5,7 +5,7 @@ import { Home, ChevronRight, Settings, CheckCircle2, Building, DollarSign, Hash 
 export const AppSettings: React.FC = () => {
   const [toast, setToast] = React.useState<string | null>(null);
 
-  const [companyName, setCompanyName] = React.useState('Empire Interior Contracting Pvt Ltd');
+  const [companyName, setCompanyName] = React.useState('Flutebyte Technologies Contracting Pvt Ltd');
   const [gstin, setGstin] = React.useState('29AAACE1234A1Z5');
   const [currency, setCurrency] = React.useState('INR (₹)');
   const [dateFormat, setDateFormat] = React.useState('YYYY-MM-DD');

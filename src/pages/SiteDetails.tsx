@@ -313,7 +313,7 @@ export const SiteDetails: React.FC = () => {
 
         {/* Top Key Metadata Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 pt-1 text-xs">
-          <div><span className="text-gray-400 block text-[9px] uppercase font-bold">Company Entity:</span><span className="font-bold text-gray-900">{site.company || 'Empire Contracting'}</span></div>
+          <div><span className="text-gray-400 block text-[9px] uppercase font-bold">Company Entity:</span><span className="font-bold text-gray-900">{site.company || 'Flutebyte Technologies Contracting'}</span></div>
           <div><span className="text-gray-400 block text-[9px] uppercase font-bold">Client Sponsor:</span><span className="font-bold text-gray-900">{site.client}</span></div>
           <div><span className="text-gray-400 block text-[9px] uppercase font-bold">City Location:</span><span className="font-bold text-gray-800">{site.city}</span></div>
           <div><span className="text-gray-400 block text-[9px] uppercase font-bold">Category:</span><span className="font-bold text-gray-800">{site.category}</span></div>

@@ -72,7 +72,7 @@ export const CreateSite: React.FC = () => {
 
   // Form Fields State
   const [basicDetails, setBasicDetails] = React.useState({
-    entity: 'Empire Interior Pvt Ltd',
+    entity: 'Flutebyte Technologies Pvt Ltd',
     code: 'SITE-2026-001',
     name: '',
     category: 'Corporate Office',
@@ -101,8 +101,8 @@ export const CreateSite: React.FC = () => {
 
   // Stakeholders (Team Members) State
   const [teamMembers, setTeamMembers] = React.useState<TeamMember[]>([
-    { id: '1', name: 'Rajesh Kumar', role: 'Project Manager', department: 'Operations', email: 'rajesh@empireii.com', phone: '9876543210' },
-    { id: '2', name: 'Amit Dev', role: 'Site Engineer', department: 'Operations', email: 'amit@empireii.com', phone: '9876543211' }
+    { id: '1', name: 'Rajesh Kumar', role: 'Project Manager', department: 'Operations', email: 'rajesh@flutebyte.com', phone: '9876543210' },
+    { id: '2', name: 'Amit Dev', role: 'Site Engineer', department: 'Operations', email: 'amit@flutebyte.com', phone: '9876543211' }
   ]);
   const [newMember, setNewMember] = React.useState({ name: '', role: 'Site Engineer', department: 'Operations', email: '', phone: '' });
   const [showAddMemberRow, setShowAddMemberRow] = React.useState(false);
@@ -343,8 +343,8 @@ export const CreateSite: React.FC = () => {
               <div>
                 <label className="block text-[10px] font-extrabold text-gray-550 uppercase mb-1">Company Entity *</label>
                 <select name="entity" value={basicDetails.entity} onChange={handleBasicChange} className="w-full bg-white border border-gray-250 rounded px-2.5 py-1.5 text-xs text-gray-800 focus:border-brand-500 focus:outline-none">
-                  <option value="Empire Interior Pvt Ltd">Empire Interior Pvt Ltd</option>
-                  <option value="Empire Construction Ltd">Empire Construction Ltd</option>
+                  <option value="Flutebyte Technologies Pvt Ltd">Flutebyte Technologies Pvt Ltd</option>
+                  <option value="Flutebyte Construction Ltd">Flutebyte Construction Ltd</option>
                 </select>
               </div>
 

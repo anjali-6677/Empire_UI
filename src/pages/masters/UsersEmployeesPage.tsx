@@ -36,7 +36,7 @@ const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     id: 'emp-1',
     employeeCode: 'EMP-01',
     fullName: 'Rajesh Sharma',
-    email: 'rajesh.sharma@empire.in',
+    email: 'rajesh.sharma@flutebyte.com',
     phone: '+91 98765 43210',
     departmentId: 'dept-eng',
     departmentName: 'Engineering & Projects',
@@ -48,7 +48,7 @@ const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     id: 'emp-2',
     employeeCode: 'EMP-02',
     fullName: 'Ananya Verma',
-    email: 'ananya.verma@empire.in',
+    email: 'ananya.verma@flutebyte.com',
     phone: '+91 98765 43211',
     departmentId: 'dept-proc',
     departmentName: 'Procurement & Supply Chain',
@@ -302,7 +302,7 @@ export const UsersEmployeesPage: React.FC = () => {
                   <input
                     type="email"
                     required
-                    placeholder="vikram@empire.in"
+                    placeholder="vikram@flutebyte.com"
                     value={empEmail}
                     onChange={(e) => setEmpEmail(e.target.value)}
                     className="w-full px-3 py-2 text-xs text-[#172033] bg-white border border-[#D9DEE7] rounded-md outline-none focus:border-[#7186A2]"

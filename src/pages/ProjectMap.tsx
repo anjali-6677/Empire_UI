@@ -112,7 +112,7 @@ export const ProjectMap: React.FC = () => {
         return {
           client: site.client,
           location: site.city,
-          company: 'Empire Interior Contracting Pvt Ltd',
+          company: 'Flutebyte Technologies Contracting Pvt Ltd',
           projectHead: 'Rajesh Kumar',
           projectManager: site.manager,
           architect: 'Stantec Architecture Pvt Ltd',

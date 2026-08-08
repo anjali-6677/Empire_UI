@@ -146,7 +146,7 @@ export const CRMDashboardPage: React.FC = () => {
       {/* Header Banner */}
       <div className="bg-slate-950 text-white p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="text-xs font-bold text-amber-400 uppercase tracking-widest">EMPIRE INTERIOR ERP</div>
+          <div className="text-xs font-bold text-amber-400 uppercase tracking-widest">FLUTEBYTE TECHNOLOGIES ERP</div>
           <h1 className="text-xl font-black tracking-tight text-white mt-0.5">CRM & Commercial Estimation</h1>
           <p className="text-xs text-slate-400 max-w-xl mt-1">
             Enquiry pipeline, BOQ cost builder, commercial pricing factor rules, quotation proposals & client decision tracking.

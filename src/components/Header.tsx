@@ -454,12 +454,15 @@ export const NotificationDropdown: React.FC = () => {
   );
 };
 
+import { useAuth } from '../context/AuthContext';
+
 // ==========================================
-// 4. User Menu Subcomponent (Visual Only)
+// 4. User Menu Subcomponent (Connected to AuthContext)
 // ==========================================
 export const UserMenu: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const { user, logout } = useAuth();
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -478,21 +481,38 @@ export const UserMenu: React.FC = () => {
     };
   }, []);
 
+  const handleLogout = () => {
+    setIsOpen(false);
+    logout();
+  };
+
+  const initials = user?.name
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+    : 'FB';
+
   return (
     <div className="relative font-sans text-xs" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="h-7 w-7 rounded-full bg-brand-500 hover:bg-brand-600 text-white flex items-center justify-center font-bold tracking-tight text-[11px] cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-500/50 relative shrink-0"
+        className="h-7 w-7 rounded-full bg-[#AB9570] hover:bg-[#927D5E] text-[#121214] flex items-center justify-center font-bold tracking-tight text-[11px] cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#AB9570] relative shrink-0"
         aria-label="User account dashboard menu"
       >
-        AD
+        {initials}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1.5 w-[200px] bg-white border border-gray-150 rounded shadow-lg z-50 py-1.5">
-          <div className="px-3.5 py-1.5 border-b border-gray-100">
-            <span className="font-bold text-gray-800 text-[11px] block leading-tight">Amit Dev</span>
-            <span className="text-[9.5px] text-gray-450 block font-semibold mt-0.5">Operations Director</span>
+        <div className="absolute right-0 mt-1.5 w-[220px] bg-white border border-gray-150 rounded shadow-lg z-50 py-1.5">
+          <div className="px-3.5 py-2 border-b border-gray-100">
+            <span className="font-bold text-gray-800 text-[11px] block leading-tight truncate">
+              {user?.name || 'Flutebyte Admin'}
+            </span>
+            <span className="text-[9.5px] text-gray-450 block font-semibold mt-0.5 truncate">
+              {user?.email || 'flutebyte@example.com'}
+            </span>
           </div>
 
           <div className="py-1">
@@ -519,13 +539,13 @@ export const UserMenu: React.FC = () => {
             </button>
           </div>
 
-          <div className="border-t border-gray-105 my-1.5"></div>
+          <div className="border-t border-gray-105 my-1 font-sans"></div>
 
           <button
-            onClick={() => setIsOpen(false)}
-            className="w-full text-left px-3.5 py-1.5 hover:bg-rose-50 flex items-center gap-2 text-rose-650 font-bold tracking-tight cursor-pointer"
+            onClick={handleLogout}
+            className="w-full text-left px-3.5 py-1.5 hover:bg-rose-50 flex items-center gap-2 text-rose-600 font-bold tracking-tight cursor-pointer"
           >
-            <LogOut className="h-3.5 w-3.5 text-rose-450 shrink-0" />
+            <LogOut className="h-3.5 w-3.5 text-rose-500 shrink-0" />
             <span>Sign Out</span>
           </button>
         </div>
@@ -577,8 +597,8 @@ export const Header: React.FC<HeaderProps> = ({
           <ProjectSwitcher />
         ) : (
           <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-zinc-100/80 border border-zinc-200 text-[11px] font-semibold text-zinc-600">
-            <span className="h-2 w-2 rounded-full bg-brand-500"></span>
-            <span>Empire Corporate HQ</span>
+            <span className="h-2 w-2 rounded-full bg-[#AB9570]"></span>
+            <span>Flutebyte Corporate HQ</span>
           </div>
         )}
       </div>
