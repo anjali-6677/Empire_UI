@@ -500,4 +500,208 @@ export const getEligibleVendorsForCategory = (
   return vendors;
 };
 
+// ==========================================
+// CANONICAL PROCUREMENT PROJECT & BOQ SELECTORS
+// ==========================================
+
+export interface NormalizedBOQLine {
+  id: string;
+  lineNo: number;
+  itemDescription: string;
+  categoryId: string;
+  categoryName: string;
+  unitSymbol: string;
+  boqQuantity: number;
+  boqRate: number;
+  boqAmount: number;
+  specifications?: string;
+  productId?: string;
+}
+
+const normalizeBOQLineItem = (rawLine: any, index: number): NormalizedBOQLine => {
+  const categoryId = rawLine.categoryId || rawLine.sectionId || rawLine.category || rawLine.categoryName || 'cat_general';
+  const categoryName = rawLine.categoryName || rawLine.sectionName || rawLine.categoryTitle || rawLine.category || 'General Works';
+
+  return {
+    id: String(rawLine.id || rawLine.boqItemId || `boq-line-${index + 1}`),
+    lineNo: Number(rawLine.lineNo || index + 1),
+    itemDescription: String(rawLine.itemDescription || rawLine.materialName || rawLine.description || rawLine.name || 'BOQ Line Item'),
+    categoryId: String(categoryId),
+    categoryName: String(categoryName),
+    unitSymbol: String(rawLine.unitSymbol || rawLine.unit || 'nos'),
+    boqQuantity: Number(rawLine.boqQuantity ?? rawLine.quantity ?? 0),
+    boqRate: Number(rawLine.boqRate ?? rawLine.rate ?? 0),
+    boqAmount: Number(
+      rawLine.boqAmount ??
+        rawLine.totalAmount ??
+        rawLine.amount ??
+        (Number(rawLine.boqQuantity ?? rawLine.quantity ?? 0) * Number(rawLine.boqRate ?? rawLine.rate ?? 0))
+    ),
+    specifications: rawLine.specifications || rawLine.specification || rawLine.specs || '',
+    productId: rawLine.productId ? String(rawLine.productId) : undefined,
+  };
+};
+
+export const getNormalizedLockedBOQLines = (state: ERPCollections, project: Project | string): NormalizedBOQLine[] => {
+  const projectId = typeof project === 'string' ? project : project?.id;
+  if (!projectId) return [];
+
+  const targetProject = typeof project === 'string' ? getProjectById(state, projectId) : project;
+  if (!targetProject) return [];
+
+  // 1. Direct lines on lockedProjectBOQ
+  if (targetProject.lockedProjectBOQ?.lines && Array.isArray(targetProject.lockedProjectBOQ.lines) && targetProject.lockedProjectBOQ.lines.length > 0) {
+    return targetProject.lockedProjectBOQ.lines.map(normalizeBOQLineItem);
+  }
+
+  // 2. Sections/items on lockedProjectBOQ
+  if ((targetProject.lockedProjectBOQ as any)?.sections && Array.isArray((targetProject.lockedProjectBOQ as any).sections)) {
+    const rawLines: any[] = [];
+    (targetProject.lockedProjectBOQ as any).sections.forEach((sec: any) => {
+      const secItems = sec.items || sec.lines || [];
+      secItems.forEach((item: any) => {
+        rawLines.push({
+          ...item,
+          categoryId: item.categoryId || sec.id || sec.categoryName || sec.title,
+          categoryName: item.categoryName || sec.title || sec.categoryName || 'General Works',
+        });
+      });
+    });
+    if (rawLines.length > 0) {
+      return rawLines.map(normalizeBOQLineItem);
+    }
+  }
+
+  // 3. state.projectBOQs
+  const boqInStore = (state.projectBOQs || []).find((b) => b.projectId === projectId || b.id === projectId || b.id === `boq-${projectId}`);
+  if (boqInStore?.lines && Array.isArray(boqInStore.lines) && boqInStore.lines.length > 0) {
+    return boqInStore.lines.map(normalizeBOQLineItem);
+  }
+
+  // 4. state.projectBOQLines filtered by projectId or id prefix fallback
+  const linesInStore = (state.projectBOQLines || []).filter((l) => {
+    const lineProjectId = (l as any).projectId;
+    if (lineProjectId) return lineProjectId === projectId;
+    if (projectId === 'prj-2026-001' && l.id.startsWith('bline-1')) return true;
+    if (projectId === 'prj-2026-002' && l.id.startsWith('bline-2')) return true;
+    if (projectId === 'prj-2026-003' && l.id.startsWith('bline-3')) return true;
+    return false;
+  });
+  if (linesInStore.length > 0) {
+    return linesInStore.map(normalizeBOQLineItem);
+  }
+
+  // 5. acceptedBOQSnapshot
+  if ((targetProject as any)?.acceptedBOQSnapshot && Array.isArray((targetProject as any).acceptedBOQSnapshot) && (targetProject as any).acceptedBOQSnapshot.length > 0) {
+    return (targetProject as any).acceptedBOQSnapshot.map(normalizeBOQLineItem);
+  }
+
+  return [];
+};
+
+export const getProjectBOQCategories = (state: ERPCollections, project: Project | string): { id: string; name: string }[] => {
+  const lines = getNormalizedLockedBOQLines(state, project);
+  const map = new Map<string, string>();
+  lines.forEach((l) => {
+    if (!map.has(l.categoryId)) {
+      map.set(l.categoryId, l.categoryName);
+    }
+  });
+  return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+};
+
+export const isProcurementReadyProject = (state: ERPCollections, project: Project): boolean => {
+  if (!project) return false;
+
+  // 1. Must be Active
+  const rawStatus = String(project.projectStatus || project.status || '').toLowerCase();
+  const isActive = rawStatus === 'active' || rawStatus === 'execution_active' || rawStatus === 'in_progress';
+  if (!isActive) return false;
+
+  // 2. Must not be legacy/draft
+  if (project.projectCode?.startsWith('SITE-')) return false;
+  if ((project as any).isDraft) return false;
+
+  // 3. Must have BOQ lines
+  const lines = getNormalizedLockedBOQLines(state, project);
+  return lines.length > 0;
+};
+
+export const getProcurementReadyProjects = (state: ERPCollections): Project[] => {
+  if (!state.projects || !Array.isArray(state.projects)) return [];
+  return state.projects.filter((p) => isProcurementReadyProject(state, p));
+};
+
+export interface HistoricalRateRecord {
+  poId: string;
+  poNumber: string;
+  poDate: string;
+  vendorName: string;
+  vendorId?: string;
+  productName: string;
+  qty: number;
+  unit: string;
+  basicRate: number;
+  taxPercent: number;
+  landedRate: number;
+  projectName?: string;
+  status: string;
+}
+
+export const getHistoricalProductPurchaseRates = (
+  state: ERPCollections,
+  productId?: string,
+  materialName?: string
+): HistoricalRateRecord[] => {
+  if (!state.purchaseOrders || !Array.isArray(state.purchaseOrders)) return [];
+
+  // Filter valid completed/issued/approved POs
+  const validPOs = state.purchaseOrders.filter((po) => {
+    const s = String(po.status || '').toLowerCase();
+    return s === 'issued' || s === 'approved' || s === 'completed';
+  });
+
+  const records: HistoricalRateRecord[] = [];
+
+  validPOs.forEach((po: any) => {
+    const lines = po.lines || po.items || [];
+    lines.forEach((line: any) => {
+      const matchById = productId && (line.productId === productId || line.boqLineId === productId);
+      const matchByName =
+        materialName &&
+        (line.productName || line.materialName || '')
+          .toLowerCase()
+          .trim() === materialName.toLowerCase().trim();
+
+      if (matchById || matchByName) {
+        const qty = line.orderedQty || line.quantity || 1;
+        const basicRate = line.basicRate || line.rate || line.unitRate || 0;
+        const taxPercent = line.taxPercentage || line.taxPercent || 0;
+        const total = line.lineTotal || (qty * basicRate * (1 + taxPercent / 100));
+        const landedRate = qty > 0 ? total / qty : basicRate;
+
+        records.push({
+          poId: po.id,
+          poNumber: po.poNumber || po.id,
+          poDate: po.poDate || (po.createdAt ? po.createdAt.split('T')[0] : 'N/A'),
+          vendorName: po.vendorName || 'Vendor',
+          vendorId: po.vendorId,
+          productName: line.productName || line.materialName || materialName || 'Product',
+          qty,
+          unit: line.unitSymbol || line.unit || 'Pcs',
+          basicRate,
+          taxPercent,
+          landedRate,
+          projectName: po.projectName,
+          status: po.status,
+        });
+      }
+    });
+  });
+
+  // Sort latest first
+  return records.sort((a, b) => new Date(b.poDate).getTime() - new Date(a.poDate).getTime());
+};
+
+
 

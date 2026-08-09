@@ -14,9 +14,11 @@ import {
   Layers,
   CheckCircle2,
   Printer,
+  Download,
   ShieldCheck,
   AlertTriangle,
 } from 'lucide-react';
+import { buildPODocumentHtml, printDocumentHtml, downloadDocumentHtml } from '../../utils/documentGenerator';
 
 export const PurchaseOrderDetailsPage: React.FC = () => {
   const { poId } = useParams<{ poId: string }>();
@@ -69,10 +71,27 @@ export const PurchaseOrderDetailsPage: React.FC = () => {
           )}
 
           <button
-            onClick={() => window.print()}
+            onClick={() => {
+              const documentNumber = po.documentNumber || po.id;
+              const vendor = state.vendors.find((v) => v.id === po.vendorId);
+              const htmlContent = buildPODocumentHtml(po, vendor);
+              printDocumentHtml(`PO ${documentNumber}`, htmlContent);
+            }}
             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-semibold flex items-center gap-1"
           >
             <Printer className="h-3.5 w-3.5" /> Print PO
+          </button>
+
+          <button
+            onClick={() => {
+              const documentNumber = po.documentNumber || po.id;
+              const vendor = state.vendors.find((v) => v.id === po.vendorId);
+              const htmlContent = buildPODocumentHtml(po, vendor);
+              downloadDocumentHtml(`${documentNumber}.pdf`, `PO ${documentNumber}`, htmlContent);
+            }}
+            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-500 rounded font-semibold flex items-center gap-1"
+          >
+            <Download className="h-3.5 w-3.5" /> Download PO
           </button>
         </div>
       </div>

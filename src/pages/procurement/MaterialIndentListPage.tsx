@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
 import { Plus, ShieldAlert, XCircle, AlertTriangle, ExternalLink } from 'lucide-react';
@@ -6,13 +6,27 @@ import { formatIndianCurrency } from '../../utils/format';
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
 import { FilterToolbar } from '../../components/common/FilterToolbar';
+import { CreateMaterialIndentModal } from '../../components/procurement/CreateMaterialIndentModal';
 
-export const MaterialIndentListPage: React.FC = () => {
-  const { state, approveMaterialIndent, rejectMaterialIndent, returnMaterialIndent } = useERPStore();
+interface MaterialIndentListPageProps {
+  initialCreateModalOpen?: boolean;
+  initialProjectId?: string;
+  onModalClose?: () => void;
+}
+
+export const MaterialIndentListPage: React.FC<MaterialIndentListPageProps> = ({
+  initialCreateModalOpen = false,
+  initialProjectId,
+  onModalClose,
+}) => {
+  const { state, approveMaterialIndent, rejectMaterialIndent, returnMaterialIndent, cancelMaterialIndent } = useERPStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+
+  // Create Indent Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(initialCreateModalOpen);
 
   // Modal State for In-line Action Comments
   const [actionModal, setActionModal] = useState<{
@@ -97,6 +111,42 @@ export const MaterialIndentListPage: React.FC = () => {
     setActionModal({ isOpen: false, indentId: '', actionType: 'reject', comment: '', error: null });
   };
 
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
+    if (onModalClose) {
+      onModalClose();
+    }
+  };
+
+  // 3-Dot Menu State
+  const [activeMenuIndentId, setActiveMenuIndentId] = useState<string | null>(null);
+  const [menuCoords, setMenuCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+  const handleOpenMenu = (e: React.MouseEvent, indentId: string) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuWidth = 200;
+    const menuHeight = 220;
+    const left = rect.right - menuWidth > 10 ? rect.right - menuWidth : rect.left;
+    const top = window.innerHeight - rect.bottom < menuHeight ? rect.top - menuHeight : rect.bottom + 4;
+
+    setMenuCoords({ top, left });
+    setActiveMenuIndentId(activeMenuIndentId === indentId ? null : indentId);
+  };
+
+  useEffect(() => {
+    if (!activeMenuIndentId) return;
+    const handleClose = () => setActiveMenuIndentId(null);
+    window.addEventListener('scroll', handleClose, true);
+    window.addEventListener('resize', handleClose);
+    document.addEventListener('click', handleClose);
+    return () => {
+      window.removeEventListener('scroll', handleClose, true);
+      window.removeEventListener('resize', handleClose);
+      document.removeEventListener('click', handleClose);
+    };
+  }, [activeMenuIndentId]);
+
   return (
     <ListPageLayout>
       {/* Header Banner */}
@@ -108,13 +158,24 @@ export const MaterialIndentListPage: React.FC = () => {
           { label: 'Material Indents' }
         ]}
         actions={
-          <Link
-            to="/procurement/indents/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#AB9570] hover:bg-[#927D5E] text-slate-950 font-bold rounded-xl shadow-xs transition-all text-xs"
+          <button
+            type="button"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold rounded-xl shadow-xs transition-all text-xs cursor-pointer"
           >
             <Plus className="h-4 w-4 stroke-[3]" /> Create Material Indent
-          </Link>
+          </button>
         }
+      />
+
+      {/* Create Material Indent Compact Modal */}
+      <CreateMaterialIndentModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseCreateModal}
+        initialProjectId={initialProjectId}
+        onSuccess={() => {
+          setIsCreateModalOpen(false);
+        }}
       />
 
       {/* KPI Metric Summary Cards */}
@@ -276,89 +337,30 @@ export const MaterialIndentListPage: React.FC = () => {
                             ? 'bg-amber-50 text-amber-700 border-amber-200'
                             : ind.status === 'sent_back' || ind.status === 'returned_for_revision'
                             ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : ind.status === 'rejected'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : ind.status === 'cancelled'
+                            ? 'bg-slate-100 text-slate-600 border-slate-300'
                             : 'bg-slate-100 text-slate-700 border-slate-200'
                         }`}>
                           {ind.status === 'approved' && 'Approved'}
                           {isPending && 'Pending Approval'}
                           {(ind.status === 'sent_back' || ind.status === 'returned_for_revision') && 'Sent Back'}
                           {ind.status === 'rejected' && 'Rejected'}
+                          {ind.status === 'cancelled' && 'Cancelled'}
                           {ind.status === 'draft' && 'Draft'}
                         </span>
                       </td>
                       <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
-                          {ind.status === 'approved' && (
-                            <>
-                              {ind.poId ? (
-                                <Link
-                                  to={`/procurement/purchase-orders/${ind.poId}`}
-                                  className="px-3 py-1.5 bg-white hover:bg-[#F8F9FB] border border-[#D8DEE8] hover:border-[#AB9570] text-[#1F2937] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                                >
-                                  PO Attached
-                                </Link>
-                              ) : ind.rfqId ? (
-                                <Link
-                                  to={`/procurement/rfqs/${ind.rfqId}`}
-                                  className="px-3 py-1.5 bg-white hover:bg-[#F8F9FB] border border-[#D8DEE8] hover:border-[#AB9570] text-[#1F2937] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                                >
-                                  RFQ Attached
-                                </Link>
-                              ) : (
-                                <div className="flex items-center gap-1.5">
-                                  <Link
-                                    to={`/procurement/purchase-orders/new?indentId=${ind.id}`}
-                                    className="px-3 py-1.5 bg-[#AB9570] hover:bg-[#927D5E] text-[#121214] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                                    title="Create Direct Purchase Order"
-                                  >
-                                    Direct PO
-                                  </Link>
-                                  <Link
-                                    to={`/procurement/rfqs/new?indentId=${ind.id}`}
-                                    className="px-3 py-1.5 bg-white hover:bg-[#F8F9FB] border border-[#D8DEE8] hover:border-[#AB9570] text-[#1F2937] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                                    title="Create RFQ"
-                                  >
-                                    Create RFQ
-                                  </Link>
-                                </div>
-                              )}
-                            </>
-                          )}
-                          {isPending && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleInlineApprove(ind.id)}
-                                className="px-3 py-1.5 bg-[#AB9570] hover:bg-[#927D5E] text-[#121214] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs cursor-pointer"
-                                title="Quick Approve"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenActionModal(ind.id, 'return')}
-                                className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                                title="Send Back for Revision"
-                              >
-                                Send Back
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenActionModal(ind.id, 'reject')}
-                                className="px-3 py-1.5 bg-white hover:bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                                title="Reject Indent"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
-                          <Link
-                            to={`/procurement/indents/${ind.id}`}
-                            className="w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center transition-colors shrink-0"
-                            title="View Details"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Link>
-                        </div>
+                        {/* 3-Dot Action Trigger */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenMenu(e, ind.id)}
+                          className="w-8 h-8 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 flex items-center justify-center transition-colors shrink-0 ml-auto cursor-pointer"
+                          title="Actions"
+                        >
+                          <span className="text-base font-extrabold leading-none">⋮</span>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -368,6 +370,145 @@ export const MaterialIndentListPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Portal 3-Dot Menu */}
+      {activeMenuIndentId && (() => {
+        const activeIndent = state.materialIndents.find((i) => i.id === activeMenuIndentId);
+        if (!activeIndent) return null;
+
+        const isPending = activeIndent.status === 'submitted' || activeIndent.status === 'pending_approval';
+        const isApproved = activeIndent.status === 'approved';
+        const hasRFQ = Boolean(activeIndent.rfqId);
+        const hasPO = Boolean(activeIndent.poId);
+
+        const handleCancelIndent = () => {
+          if (confirm('Cancel this Material Indent?')) {
+            cancelMaterialIndent(activeIndent.id, currentUser, 'Cancelled via action menu.');
+          }
+        };
+
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              top: `${menuCoords.top}px`,
+              left: `${menuCoords.left}px`,
+              width: '200px',
+              zIndex: 99999,
+            }}
+            className="bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 font-sans text-xs animate-in fade-in zoom-in-95 duration-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* View Details */}
+            <Link
+              to={`/procurement/indents/${activeIndent.id}`}
+              className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-800 font-semibold"
+            >
+              <ExternalLink className="h-3.5 w-3.5 text-slate-400" /> View Details
+            </Link>
+
+            {/* Pending Approval Actions */}
+            {isPending && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleInlineApprove(activeIndent.id);
+                    setActiveMenuIndentId(null);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-emerald-50 text-emerald-800 font-semibold flex items-center gap-2 cursor-pointer"
+                >
+                  Approve Indent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleOpenActionModal(activeIndent.id, 'return');
+                    setActiveMenuIndentId(null);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-purple-50 text-purple-800 font-semibold flex items-center gap-2 cursor-pointer"
+                >
+                  Send Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleOpenActionModal(activeIndent.id, 'reject');
+                    setActiveMenuIndentId(null);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-800 font-semibold flex items-center gap-2 cursor-pointer"
+                >
+                  Reject Indent
+                </button>
+                <div className="my-1 border-t border-slate-100" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleCancelIndent();
+                    setActiveMenuIndentId(null);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-700 font-semibold flex items-center gap-2 cursor-pointer"
+                >
+                  Cancel Indent
+                </button>
+              </>
+            )}
+
+            {/* Approved + No RFQ/PO Actions */}
+            {isApproved && !hasRFQ && !hasPO && (
+              <>
+                <Link
+                  to={`/procurement/rfqs/new?indentId=${activeIndent.id}`}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-[#AB9570] font-bold flex items-center gap-2"
+                >
+                  Create RFQ
+                </Link>
+                <Link
+                  to={`/procurement/purchase-orders/new?indentId=${activeIndent.id}&route=direct_po`}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-slate-900 font-semibold flex items-center gap-2"
+                >
+                  Create Direct PO
+                </Link>
+                <div className="my-1 border-t border-slate-100" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleCancelIndent();
+                    setActiveMenuIndentId(null);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-700 font-semibold flex items-center gap-2 cursor-pointer"
+                >
+                  Cancel Indent
+                </button>
+              </>
+            )}
+
+            {/* RFQ Linked Actions */}
+            {hasRFQ && (
+              <>
+                <Link
+                  to={`/procurement/rfqs/${activeIndent.rfqId}`}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-slate-900 font-semibold flex items-center gap-2"
+                >
+                  RFQ Management
+                </Link>
+              </>
+            )}
+
+            {/* Converted to PO Actions */}
+            {hasPO && (
+              <>
+                <Link
+                  to={`/procurement/purchase-orders/${activeIndent.poId}`}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-slate-900 font-semibold flex items-center gap-2"
+                >
+                  Open Purchase Order
+                </Link>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Action Comment Modal */}
       {actionModal.isOpen && (

@@ -21,7 +21,10 @@ import {
   Send,
   PlusCircle,
   Eye,
+  Printer,
+  Download,
 } from 'lucide-react';
+import { buildRFQDocumentHtml, printDocumentHtml, downloadDocumentHtml } from '../../utils/documentGenerator';
 
 export const RFQDetailsPage: React.FC = () => {
   const { rfqId } = useParams<{ rfqId: string }>();
@@ -34,9 +37,9 @@ export const RFQDetailsPage: React.FC = () => {
   const [showMarkSentModal, setShowMarkSentModal] = useState<boolean>(false);
   const [recordQuoteVendor, setRecordQuoteVendor] = useState<Vendor | null>(null);
 
-  const rfq = state.rfqs.find((r) => r.id === rfqId || r.documentNumber === rfqId) || state.rfqs[0];
+  const rawRfq = state.rfqs.find((r) => r.id === rfqId || r.documentNumber === rfqId) || state.rfqs[0];
 
-  if (!rfq) {
+  if (!rawRfq) {
     return (
       <div className="max-w-5xl mx-auto p-6 font-sans text-xs text-center space-y-4">
         <div className="text-slate-500">RFQ document not found.</div>
@@ -47,7 +50,29 @@ export const RFQDetailsPage: React.FC = () => {
     );
   }
 
-  const invitedVendors = state.vendors.filter((v) => rfq.invitedVendorIds?.includes(v.id));
+  const rawRfqAny = rawRfq as any;
+  const lines = Array.isArray(rawRfq.lines) && rawRfq.lines.length > 0
+    ? rawRfq.lines
+    : Array.isArray(rawRfqAny.items) && rawRfqAny.items.length > 0
+    ? rawRfqAny.items
+    : [];
+
+  const invitedVendorIds: string[] = Array.isArray(rawRfq.invitedVendorIds)
+    ? rawRfq.invitedVendorIds
+    : Array.isArray(rawRfqAny.vendorIds)
+    ? rawRfqAny.vendorIds
+    : [];
+
+  const rfq = {
+    ...rawRfq,
+    documentNumber: rawRfq.documentNumber || rawRfqAny.rfqNumber || rawRfq.id,
+    sourceIndentNumber: rawRfq.sourceIndentNumber || rawRfqAny.sourceIndentId || 'IND-2026-001',
+    quoteDueDate: rawRfq.quoteDueDate || rawRfqAny.dueDate || rawRfqAny.requiredDate || 'N/A',
+    lines,
+    invitedVendorIds,
+  };
+
+  const invitedVendors = state.vendors.filter((v) => rfq.invitedVendorIds.includes(v.id));
   const receivedQuotations = (state.vendorQuotations || []).filter((q) => q.rfqId === rfq.id);
   const auditLogs = (state.auditEvents || []).filter((a) => a.documentId === rfq.id || a.documentNumber === rfq.documentNumber);
 
@@ -64,6 +89,28 @@ export const RFQDetailsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const documentNumber = rfq.documentNumber || rfq.id;
+              const htmlContent = buildRFQDocumentHtml(rfq);
+              printDocumentHtml(`RFQ ${documentNumber}`, htmlContent);
+            }}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-semibold flex items-center gap-1"
+          >
+            <Printer className="h-3.5 w-3.5" /> Print RFQ
+          </button>
+
+          <button
+            onClick={() => {
+              const documentNumber = rfq.documentNumber || rfq.id;
+              const htmlContent = buildRFQDocumentHtml(rfq);
+              downloadDocumentHtml(`${documentNumber}.pdf`, `RFQ ${documentNumber}`, htmlContent);
+            }}
+            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-500 rounded font-semibold flex items-center gap-1"
+          >
+            <Download className="h-3.5 w-3.5" /> Download RFQ
+          </button>
+
           {receivedQuotations.length > 0 && (
             <Button variant="primary" onClick={() => navigate(`/procurement/purchase-orders/new?rfqId=${rfq.id}`)}>
               <ShoppingBag className="h-4 w-4 mr-1.5" /> Create Purchase Order
@@ -227,7 +274,7 @@ export const RFQDetailsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800">
-              {rfq.lines.map((line, index) => (
+              {rfq.lines.map((line: any, index: number) => (
                 <tr key={line.id} className="hover:bg-slate-50">
                   <td className="p-3 font-mono font-bold text-slate-500">{index + 1}</td>
                   <td className="p-3">

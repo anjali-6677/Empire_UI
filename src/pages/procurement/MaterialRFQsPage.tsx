@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
 import { RFQ, RFQStatus, Vendor } from '../../domain/types';
+import { buildRFQDocumentHtml, downloadDocumentHtml } from '../../utils/documentGenerator';
 import { getRFQStatusBadge } from '../../utils/statusStyles';
 import { MarkRFQSentModal } from '../../components/procurement/MarkRFQSentModal';
 import { RecordVendorQuoteModal } from '../../components/procurement/RecordVendorQuoteModal';
@@ -86,10 +87,9 @@ export const MaterialRFQsPage: React.FC = () => {
   };
 
   const handleDownloadRFQ = (rfq: RFQ) => {
-    setDownloadNotice(`Generating PDF document for RFQ ${rfq.documentNumber}...`);
-    setTimeout(() => {
-      setDownloadNotice(null);
-    }, 3000);
+    const documentNumber = rfq.documentNumber || (rfq as any).rfqNumber || rfq.id;
+    const htmlContent = buildRFQDocumentHtml(rfq);
+    downloadDocumentHtml(`${documentNumber}.pdf`, `RFQ ${documentNumber}`, htmlContent);
   };
 
   return (
@@ -248,25 +248,43 @@ export const MaterialRFQsPage: React.FC = () => {
                 </tr>
               ) : (
                 filteredRFQs.map((rfq) => {
-                  const invitedCount = rfq.invitedVendorIds?.length || 0;
+                  const rfqAny = rfq as any;
+                  const documentNumber = rfq.documentNumber || rfqAny.rfqNumber || rfq.id;
+                  const sourceIndentNumber = rfq.sourceIndentNumber || rfqAny.sourceIndentId || 'IND-2026-001';
+                  const invitedCount = Array.isArray(rfq.invitedVendorIds)
+                    ? rfq.invitedVendorIds.length
+                    : Array.isArray(rfqAny.vendorIds)
+                    ? rfqAny.vendorIds.length
+                    : 0;
                   const receivedCount = (state.vendorQuotations || []).filter((q) => q.rfqId === rfq.id).length;
                   const quoteProgressText = `${receivedCount} of ${invitedCount} received`;
+
+                  // Safe line extraction (checks both rfq.lines and rfq.items safely)
+                  const rawLines = Array.isArray(rfq.lines) && rfq.lines.length > 0
+                    ? rfq.lines
+                    : Array.isArray(rfqAny.items) && rfqAny.items.length > 0
+                    ? rfqAny.items
+                    : [];
+                  const firstLineName = rawLines[0]?.productName || rawLines[0]?.productCode || rawLines[0]?.item || '';
+                  const categoryPackageText = firstLineName
+                    ? `${firstLineName.split(' ')[0]} & Hardware`
+                    : 'Civil & Finishing';
 
                   return (
                     <tr key={rfq.id} className="hover:bg-slate-50 transition-colors h-14">
                       <td className="p-3.5 align-middle font-mono font-bold text-slate-900">
                         <Link to={`/procurement/rfqs/${rfq.id}`} className="hover:text-[#AB9570] underline decoration-slate-300">
-                          {rfq.documentNumber}
+                          {documentNumber}
                         </Link>
                       </td>
                       <td className="p-3.5 align-middle font-mono text-slate-700 font-medium">
-                        {rfq.sourceIndentNumber || 'IND-2026-001'}
+                        {sourceIndentNumber}
                       </td>
                       <td className="p-3.5 align-middle">
-                        <div className="font-semibold text-slate-900">{rfq.projectName}</div>
+                        <div className="font-semibold text-slate-900">{rfq.projectName || 'General Project'}</div>
                       </td>
                       <td className="p-3.5 align-middle text-slate-600 font-medium">
-                        {rfq.lines[0]?.productName ? `${rfq.lines[0].productName.split(' ')[0]} & Hardware` : 'Civil & Finishing'}
+                        {categoryPackageText}
                       </td>
                       <td className="p-3.5 align-middle text-center font-mono font-semibold">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
@@ -286,7 +304,7 @@ export const MaterialRFQsPage: React.FC = () => {
                       </td>
                       <td className="p-3.5 align-middle font-mono text-slate-700">
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-slate-400" /> {rfq.quoteDueDate}
+                          <Calendar className="h-3 w-3 text-slate-400" /> {rfq.quoteDueDate || rfqAny.dueDate || rfqAny.requiredDate || 'N/A'}
                         </div>
                       </td>
                       <td className="p-3.5 align-middle">{getRFQStatusBadge(rfq.status as RFQStatus)}</td>

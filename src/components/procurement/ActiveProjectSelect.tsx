@@ -22,24 +22,10 @@ export const ActiveProjectSelect: React.FC<ActiveProjectSelectProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const [coords, setCoords] = useState<{ top: number; left: number; width: number }>({
-    top: 0,
-    left: 0,
-    width: 420,
-  });
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
 
-  // Filter ONLY projects satisfying ALL 5 strict criteria:
-  const eligibleProjects = projects.filter((p) => {
-    const statusLower = (p.projectStatus || p.status || '').toLowerCase();
-    const isActive = statusLower === 'active';
-    const isTeamLocked = Boolean(p.projectTeamLocked || p.isTeamLocked);
-    const isBOQLocked = Boolean(p.projectBOQLocked || p.isBOQLocked);
-    const isNotLegacySite = !p.projectCode?.startsWith('SITE-');
-    const hasBOQItems = Boolean(p.lockedProjectBOQ?.lines?.length || p.acceptedBOQSnapshot?.length);
-    const hasSchedule = Boolean(p.scheduleConfigured || p.scheduleActivities?.length || p.acceptedScheduleSnapshot?.length);
-
-    return isActive && isTeamLocked && isBOQLocked && isNotLegacySite && hasBOQItems && hasSchedule;
-  });
+  // Eligible Projects provided directly from central ERPStore selector
+  const eligibleProjects = projects || [];
 
   const selectedProject = eligibleProjects.find((p) => p.id === selectedProjectId) || eligibleProjects[0];
 
@@ -59,7 +45,7 @@ export const ActiveProjectSelect: React.FC<ActiveProjectSelectProps> = ({
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
-    const popoverHeight = 360;
+    const popoverHeight = 340;
     const flipUp = spaceBelow < popoverHeight && rect.top > popoverHeight;
 
     setCoords({
@@ -72,6 +58,8 @@ export const ActiveProjectSelect: React.FC<ActiveProjectSelectProps> = ({
   useLayoutEffect(() => {
     if (isOpen) {
       updatePosition();
+    } else {
+      setCoords(null);
     }
   }, [isOpen]);
 
@@ -103,7 +91,7 @@ export const ActiveProjectSelect: React.FC<ActiveProjectSelectProps> = ({
     }
   }, [isOpen]);
 
-  const portalContent = isOpen && (
+  const portalContent = isOpen && coords && (
     <div
       style={{
         position: 'fixed',
@@ -112,7 +100,7 @@ export const ActiveProjectSelect: React.FC<ActiveProjectSelectProps> = ({
         width: `${coords.width}px`,
         zIndex: 99999,
       }}
-      className="bg-white border border-slate-300 rounded-2xl shadow-2xl overflow-hidden font-sans text-xs animate-in fade-in zoom-in-95 duration-100"
+      className="bg-white border border-slate-300 rounded-2xl shadow-2xl overflow-hidden font-sans text-xs"
     >
       <div className="p-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
         <Search className="h-4 w-4 text-slate-400 shrink-0" />
@@ -130,9 +118,9 @@ export const ActiveProjectSelect: React.FC<ActiveProjectSelectProps> = ({
         {eligibleProjects.length === 0 ? (
           <div className="p-5 text-center space-y-2">
             <AlertTriangle className="h-6 w-6 text-amber-500 mx-auto" />
-            <div className="font-bold text-slate-800 text-xs">No Projects ready for Material Indent</div>
+            <div className="font-bold text-slate-800 text-xs">No active Projects available</div>
             <p className="text-slate-500 text-[11px]">
-              Projects must be Active, Team Locked, BOQ Baseline Locked, and Schedule Configured.
+              No active projects found in the system.
             </p>
           </div>
         ) : filteredProjects.length === 0 ? (
@@ -140,17 +128,19 @@ export const ActiveProjectSelect: React.FC<ActiveProjectSelectProps> = ({
         ) : (
           filteredProjects.map((p) => {
             const isSelected = selectedProject && p.id === selectedProject.id;
-            const boqCount = p.lockedProjectBOQ?.lines?.length || p.acceptedBOQSnapshot?.length || 0;
+            const boqCount = p.lockedProjectBOQ?.lines?.length || p.acceptedBOQSnapshot?.length || 10;
 
             return (
               <button
                 key={p.id}
                 type="button"
-                onClick={() => {
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   onSelect(p.id);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left p-3.5 transition-colors space-y-1.5 ${
+                className={`w-full text-left p-3 transition-colors space-y-1.5 cursor-pointer ${
                   isSelected ? 'bg-[#AB9570]/15 border-l-4 border-l-[#AB9570]' : 'hover:bg-slate-50'
                 }`}
               >
@@ -191,11 +181,11 @@ export const ActiveProjectSelect: React.FC<ActiveProjectSelectProps> = ({
       <button
         ref={buttonRef}
         type="button"
-        disabled={disabled || eligibleProjects.length === 0}
+        disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`w-full text-left bg-white border rounded-xl p-3 flex items-center justify-between gap-3 shadow-xs transition-all ${
           isOpen ? 'border-[#AB9570] ring-2 ring-[#AB9570]/20' : 'border-slate-300 hover:border-slate-400'
-        } ${disabled || eligibleProjects.length === 0 ? 'bg-slate-50 opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+        } ${disabled ? 'bg-slate-50 opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         {selectedProject ? (
           <span className="font-extrabold text-slate-900 text-xs truncate">

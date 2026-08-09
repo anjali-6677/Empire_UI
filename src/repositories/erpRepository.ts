@@ -120,6 +120,7 @@ export class LocalStorageERPRepository implements IERPRepository {
       'tenderDecisions',
       'projects',
       'indents',
+      'materialIndents',
       'rfqs',
       'vendorQuotations',
       'rateComparisons',

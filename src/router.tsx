@@ -129,7 +129,10 @@ export const AppRouter: React.FC = () => {
             <Route path="procurement/rate-comparison" element={<Navigate to="/procurement/rfqs" replace />} />
             <Route path="procurement/rate-comparison/:rfqId" element={<Navigate to="/procurement/rfqs" replace />} />
 
-            {/* Purchase Order Routes */}
+            {/* Purchase Order & Legacy Procurement Redirect Routes */}
+            <Route path="procurement/direct-purchase" element={<Navigate to="/procurement/purchase-orders" replace />} />
+            <Route path="procurement/direct-purchases" element={<Navigate to="/procurement/purchase-orders" replace />} />
+            <Route path="procurement/historical-rates" element={<Navigate to="/procurement/purchase-orders" replace />} />
             <Route path="procurement/purchase-orders" element={<PurchaseOrderListPage />} />
             <Route path="procurement/purchase-orders/new" element={<CreatePurchaseOrderPage />} />
             <Route path="procurement/purchase-orders/:poId" element={<PurchaseOrderDetailsPage />} />

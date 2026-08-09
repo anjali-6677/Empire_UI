@@ -4,6 +4,7 @@ import { Enquiry, Estimate } from '../../domain/types';
 import { formatIndianCurrency } from '../../utils/format';
 import { getClientDisplayDetails, normalizeEnquiryRequirement } from '../../utils/crmHelpers';
 import { useERPStore } from '../../store/ERPStoreContext';
+import { buildProposalDocumentHtml, printDocumentHtml, downloadDocumentHtml } from '../../utils/documentGenerator';
 
 interface QuotationPreviewProps {
   enquiry: Enquiry;
@@ -23,12 +24,13 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
   const clientDetails = getClientDisplayDetails(client);
 
   const handlePrint = () => {
-    window.print();
+    const htmlContent = buildProposalDocumentHtml(estimate, enquiry, client);
+    printDocumentHtml(`Proposal ${estimate.quotationNumber}`, htmlContent);
   };
 
   const handleDownloadPDF = () => {
-    // Triggers standard print-to-PDF layout view
-    window.print();
+    const htmlContent = buildProposalDocumentHtml(estimate, enquiry, client);
+    downloadDocumentHtml(`${estimate.quotationNumber}.pdf`, `Proposal ${estimate.quotationNumber}`, htmlContent);
   };
 
   return (

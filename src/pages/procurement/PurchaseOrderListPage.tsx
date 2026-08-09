@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
+import { buildPODocumentHtml, downloadDocumentHtml } from '../../utils/documentGenerator';
 import { POStatus } from '../../domain/types';
 import { getPOStatusBadge } from '../../utils/statusStyles';
 import { getPOTotalAmount } from '../../domain/selectors';
@@ -54,10 +55,10 @@ export const PurchaseOrderListPage: React.FC = () => {
   const pendingDelivery = activeScopePOs.filter((p) => (p.status as string) === 'issued' || (p.status as string) === 'partially_delivered' || (p.status as string) === 'partially_received').length;
 
   const handleDownloadPO = (po: any) => {
-    setDownloadNotice(`Downloading PDF document for PO ${po.documentNumber}...`);
-    setTimeout(() => {
-      setDownloadNotice(null);
-    }, 3000);
+    const documentNumber = po.documentNumber || po.poNumber || po.id;
+    const vendor = state.vendors.find((v) => v.id === po.vendorId);
+    const htmlContent = buildPODocumentHtml(po, vendor);
+    downloadDocumentHtml(`${documentNumber}.pdf`, `PO ${documentNumber}`, htmlContent);
   };
 
   const handleCancelPO = (po: any) => {

@@ -78,7 +78,7 @@ export const ProjectSummaryCards: React.FC<ProjectSummaryCardsProps> = ({ projec
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+    <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
       {cards.map((card, idx) => {
         const Icon = card.icon;
         return (
@@ -86,11 +86,11 @@ export const ProjectSummaryCards: React.FC<ProjectSummaryCardsProps> = ({ projec
             key={idx}
             className={`p-3.5 rounded-xl border border-slate-200 shadow-xs transition-all hover:shadow-md ${card.color}`}
           >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-bold tracking-wider uppercase text-slate-500 truncate">
+            <div className="flex items-center justify-between mb-1.5 gap-1">
+              <span className="text-[10px] font-bold tracking-wider uppercase text-slate-500 whitespace-nowrap">
                 {card.title}
               </span>
-              <div className={`p-1.5 rounded-lg ${card.iconColor}`}>
+              <div className={`p-1.5 rounded-lg shrink-0 ${card.iconColor}`}>
                 <Icon className="w-3.5 h-3.5" />
               </div>
             </div>

@@ -17,7 +17,6 @@ import {
   ClipboardList,
   CheckCircle,
   FileText,
-  Zap,
   ShoppingBag,
   Hammer,
   TrendingUp,
@@ -271,10 +270,8 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
     items: [
       { id: 'proc-ind', label: 'Material Indents', path: ROUTES.PROCUREMENT_INDENTS, icon: ClipboardList, projectContext: 'required' },
       { id: 'proc-rfq', label: 'Material RFQs', path: ROUTES.PROCUREMENT_RFQS, icon: FileText, projectContext: 'required' },
-      { id: 'proc-dir', label: 'Authorised Direct Purchase', path: ROUTES.PROCUREMENT_DIRECT_PURCHASE, icon: Zap, projectContext: 'required' },
       { id: 'proc-po', label: 'Purchase Orders', path: ROUTES.PROCUREMENT_PURCHASE_ORDERS, icon: ShoppingBag, projectContext: 'required' },
       { id: 'proc-wo', label: 'Subcontractor Work Orders', path: ROUTES.PROCUREMENT_WORK_ORDERS, icon: Hammer, projectContext: 'required' },
-      { id: 'proc-his', label: 'Historical Rates', path: ROUTES.PROCUREMENT_HISTORICAL_RATES, icon: TrendingUp, projectContext: 'optional' },
     ],
   },
   {

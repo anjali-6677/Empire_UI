@@ -76,6 +76,7 @@ export interface ERPStoreContextType {
   approveMaterialIndent: (indentId: string, approverId: string, comments: string) => { success: boolean; error?: string };
   rejectMaterialIndent: (indentId: string, rejectorId: string, reason: string) => { success: boolean; error?: string };
   returnMaterialIndent: (indentId: string, returnerId: string, comments: string) => { success: boolean; error?: string };
+  cancelMaterialIndent: (indentId: string, performedBy: string, reason: string) => { success: boolean; error?: string };
 
   // Procurement Store Actions
   createRFQ: (rfq: RFQ, performedBy: string) => { success: boolean; rfq?: RFQ; error?: string };
@@ -111,6 +112,7 @@ export interface ERPStoreContextType {
 
   // Reset data to defaults
   resetToDefaults: () => void;
+  resetDemoData: () => Promise<void>;
 }
 
 const repository = new LocalStorageERPRepository();
@@ -129,7 +131,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         const stored = await repository.loadAll();
 
         // Check demo seed version
-        const DEMO_SEED_VERSION = 'v3';
+        const DEMO_SEED_VERSION = 'v4';
         const storedSeedVersion = localStorage.getItem('flutebyte_demo_seed_version');
 
         if (storedSeedVersion !== DEMO_SEED_VERSION) {
@@ -144,38 +146,29 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
             rfqs: stored.rfqs || [],
             purchaseOrders: stored.purchaseOrders || [],
           };
-          localStorage.setItem('flutebyte_demo_reseed_backup_v2', JSON.stringify(backupData));
+          localStorage.setItem('flutebyte_demo_backup_v4', JSON.stringify(backupData));
 
-          // Clean reset to v3 CANONICAL_SEED_DATA
+          // Clean reset to v4 CANONICAL_SEED_DATA (Replace old business records entirely)
           await repository.resetToDefaults(CANONICAL_SEED_DATA);
           localStorage.setItem('flutebyte_demo_seed_version', DEMO_SEED_VERSION);
         }
 
         const freshStored = await repository.loadAll();
-        const merged: ERPCollections = { ...CANONICAL_SEED_DATA };
+        const merged: ERPCollections = { ...freshStored };
+
+        // Override business collections explicitly with fresh stored values
         (Object.keys(CANONICAL_SEED_DATA) as Array<keyof ERPCollections>).forEach((key) => {
           if (freshStored[key] && Array.isArray(freshStored[key])) {
             merged[key] = freshStored[key] as any;
+          } else {
+            merged[key] = CANONICAL_SEED_DATA[key] as any;
           }
         });
 
-        // Explicit sanitization to guarantee deleted lost CRM opportunities (ENQ-005/006, EST-005/006) are never re-hydrated
-        const DELETED_ENQUIRY_IDS = new Set(['enq-2026-005', 'enq-2026-006']);
-        const DELETED_ESTIMATE_IDS = new Set(['est-2026-005-r0', 'est-2026-006-r0']);
-        const DELETED_QUOTATION_NUMS = new Set(['EMP-QUOTE-2026-005-R0', 'EMP-QUOTE-2026-006-R0']);
-
-        if (Array.isArray(merged.enquiries)) {
-          merged.enquiries = merged.enquiries.filter(
-            (e) => !DELETED_ENQUIRY_IDS.has(e.id) && !DELETED_ENQUIRY_IDS.has(e.enquiryNumber)
-          );
-          repository.saveCollection('enquiries', merged.enquiries);
-        }
-
-        if (Array.isArray(merged.estimates)) {
-          merged.estimates = merged.estimates.filter(
-            (est) => !DELETED_ESTIMATE_IDS.has(est.id) && !DELETED_QUOTATION_NUMS.has(est.quotationNumber)
-          );
-        }
+        // Ensure indents and materialIndents are synchronized
+        const activeIndents = merged.materialIndents?.length ? merged.materialIndents : merged.indents || [];
+        merged.materialIndents = activeIndents;
+        merged.indents = activeIndents;
 
         // Schema version check & normalization
         const CURRENT_SCHEMA_VERSION = '2';
@@ -254,20 +247,42 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const addItem = <K extends keyof ERPCollections>(key: K, item: any) => {
     setState((prev) => {
-      const currentList = prev[key] as any[];
+      const currentList = (prev[key] as any[]) || [];
       const newList = [item, ...currentList];
-      const updated = { ...prev, [key]: newList };
+      let updated = { ...prev, [key]: newList };
+
       repository.saveCollection(key, newList as any);
+
+      // Keep indents and materialIndents alias collections synchronized
+      if (key === 'materialIndents') {
+        updated = { ...updated, indents: newList };
+        repository.saveCollection('indents', newList as any);
+      } else if (key === 'indents') {
+        updated = { ...updated, materialIndents: newList };
+        repository.saveCollection('materialIndents', newList as any);
+      }
+
       return updated;
     });
   };
 
   const updateItem = <K extends keyof ERPCollections>(key: K, id: string, updatedFields: any) => {
     setState((prev) => {
-      const currentList = prev[key] as any[];
+      const currentList = (prev[key] as any[]) || [];
       const newList = currentList.map((item) => (item.id === id ? { ...item, ...updatedFields } : item));
-      const updated = { ...prev, [key]: newList };
+      let updated = { ...prev, [key]: newList };
+
       repository.saveCollection(key, newList as any);
+
+      // Keep indents and materialIndents alias collections synchronized
+      if (key === 'materialIndents') {
+        updated = { ...updated, indents: newList };
+        repository.saveCollection('indents', newList as any);
+      } else if (key === 'indents') {
+        updated = { ...updated, materialIndents: newList };
+        repository.saveCollection('materialIndents', newList as any);
+      }
+
       return updated;
     });
   };
@@ -693,6 +708,35 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
       previousStatus: indent.status,
       newStatus: 'returned_for_revision',
       details: `Returned Material Indent ${(indent as any).documentNumber || (indent as any).indentNumber || indent.id} for revision. Feedback: ${comments}`,
+    });
+
+    return { success: true };
+  };
+
+  // Domain Store Action: Cancel Material Indent
+  const cancelMaterialIndent = (indentId: string, performedBy: string, reason: string) => {
+    const indent = state.materialIndents.find((i) => i.id === indentId);
+    if (!indent) return { success: false, error: 'Indent not found' };
+
+    if (indent.rfqId || indent.poId) {
+      return { success: false, error: 'Cannot cancel an indent that has downstream RFQ or PO attached.' };
+    }
+
+    updateItem('materialIndents', indent.id, {
+      status: 'cancelled',
+      updatedAt: new Date().toISOString(),
+      updatedBy: performedBy,
+    });
+
+    logAudit({
+      documentType: 'indent',
+      documentId: indent.id,
+      documentNumber: (indent as any).documentNumber || (indent as any).indentNumber || indent.id,
+      action: 'CANCELLED',
+      performedBy,
+      previousStatus: indent.status,
+      newStatus: 'cancelled',
+      details: `Cancelled Material Indent ${(indent as any).documentNumber || (indent as any).indentNumber || indent.id}. Reason: ${reason || 'Cancelled by user'}`,
     });
 
     return { success: true };
@@ -1449,6 +1493,35 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
   };
 
+  const resetDemoData = async () => {
+    const backupData = {
+      clients: state.clients || [],
+      enquiries: state.enquiries || [],
+      estimates: state.estimates || [],
+      projectSetupDrafts: state.projectSetupDrafts || [],
+      projects: state.projects || [],
+      indents: state.indents || [],
+      rfqs: state.rfqs || [],
+      purchaseOrders: state.purchaseOrders || [],
+    };
+    localStorage.setItem('flutebyte_demo_backup_v4', JSON.stringify(backupData));
+    await repository.resetToDefaults(CANONICAL_SEED_DATA);
+    localStorage.setItem('flutebyte_demo_seed_version', 'v4');
+    const fresh = await repository.loadAll();
+    const activeIndents = fresh.materialIndents?.length ? fresh.materialIndents : fresh.indents || [];
+    setState({
+      ...fresh,
+      indents: activeIndents,
+      materialIndents: activeIndents,
+    });
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).resetDemoData = resetDemoData;
+    }
+  }, [resetDemoData]);
+
   return (
     <ERPStoreContext.Provider
       value={{
@@ -1470,6 +1543,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         approveMaterialIndent,
         rejectMaterialIndent,
         returnMaterialIndent,
+        cancelMaterialIndent,
         createRFQ,
         updateRFQStatus,
         submitVendorQuotation,
@@ -1496,6 +1570,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         addPropertyType,
         logAudit,
         resetToDefaults,
+        resetDemoData,
       }}
     >
       {children}
