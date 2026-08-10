@@ -130,6 +130,22 @@ export const CreateMaterialIndentModal: React.FC<CreateMaterialIndentModalProps>
     }
   }, [availableCategories]);
 
+  const modalBodyRef = React.useRef<HTMLDivElement>(null);
+
+  // Reset scroll position to top whenever modal opens & lock body scroll
+  useEffect(() => {
+    if (isOpen) {
+      if (modalBodyRef.current) {
+        modalBodyRef.current.scrollTop = 0;
+      }
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   // Restore saved draft on modal open
   useEffect(() => {
     if (!isOpen) return;
@@ -271,17 +287,19 @@ export const CreateMaterialIndentModal: React.FC<CreateMaterialIndentModalProps>
   // Availability calculations
   const calculatedAddedLines = useMemo(() => {
     return addedLines.map((line, idx) => {
-      const avail = getIndentBOQAvailability(state, selectedProjectId, line.boqLineId, line.qty);
-      const isOverLimit = line.qty > avail.availableBOQQty;
-      const overLimitQty = isOverLimit ? line.qty - avail.availableBOQQty : 0;
+      // Get current available quantity based on existing system indents BEFORE this current request
+      const avail = getIndentBOQAvailability(state, selectedProjectId, line.boqLineId, 0);
+      const availableBOQQty = avail.availableBOQQty;
+      const isOverLimit = line.qty > availableBOQQty;
+      const overLimitQty = isOverLimit ? line.qty - availableBOQQty : 0;
       const lineTotal = line.qty * line.rate;
 
       return {
         ...line,
         lineIndex: idx + 1,
-        acceptedBOQQty: avail.acceptedBOQQty || 100,
+        acceptedBOQQty: avail.acceptedBOQQty || 0,
         previouslyIndentedQty: avail.previouslyIndentedQty || 0,
-        availableBOQQty: avail.availableBOQQty ?? 100,
+        availableBOQQty,
         isOverLimit,
         overLimitQty,
         lineTotal,
@@ -465,7 +483,7 @@ export const CreateMaterialIndentModal: React.FC<CreateMaterialIndentModalProps>
         </div>
 
         {/* Modal Body - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-white">
+        <div ref={modalBodyRef} className="flex-1 overflow-y-auto p-6 space-y-5 bg-white">
           {errorMsg && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 font-semibold flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
@@ -587,7 +605,7 @@ export const CreateMaterialIndentModal: React.FC<CreateMaterialIndentModalProps>
                       setSelectedBOQLine(line);
                       if (duplicateError) setDuplicateError(null);
                     }}
-                    getAvailability={(id) => getIndentBOQAvailability(state, selectedProjectId, id, Number(inputQty) || 0)}
+                    getAvailability={(id) => getIndentBOQAvailability(state, selectedProjectId, id, 0)}
                     alreadySelectedIds={addedLines.map((l) => l.boqLineId)}
                     disabled={!selectedCategory || !selectedProjectId}
                   />
@@ -618,6 +636,18 @@ export const CreateMaterialIndentModal: React.FC<CreateMaterialIndentModalProps>
                   </button>
                 </div>
               </div>
+
+              {selectedBOQLine && (() => {
+                const avail = getIndentBOQAvailability(state, selectedProjectId, selectedBOQLine.id, 0);
+                return (
+                  <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center gap-4 text-[11px] font-mono">
+                    <span className="text-slate-600 font-sans">BOQ Status:</span>
+                    <span>Accepted: <strong className="text-slate-900">{avail.acceptedBOQQty} {avail.unitSymbol}</strong></span>
+                    <span>Indented: <strong className="text-slate-700">{avail.previouslyIndentedQty} {avail.unitSymbol}</strong></span>
+                    <span>Available: <strong className={avail.availableBOQQty > 0 ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold'}>{avail.availableBOQQty} {avail.unitSymbol}</strong></span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

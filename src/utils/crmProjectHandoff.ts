@@ -282,30 +282,68 @@ export function startProjectSetupFromAcceptedEstimate({
 
   // Extract BOQ items into structured lines
   const boqLines: ProjectBOQLine[] = [];
-  if (estimate?.boqSections && estimate.boqSections.length > 0) {
-    let lineNoCounter = 1;
+  let lineNoCounter = 1;
+
+  if (estimate?.boqSections && Array.isArray(estimate.boqSections) && estimate.boqSections.length > 0) {
     estimate.boqSections.forEach((sec: any) => {
-      sec.items?.forEach((item: any) => {
+      const secItems = sec.items || sec.lines || [];
+      secItems.forEach((item: any) => {
+        const qty = Number(item.quantity ?? item.boqQuantity ?? 1);
+        const rate = Number(item.baseRate ?? item.materialCost ?? item.boqRate ?? item.rate ?? item.totalCost ?? 0);
+        const amount = Number(item.totalCost ?? item.boqAmount ?? (qty * rate));
+
         boqLines.push({
           id: `bline-${Date.now()}-${lineNoCounter}`,
-          estimateLineId: item.id,
+          estimateLineId: item.id || `est-line-${lineNoCounter}`,
           lineNo: lineNoCounter++,
-          itemDescription: item.description || item.productName || 'BOQ Line Item',
-          categoryId: item.categoryId || sec.id || 'cat-1',
-          categoryName: item.categoryName || sec.name || 'General Fitout',
-          unitSymbol: item.unit || 'nos',
-          boqQuantity: item.quantity || 1,
-          boqRate: item.baseRate || item.materialCost || item.totalCost || 0,
-          boqAmount: item.totalCost || ((item.quantity || 1) * (item.baseRate || 0)),
+          itemDescription: item.description || item.productName || item.itemDescription || item.name || 'BOQ Line Item',
+          categoryId: item.categoryId || sec.id || sec.categoryName || 'cat-1',
+          categoryName: item.categoryName || sec.name || sec.title || 'General Fitout',
+          unitSymbol: item.unitSymbol || item.unit || 'nos',
+          boqQuantity: qty,
+          boqRate: rate,
+          boqAmount: amount,
           indentedQuantity: 0,
           orderedQuantity: 0,
           receivedQuantity: 0,
           issuedQuantity: 0,
-          remainingQuantity: item.quantity || 1,
+          remainingQuantity: qty,
           committedCost: 0,
           actualCost: 0,
           variance: 0,
+          specifications: item.specifications || item.specification || item.specs || '',
+          productId: item.productId ? String(item.productId) : undefined,
         });
+      });
+    });
+  } else if ((estimate?.lines || estimate?.items) && Array.isArray(estimate.lines || estimate.items)) {
+    const rawList = estimate.lines || estimate.items;
+    rawList.forEach((item: any) => {
+      const qty = Number(item.quantity ?? item.boqQuantity ?? 1);
+      const rate = Number(item.baseRate ?? item.materialCost ?? item.boqRate ?? item.rate ?? item.totalCost ?? 0);
+      const amount = Number(item.totalCost ?? item.boqAmount ?? (qty * rate));
+
+      boqLines.push({
+        id: `bline-${Date.now()}-${lineNoCounter}`,
+        estimateLineId: item.id || `est-line-${lineNoCounter}`,
+        lineNo: lineNoCounter++,
+        itemDescription: item.description || item.productName || item.itemDescription || item.name || 'BOQ Line Item',
+        categoryId: item.categoryId || item.categoryName || 'cat-1',
+        categoryName: item.categoryName || 'General Fitout',
+        unitSymbol: item.unitSymbol || item.unit || 'nos',
+        boqQuantity: qty,
+        boqRate: rate,
+        boqAmount: amount,
+        indentedQuantity: 0,
+        orderedQuantity: 0,
+        receivedQuantity: 0,
+        issuedQuantity: 0,
+        remainingQuantity: qty,
+        committedCost: 0,
+        actualCost: 0,
+        variance: 0,
+        specifications: item.specifications || item.specification || item.specs || '',
+        productId: item.productId ? String(item.productId) : undefined,
       });
     });
   }

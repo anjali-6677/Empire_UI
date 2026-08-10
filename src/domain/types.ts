@@ -487,6 +487,8 @@ export interface ProjectBOQLine {
   committedCost: number;
   actualCost: number;
   variance: number;
+  specifications?: string;
+  productId?: string;
 }
 
 export interface ProjectBOQ {
@@ -984,6 +986,26 @@ export interface RateComparison {
   status: 'draft' | 'compared' | 'awarded';
 }
 
+export interface PODeliveryItem {
+  poLineId: string;
+  productId: string;
+  qtyReceived: number;
+  remarks?: string;
+}
+
+export interface PODeliveryRecord {
+  id: string;
+  deliveryId: string;
+  poId: string;
+  deliveryDate: string;
+  invoiceNumber: string;
+  notes?: string;
+  recordedBy: string;
+  recordedAt: string;
+  status: 'partial' | 'received';
+  items: PODeliveryItem[];
+}
+
 export interface PurchaseOrderLine {
   id: string;
   productId: string;
@@ -997,12 +1019,18 @@ export interface PurchaseOrderLine {
   discountPercentage?: number;
   taxPercentage?: number;
   freightAmount?: number;
+  packingCharges?: number;
+  labourCharges?: number;
   landedUnitRate?: number;
   lineTotal: number;
   deliveryDate?: string;
   receivedQty?: number;
   invoicedQty?: number;
   indentLineId?: string;
+  boqLineId?: string;
+  categoryName?: string;
+  specifications?: string;
+  brand?: string;
 }
 
 export type POLine = PurchaseOrderLine;
@@ -1010,6 +1038,7 @@ export type POLine = PurchaseOrderLine;
 export interface PurchaseOrder {
   id: string;
   documentNumber: string;
+  poNumber?: string;
   projectId: string;
   projectName: string;
   vendorId: string;
@@ -1022,18 +1051,35 @@ export interface PurchaseOrder {
   sourceIndentId?: string;
   quotationNumber?: string;
   directPurchaseReason?: string;
+  validUntil?: string;
   rateValidityDate?: string;
   orderDate: string;
   deliveryDueDate?: string;
   expectedDeliveryDate?: string;
   lines: POLine[];
   subtotal?: number;
+  discountTotal?: number;
   taxTotal?: number;
   freightTotal?: number;
+  packingTotal?: number;
+  labourTotal?: number;
+  roundOff?: number;
   totalAmount: number;
   grandTotal?: number;
   currency?: string;
   status: DocumentStatus | POStatus;
+  paymentStatus?: 'unpaid' | 'advance_paid' | 'partially_paid' | 'paid';
+  deliveryStatus?: 'not_received' | 'partial' | 'received';
+  remarks?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
+  rejectionReason?: string;
+  cancelledAt?: string;
+  cancelledBy?: string;
+  cancellationReason?: string;
+  deliveries?: PODeliveryRecord[];
   createdAt: string;
   createdBy: string;
   createdById?: string;

@@ -34,7 +34,12 @@ import {
   POStatus,
 } from '../domain/types';
 import { normalizeEstimate } from '../utils/normalizeEstimate';
-import { reconcileCRMProjectLinks, createActiveProjectFromSetup, migrateIncompleteProjectsToDrafts } from '../utils/crmProjectHandoff';
+import {
+  migrateIncompleteProjectsToDrafts,
+  reconcileCRMProjectLinks,
+  createActiveProjectFromSetup,
+  startProjectSetupFromAcceptedEstimate,
+} from '../utils/crmProjectHandoff';
 
 export interface ActivateProjectParams {
   estimateVersionId: string;
@@ -87,6 +92,10 @@ export interface ERPStoreContextType {
   approveDirectPurchase: (dpId: string, approverId: string) => { success: boolean; error?: string };
   createPurchaseOrder: (po: PurchaseOrder, performedBy?: string) => { success: boolean; purchaseOrder?: PurchaseOrder; error?: string };
   updatePOStatus: (poId: string, status: POStatus, performedBy: string, comments?: string) => { success: boolean; error?: string };
+  approvePurchaseOrder: (poId: string, approverId: string, approverName: string) => { success: boolean; error?: string };
+  rejectPurchaseOrder: (poId: string, rejectorId: string, reason: string) => { success: boolean; error?: string };
+  cancelPurchaseOrder: (poId: string, performedBy: string, reason: string) => { success: boolean; error?: string };
+  addPODelivery: (poId: string, delivery: any) => { success: boolean; error?: string };
   // Stage 4 Store Actions
   createGRN: (grn: GoodsReceivedNote, performedBy?: string) => { success: boolean; grn?: GoodsReceivedNote; error?: string };
   inspectGRN: (grnId: string, inspection: QualityInspection, performedBy?: string) => { success: boolean; error?: string };
@@ -192,9 +201,53 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
           estimates: merged.estimates || [],
         });
 
-        merged.projects = finalizedProjects;
+        // Auto-reconcile active projects with empty BOQ snapshots from accepted CRM estimates
+        const repairedProjects = finalizedProjects.map((proj: any) => {
+          const isBOQLocked = Boolean(proj.projectBOQLocked || proj.isBOQLocked);
+          const hasLines =
+            proj.lockedProjectBOQ?.lines?.length > 0 ||
+            (proj.lockedProjectBOQ?.sections && proj.lockedProjectBOQ.sections.some((s: any) => s.items?.length > 0));
+
+          if (isBOQLocked && !hasLines) {
+            const estId = proj.sourceEstimateRevisionId || proj.sourceEstimateId || proj.acceptedEstimateId;
+            const acceptedEst = (merged.estimates || []).find((e: any) => e.id === estId || e.enquiryId === proj.sourceEnquiryId);
+            if (acceptedEst) {
+              const draftSnapshot = startProjectSetupFromAcceptedEstimate({
+                enquiry: { id: proj.sourceEnquiryId, clientName: proj.clientName, projectRequirement: proj.projectName },
+                estimate: acceptedEst,
+                clients: merged.clients || [],
+                employees: merged.employees || [],
+              });
+              return {
+                ...proj,
+                projectBOQLocked: true,
+                isBOQLocked: true,
+                lockedProjectBOQ: draftSnapshot.boqLockSetup.lockedProjectBOQ,
+              };
+            }
+          }
+          return proj;
+        });
+
+        // Normalize purchase orders (ensure canonical documentNumber and poNumber)
+        if (Array.isArray(merged.purchaseOrders)) {
+          merged.purchaseOrders = merged.purchaseOrders.map((po: any, idx: number) => {
+            const canonicalNum = po.documentNumber || po.poNumber || po.number || po.code || `PO-2026-00${idx + 1}`;
+            return {
+              ...po,
+              documentNumber: canonicalNum,
+              poNumber: canonicalNum,
+              deliveries: po.deliveries || [],
+              paymentStatus: po.paymentStatus || 'unpaid',
+              deliveryStatus: po.deliveryStatus || 'not_received',
+            };
+          });
+        }
+
+        merged.projects = repairedProjects;
         merged.projectSetupDrafts = updatedSetupDrafts;
-        repository.saveCollection('projects', finalizedProjects);
+        repository.saveCollection('projects', repairedProjects);
+        repository.saveCollection('purchaseOrders', merged.purchaseOrders);
         repository.saveCollection('projectSetupDrafts' as any, updatedSetupDrafts);
 
         setState(merged);
@@ -940,6 +993,180 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     return { success: true };
   };
 
+  const approvePurchaseOrder = (poId: string, approverId: string, approverName: string) => {
+    const po = state.purchaseOrders.find((p) => p.id === poId);
+    if (!po) return { success: false, error: 'Purchase Order not found' };
+
+    updateItem('purchaseOrders', po.id, {
+      status: 'approved',
+      approvedBy: approverName || approverId,
+      approvedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      updatedBy: approverName || approverId,
+    });
+
+    // Update project BOQ line ordered quantities
+    if (po.projectId && state.projects) {
+      const project = state.projects.find((p) => p.id === po.projectId);
+      if (project?.lockedProjectBOQ?.lines) {
+        const updatedLines = project.lockedProjectBOQ.lines.map((bLine) => {
+          const poLineMatch = po.lines?.find((l) => l.boqLineId === bLine.id || l.productId === bLine.productId);
+          if (poLineMatch) {
+            const addedQty = Number(poLineMatch.quantity || 0);
+            return {
+              ...bLine,
+              orderedQuantity: (bLine.orderedQuantity || 0) + addedQty,
+            };
+          }
+          return bLine;
+        });
+
+        updateItem('projects', project.id, {
+          lockedProjectBOQ: {
+            ...project.lockedProjectBOQ,
+            lines: updatedLines,
+          },
+        });
+      }
+    }
+
+    logAudit({
+      documentType: 'purchase_order',
+      documentId: po.id,
+      documentNumber: po.documentNumber,
+      action: 'APPROVED',
+      performedBy: approverName || approverId,
+      previousStatus: po.status,
+      newStatus: 'approved',
+      details: `Approved Purchase Order ${po.documentNumber}`,
+    });
+
+    return { success: true };
+  };
+
+  const rejectPurchaseOrder = (poId: string, rejectorId: string, reason: string) => {
+    const po = state.purchaseOrders.find((p) => p.id === poId);
+    if (!po) return { success: false, error: 'Purchase Order not found' };
+
+    updateItem('purchaseOrders', po.id, {
+      status: 'rejected',
+      rejectedBy: rejectorId,
+      rejectedAt: new Date().toISOString(),
+      rejectionReason: reason,
+      updatedAt: new Date().toISOString(),
+      updatedBy: rejectorId,
+    });
+
+    logAudit({
+      documentType: 'purchase_order',
+      documentId: po.id,
+      documentNumber: po.documentNumber,
+      action: 'REJECTED',
+      performedBy: rejectorId,
+      previousStatus: po.status,
+      newStatus: 'rejected',
+      details: `Rejected Purchase Order ${po.documentNumber}. Reason: ${reason}`,
+    });
+
+    return { success: true };
+  };
+
+  const cancelPurchaseOrder = (poId: string, performedBy: string, reason: string) => {
+    const po = state.purchaseOrders.find((p) => p.id === poId);
+    if (!po) return { success: false, error: 'Purchase Order not found' };
+
+    updateItem('purchaseOrders', po.id, {
+      status: 'cancelled',
+      cancelledBy: performedBy,
+      cancelledAt: new Date().toISOString(),
+      cancellationReason: reason,
+      updatedAt: new Date().toISOString(),
+      updatedBy: performedBy,
+    });
+
+    logAudit({
+      documentType: 'purchase_order',
+      documentId: po.id,
+      documentNumber: po.documentNumber,
+      action: 'CANCELLED',
+      performedBy,
+      previousStatus: po.status,
+      newStatus: 'cancelled',
+      details: `Cancelled Purchase Order ${po.documentNumber}. Reason: ${reason}`,
+    });
+
+    return { success: true };
+  };
+
+  const addPODelivery = (poId: string, delivery: any) => {
+    const po = state.purchaseOrders.find((p) => p.id === poId);
+    if (!po) return { success: false, error: 'Purchase Order not found' };
+
+    const existingDeliveries = po.deliveries || [];
+    const updatedDeliveries = [delivery, ...existingDeliveries];
+
+    // Calculate delivery status
+    let totalOrdered = 0;
+    let totalReceived = 0;
+    (po.lines || []).forEach((line) => {
+      totalOrdered += Number(line.quantity || 0);
+    });
+
+    updatedDeliveries.forEach((d: any) => {
+      (d.items || []).forEach((item: any) => {
+        totalReceived += Number(item.qtyReceived || 0);
+      });
+    });
+
+    let deliveryStatus: 'not_received' | 'partial' | 'received' = 'not_received';
+    if (totalReceived > 0 && totalReceived < totalOrdered) {
+      deliveryStatus = 'partial';
+    } else if (totalOrdered > 0 && totalReceived >= totalOrdered) {
+      deliveryStatus = 'received';
+    }
+
+    updateItem('purchaseOrders', po.id, {
+      deliveries: updatedDeliveries,
+      deliveryStatus,
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Update project BOQ line received quantities
+    if (po.projectId && state.projects) {
+      const project = state.projects.find((p) => p.id === po.projectId);
+      if (project?.lockedProjectBOQ?.lines) {
+        const updatedLines = project.lockedProjectBOQ.lines.map((bLine) => {
+          const itemMatch = delivery.items?.find((i: any) => i.productId === bLine.productId || i.poLineId === bLine.id);
+          if (itemMatch) {
+            return {
+              ...bLine,
+              receivedQuantity: (bLine.receivedQuantity || 0) + Number(itemMatch.qtyReceived || 0),
+            };
+          }
+          return bLine;
+        });
+
+        updateItem('projects', project.id, {
+          lockedProjectBOQ: {
+            ...project.lockedProjectBOQ,
+            lines: updatedLines,
+          },
+        });
+      }
+    }
+
+    logAudit({
+      documentType: 'purchase_order',
+      documentId: po.id,
+      documentNumber: po.documentNumber,
+      action: 'DELIVERY_RECORDED',
+      performedBy: delivery.recordedBy || 'Procurement User',
+      details: `Recorded delivery ${delivery.deliveryId} (Invoice: ${delivery.invoiceNumber}) for PO ${po.documentNumber}`,
+    });
+
+    return { success: true };
+  };
+
   // Stage 4 Store Action: Create Goods Received Note (GRN)
   const createGRN = (grn: GoodsReceivedNote, performedBy: string = 'Stores Officer') => {
     // Domain Guard: PO must be issued or approved
@@ -1552,6 +1779,10 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         approveDirectPurchase,
         createPurchaseOrder,
         updatePOStatus,
+        approvePurchaseOrder,
+        rejectPurchaseOrder,
+        cancelPurchaseOrder,
+        addPODelivery,
         createGRN,
         inspectGRN,
         approveGRN,

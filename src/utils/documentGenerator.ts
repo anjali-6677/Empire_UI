@@ -567,3 +567,111 @@ export function buildProposalDocumentHtml(estimate: any, enquiry: any, client: a
     </div>
   `;
 }
+
+// =========================================
+// 4. BOQ Document Builder
+// =========================================
+export function buildBOQDocumentHtml(params: {
+  documentTitle: string;
+  projectCode: string;
+  projectName: string;
+  clientName: string;
+  sourceQuotationNumber: string;
+  acceptedRevisionLabel: string;
+  lockedBy: string;
+  lockedAt: string;
+  lines: any[];
+  totalBOQValue: number;
+}): string {
+  const {
+    documentTitle,
+    projectCode,
+    projectName,
+    clientName,
+    sourceQuotationNumber,
+    acceptedRevisionLabel,
+    lockedBy,
+    lockedAt,
+    lines,
+    totalBOQValue,
+  } = params;
+
+  const rowsHtml = lines.map((item: any, idx: number) => `
+    <tr>
+      <td class="font-mono">#${item.lineNo || idx + 1}</td>
+      <td>${item.categoryName || 'General Fitout'}</td>
+      <td class="font-bold">${item.itemDescription || 'BOQ Line Item'}</td>
+      <td class="text-right font-mono font-bold">${item.boqQuantity}</td>
+      <td class="font-mono">${item.unitSymbol || 'nos'}</td>
+      <td class="text-right font-mono">${formatIndianCurrency(item.boqRate)}</td>
+      <td class="text-right font-mono font-bold">${formatIndianCurrency(item.boqAmount || item.boqQuantity * item.boqRate)}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <table class="header-table">
+      <tr>
+        <td>
+          <div class="company-title">FLUTEBYTE TECHNOLOGIES</div>
+          <div class="company-sub">${documentTitle.toUpperCase()}</div>
+          <div style="font-size: 10px; color: #64748B; margin-top: 4px;">
+            Flutebyte Technologies Pvt Ltd • Worli Sea Face, Mumbai 400018<br>
+            Email: projects@flutebyte.com • Web: www.flutebyte.com
+          </div>
+        </td>
+        <td style="text-align: right; vertical-align: top;">
+          <div class="doc-badge" style="background-color: #ECFDF5; border-color: #A7F3D0; color: #065F46;">LOCKED BOQ BASELINE</div>
+          <div class="doc-number">${projectCode}</div>
+          <div style="font-size: 10px; color: #64748B; margin-top: 4px;">Locked: <strong>${lockedAt.split('T')[0]}</strong></div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="info-title">PROJECT & CLIENT DETAILS</div>
+        <div style="font-weight: 700; font-size: 12px; color: #121214;">${projectName}</div>
+        <div><strong>Client:</strong> ${clientName}</div>
+        <div><strong>Project Code:</strong> ${projectCode}</div>
+      </div>
+      <div class="info-cell" style="border-left: 1px solid #E2E8F0;">
+        <div class="info-title">COMMERCIAL BOQ PROVENANCE</div>
+        <div><strong>CRM Quotation Ref:</strong> ${sourceQuotationNumber}</div>
+        <div><strong>Accepted Revision:</strong> ${acceptedRevisionLabel}</div>
+        <div><strong>Locked By:</strong> ${lockedBy}</div>
+      </div>
+    </div>
+
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th style="width: 50px;">Line #</th>
+          <th>Category</th>
+          <th>Item Description</th>
+          <th style="text-align: right;">Baseline Qty</th>
+          <th>Unit</th>
+          <th style="text-align: right;">Baseline Rate</th>
+          <th style="text-align: right;">Total Baseline Amount (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml.length ? rowsHtml : '<tr><td colspan="7" style="text-align:center;">No BOQ items found</td></tr>'}
+      </tbody>
+    </table>
+
+    <div class="summary-box" style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 10px; color: #AB9570; text-transform: uppercase; font-weight: 700;">CANONICAL PROJECT BOQ VALUE</div>
+        <div style="font-size: 11px; color: #CBD5E1;">Permanent baseline snapshot established during project activation</div>
+      </div>
+      <div style="text-align: right;">
+        <div class="summary-total">${formatIndianCurrency(totalBOQValue)}</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Generated automatically from Flutebyte Technologies Enterprise ERP • Canonical Commercial Document
+    </div>
+  `;
+}
+

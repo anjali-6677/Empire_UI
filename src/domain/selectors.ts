@@ -83,17 +83,27 @@ export const getProjectActivity = (state: ERPCollections, projectId: string): Au
   );
 };
 
-export const getIndentBOQAvailability = (
-  state: ERPCollections,
-  projectId: string,
-  boqLineId: string,
-  requestedQty: number,
-  excludeIndentId?: string
-): BOQAvailabilityResult => {
-  const boqLines = getProjectBOQLines(state, projectId);
+export interface GetBOQLineAvailabilityParams {
+  project?: Project | string;
+  state: ERPCollections;
+  projectId: string;
+  boqLineId: string;
+  requestedQty?: number;
+  excludeIndentId?: string;
+}
+
+export const getProjectBOQLineAvailability = ({
+  state,
+  projectId,
+  boqLineId,
+  requestedQty = 0,
+  excludeIndentId,
+}: GetBOQLineAvailabilityParams): BOQAvailabilityResult => {
+  const boqLines = getNormalizedLockedBOQLines(state, projectId);
   const line = boqLines.find((l) => l.id === boqLineId) || null;
 
   if (!line) {
+    const isOverBOQ = requestedQty > 0;
     return {
       boqLine: null,
       baselineQty: 0,
@@ -105,8 +115,8 @@ export const getIndentBOQAvailability = (
       availableBOQQty: 0,
       requestedQty,
       unitSymbol: 'nos',
-      isOverBOQ: true,
-      isOverLimit: true,
+      isOverBOQ,
+      isOverLimit: isOverBOQ,
       overBOQAmount: requestedQty,
       overLimitQty: requestedQty,
     };
@@ -114,11 +124,13 @@ export const getIndentBOQAvailability = (
 
   const projectIndents = getProjectIndents(state, projectId);
 
-  // Sum up quantities ONLY from approved/converted indents per business rule #4
-  // Draft, Pending Approval, Rejected, Sent Back, Withdrawn, and Cancelled indents do NOT reduce availability.
-  let totalIndentedAcrossSystem = 0;
+  // Sum up consumed quantities ONLY from approved/committed indents for SAME projectId + boqLineId
+  // Statuses: approved, sourcing, partially_ordered, fully_ordered, converted, converted_to_rfq, converted_to_po, submitted
+  // Draft, Rejected, Cancelled, Sent Back do NOT count toward consumption.
+  let consumedQty = 0;
 
-  const APPROVED_INDENT_STATUSES = new Set([
+  const COMMITTED_INDENT_STATUSES = new Set([
+    'submitted',
     'approved',
     'sourcing',
     'partially_ordered',
@@ -132,31 +144,59 @@ export const getIndentBOQAvailability = (
     const statusLower = (indent.status || '').toLowerCase();
     if (
       indent.id !== excludeIndentId &&
-      APPROVED_INDENT_STATUSES.has(statusLower)
+      COMMITTED_INDENT_STATUSES.has(statusLower)
     ) {
-      const itemsList = (indent as any).items || (indent as any).lines || [];
+      const itemsList = (indent as any).lines || (indent as any).items || [];
       itemsList.forEach((indentLine: any) => {
-        if (indentLine.boqLineId === boqLineId || indentLine.boqItemId === boqLineId || indentLine.id === boqLineId) {
-          totalIndentedAcrossSystem += indentLine.requestedQty || indentLine.quantity || 0;
+        const isExactBOQLineMatch =
+          indentLine.boqLineId === boqLineId ||
+          indentLine.boqItemId === boqLineId ||
+          (line.productId && indentLine.productId === line.productId);
+
+        if (isExactBOQLineMatch) {
+          consumedQty += Number(indentLine.requestedQty ?? indentLine.quantity ?? indentLine.qty ?? 0);
         }
       });
     }
   });
 
-  const baselineQty = line.boqQuantity;
-  const remainingAvailableQty = Math.max(0, baselineQty - totalIndentedAcrossSystem);
-  const isOverBOQ = requestedQty > remainingAvailableQty;
-  const overBOQAmount = isOverBOQ ? requestedQty - remainingAvailableQty : 0;
+  const acceptedBOQQty = Number(line.boqQuantity ?? 0);
+  const availableBOQQty = Math.max(0, acceptedBOQQty - consumedQty);
+  const isOverBOQ = requestedQty > availableBOQQty;
+  const overBOQAmount = isOverBOQ ? requestedQty - availableBOQQty : 0;
+
+  // Convert NormalizedBOQLine to ProjectBOQLine format for backward compatibility if needed
+  const projectBOQLineAdapter: ProjectBOQLine = {
+    id: line.id,
+    lineNo: line.lineNo,
+    itemDescription: line.itemDescription,
+    categoryId: line.categoryId,
+    categoryName: line.categoryName,
+    unitSymbol: line.unitSymbol,
+    boqQuantity: line.boqQuantity,
+    boqRate: line.boqRate,
+    boqAmount: line.boqAmount,
+    indentedQuantity: consumedQty,
+    orderedQuantity: 0,
+    receivedQuantity: 0,
+    issuedQuantity: 0,
+    remainingQuantity: availableBOQQty,
+    committedCost: 0,
+    actualCost: 0,
+    variance: 0,
+    specifications: line.specifications,
+    productId: line.productId,
+  } as unknown as ProjectBOQLine;
 
   return {
-    boqLine: line,
-    baselineQty,
-    acceptedBOQQty: baselineQty,
-    previouslyIndentedQty: totalIndentedAcrossSystem,
-    previouslyOrderedQty: line.orderedQuantity || 0,
-    previouslyReceivedQty: line.receivedQuantity || 0,
-    remainingAvailableQty,
-    availableBOQQty: remainingAvailableQty,
+    boqLine: projectBOQLineAdapter,
+    baselineQty: acceptedBOQQty,
+    acceptedBOQQty,
+    previouslyIndentedQty: consumedQty,
+    previouslyOrderedQty: 0,
+    previouslyReceivedQty: 0,
+    remainingAvailableQty: availableBOQQty,
+    availableBOQQty,
     requestedQty,
     unitSymbol: line.unitSymbol,
     isOverBOQ,
@@ -164,6 +204,22 @@ export const getIndentBOQAvailability = (
     overBOQAmount,
     overLimitQty: overBOQAmount,
   };
+};
+
+export const getIndentBOQAvailability = (
+  state: ERPCollections,
+  projectId: string,
+  boqLineId: string,
+  requestedQty: number,
+  excludeIndentId?: string
+): BOQAvailabilityResult => {
+  return getProjectBOQLineAvailability({
+    state,
+    projectId,
+    boqLineId,
+    requestedQty,
+    excludeIndentId,
+  });
 };
 
 /**
@@ -702,6 +758,206 @@ export const getHistoricalProductPurchaseRates = (
   // Sort latest first
   return records.sort((a, b) => new Date(b.poDate).getTime() - new Date(a.poDate).getTime());
 };
+
+// ==========================================
+// CANONICAL PO CALCULATION & DELIVERY HELPERS
+// ==========================================
+
+export interface POTotalsBreakdown {
+  subtotal: number;
+  discount: number;
+  freight: number;
+  packing: number;
+  labour: number;
+  tax: number;
+  roundOff: number;
+  grandTotal: number;
+}
+
+export const calculatePurchaseOrderTotals = (po: any): POTotalsBreakdown => {
+  if (!po) {
+    return { subtotal: 0, discount: 0, freight: 0, packing: 0, labour: 0, tax: 0, roundOff: 0, grandTotal: 0 };
+  }
+
+  const lines = po.lines || po.items || [];
+  let subtotal = 0;
+  let lineTaxTotal = 0;
+  let lineDiscountTotal = 0;
+
+  lines.forEach((line: any) => {
+    const qty = Number(line.quantity ?? line.qty ?? line.requestedQty ?? 0);
+    const rate = Number(line.unitRate ?? line.basicRate ?? line.unitPrice ?? line.rate ?? 0);
+    const lineBase = qty * rate;
+
+    const discountPct = Number(line.discountPercentage ?? line.discountPct ?? 0);
+    const discountAmt = lineBase * (discountPct / 100);
+
+    const afterDiscount = lineBase - discountAmt;
+    const taxPct = Number(line.taxPercentage ?? line.taxPercent ?? line.gstPercentage ?? 0);
+    const taxAmt = afterDiscount * (taxPct / 100);
+
+    subtotal += lineBase;
+    lineDiscountTotal += discountAmt;
+    lineTaxTotal += taxAmt;
+  });
+
+  const freight = Number(po.freightTotal ?? po.freightAmount ?? po.deliveryCharges ?? 0);
+  const packing = Number(po.packingTotal ?? po.packingCharges ?? 0);
+  const labour = Number(po.labourTotal ?? po.labourCharges ?? 0);
+
+  const discount = Number(po.discountTotal ?? lineDiscountTotal ?? 0);
+  const tax = Number(po.taxTotal ?? lineTaxTotal ?? 0);
+
+  const rawGrand = subtotal - discount + freight + packing + labour + tax;
+  const grandTotal = Math.round(rawGrand);
+  const roundOff = Number((grandTotal - rawGrand).toFixed(2));
+
+  return {
+    subtotal: Number(subtotal.toFixed(2)),
+    discount: Number(discount.toFixed(2)),
+    freight: Number(freight.toFixed(2)),
+    packing: Number(packing.toFixed(2)),
+    labour: Number(labour.toFixed(2)),
+    tax: Number(tax.toFixed(2)),
+    roundOff,
+    grandTotal,
+  };
+};
+
+export const getPODeliverySummary = (po: any, deliveries: any[] = []) => {
+  const lines = po?.lines || po?.items || [];
+  const poDeliveries = deliveries.length > 0 ? deliveries : (po?.deliveries || []);
+
+  const orderedQtyByLine: Record<string, number> = {};
+  const receivedQtyByLine: Record<string, number> = {};
+  const remainingQtyByLine: Record<string, number> = {};
+
+  lines.forEach((line: any, idx: number) => {
+    const lineKey = line.id || line.poLineId || `line-${idx}`;
+    const qty = Number(line.quantity ?? line.qty ?? 0);
+    orderedQtyByLine[lineKey] = qty;
+    receivedQtyByLine[lineKey] = 0;
+  });
+
+  poDeliveries.forEach((d: any) => {
+    const items = d.items || [];
+    items.forEach((item: any) => {
+      const key = item.poLineId || item.id;
+      if (key && receivedQtyByLine[key] !== undefined) {
+        receivedQtyByLine[key] += Number(item.qtyReceived || item.quantity || 0);
+      } else {
+        // Fallback match by productId
+        const line = lines.find((l: any) => l.productId === item.productId);
+        if (line) {
+          const lKey = line.id || line.poLineId;
+          receivedQtyByLine[lKey] = (receivedQtyByLine[lKey] || 0) + Number(item.qtyReceived || item.quantity || 0);
+        }
+      }
+    });
+  });
+
+  let totalOrdered = 0;
+  let totalReceived = 0;
+
+  Object.keys(orderedQtyByLine).forEach((key) => {
+    const ordered = orderedQtyByLine[key];
+    const received = receivedQtyByLine[key] || 0;
+    remainingQtyByLine[key] = Math.max(0, ordered - received);
+    totalOrdered += ordered;
+    totalReceived += received;
+  });
+
+  let deliveryStatus: 'not_received' | 'partial' | 'received' = 'not_received';
+  if (totalReceived > 0 && totalReceived < totalOrdered) {
+    deliveryStatus = 'partial';
+  } else if (totalOrdered > 0 && totalReceived >= totalOrdered) {
+    deliveryStatus = 'received';
+  }
+
+  return {
+    orderedQtyByLine,
+    receivedQtyByLine,
+    remainingQtyByLine,
+    totalOrdered,
+    totalReceived,
+    deliveryStatus,
+  };
+};
+
+export interface CategoryBudgetSummary {
+  categoryId: string;
+  categoryName: string;
+  allocatedBudget: number;
+  committedCost: number;
+  currentPOAmount: number;
+  projectedCommitment: number;
+  remainingBudget: number;
+  exceededBy: number;
+  isExceeded: boolean;
+}
+
+export const getProjectCategoryBudgetSummary = (
+  state: ERPCollections,
+  projectId: string,
+  categoryId: string,
+  currentPOAmount: number = 0,
+  excludePOId?: string
+): CategoryBudgetSummary => {
+  const project = (state.projects || []).find((p) => p.id === projectId);
+  const category = (state.categories || []).find((c) => c.id === categoryId);
+  const categoryName = category?.name || 'Category Baseline';
+
+  // 1. Allocated Budget from Locked BOQ / categoryBudgets
+  let allocatedBudget = 0;
+  if (project?.lockedProjectBOQ?.lines) {
+    allocatedBudget = project.lockedProjectBOQ.lines
+      .filter((l) => l.categoryId === categoryId)
+      .reduce((sum, l) => sum + (l.boqAmount || 0), 0);
+  }
+  if (allocatedBudget === 0 && project?.categoryBudgets) {
+    const catB = project.categoryBudgets.find((cb) => cb.categoryId === categoryId);
+    if (catB) {
+      allocatedBudget = catB.allocatedBudget || catB.budgetAmount || 0;
+    }
+  }
+
+  // 2. Already Committed: valid approved/issued/active POs in this project for this category
+  let committedCost = 0;
+  const validPOs = (state.purchaseOrders || []).filter((po) => {
+    if (po.projectId !== projectId || po.id === excludePOId) return false;
+    const s = String(po.status || '').toLowerCase();
+    return s === 'approved' || s === 'issued' || s === 'partially_delivered' || s === 'fully_received' || s === 'completed';
+  });
+
+  validPOs.forEach((po) => {
+    const lines = po.lines || [];
+    lines.forEach((line: any) => {
+      const matchCat = line.categoryId === categoryId || line.categoryName === categoryName;
+      if (matchCat) {
+        const lineTotal = line.lineTotal || (Number(line.quantity || 0) * Number(line.unitRate || line.basicRate || 0));
+        committedCost += lineTotal;
+      }
+    });
+  });
+
+  const projectedCommitment = committedCost + currentPOAmount;
+  const remainingBudget = Math.max(0, allocatedBudget - committedCost);
+  const exceededBy = Math.max(0, projectedCommitment - allocatedBudget);
+  const isExceeded = allocatedBudget > 0 && projectedCommitment > allocatedBudget;
+
+  return {
+    categoryId,
+    categoryName,
+    allocatedBudget,
+    committedCost,
+    currentPOAmount,
+    projectedCommitment,
+    remainingBudget,
+    exceededBy,
+    isExceeded,
+  };
+};
+
 
 
 

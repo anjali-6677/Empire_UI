@@ -6,9 +6,10 @@
 import React from 'react';
 import { Project } from '../../../domain/types';
 import { useERPStore } from '../../../store/ERPStoreContext';
-import { getProjectBOQLines } from '../../../domain/selectors';
+import { getNormalizedLockedBOQLines } from '../../../domain/selectors';
 import { Lock, Search, Download, Printer } from 'lucide-react';
 import { formatIndianCurrency } from '../../../utils/format';
+import { buildBOQDocumentHtml, downloadDocumentHtml, printDocumentHtml } from '../../../utils/documentGenerator';
 
 interface Props {
   project: Project;
@@ -18,7 +19,7 @@ export const AcceptedProjectBOQTab: React.FC<Props> = ({ project }) => {
   const { state } = useERPStore();
   const [searchTerm, setSearchTerm] = React.useState('');
 
-  const boqLines = getProjectBOQLines(state, project.id);
+  const boqLines = getNormalizedLockedBOQLines(state, project);
 
   const filteredLines = boqLines.filter(
     (l) =>
@@ -29,11 +30,37 @@ export const AcceptedProjectBOQTab: React.FC<Props> = ({ project }) => {
   const totalBOQValue = boqLines.reduce((sum, l) => sum + (l.boqAmount || l.boqQuantity * l.boqRate), 0);
 
   const handleDownloadBOQ = () => {
-    alert(`Downloading Locked BOQ for Project ${project.projectCode}...`);
+    const title = `Locked BOQ Baseline - ${project.projectCode}`;
+    const html = buildBOQDocumentHtml({
+      documentTitle: title,
+      projectCode: project.projectCode,
+      projectName: project.projectName,
+      clientName: project.clientName,
+      sourceQuotationNumber: project.sourceQuotationNumber || 'QUO-ACCEPTED',
+      acceptedRevisionLabel: 'Revision 1 (Client Accepted)',
+      lockedBy: project.createdBy || 'Project Director',
+      lockedAt: project.projectBOQLockedAt || project.createdAt || new Date().toISOString(),
+      lines: boqLines,
+      totalBOQValue,
+    });
+    downloadDocumentHtml(`BOQ_${project.projectCode}`, title, html);
   };
 
   const handlePrintBOQ = () => {
-    window.print();
+    const title = `Locked BOQ Baseline - ${project.projectCode}`;
+    const html = buildBOQDocumentHtml({
+      documentTitle: title,
+      projectCode: project.projectCode,
+      projectName: project.projectName,
+      clientName: project.clientName,
+      sourceQuotationNumber: project.sourceQuotationNumber || 'QUO-ACCEPTED',
+      acceptedRevisionLabel: 'Revision 1 (Client Accepted)',
+      lockedBy: project.createdBy || 'Project Director',
+      lockedAt: project.projectBOQLockedAt || project.createdAt || new Date().toISOString(),
+      lines: boqLines,
+      totalBOQValue,
+    });
+    printDocumentHtml(title, html);
   };
 
   return (
@@ -133,8 +160,11 @@ export const AcceptedProjectBOQTab: React.FC<Props> = ({ project }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800 font-sans">
-              {filteredLines.map((line) => {
-                const remaining = line.remainingQuantity ?? Math.max(0, line.boqQuantity - line.indentedQuantity);
+              {filteredLines.map((line: any) => {
+                const indentedQty = line.indentedQuantity ?? 0;
+                const orderedQty = line.orderedQuantity ?? 0;
+                const receivedQty = line.receivedQuantity ?? 0;
+                const remaining = line.remainingQuantity ?? Math.max(0, line.boqQuantity - indentedQty);
                 const isFullyIndented = remaining === 0;
 
                 return (
@@ -149,16 +179,22 @@ export const AcceptedProjectBOQTab: React.FC<Props> = ({ project }) => {
                       ₹{line.boqAmount.toLocaleString('en-IN')}
                     </td>
                     <td className="p-2.5 text-right font-mono text-blue-700 font-semibold">
-                      {line.indentedQuantity.toLocaleString('en-IN')}
+                      {indentedQty.toLocaleString('en-IN')}
                     </td>
                     <td className="p-2.5 text-right font-mono text-slate-700">
-                      {line.orderedQuantity.toLocaleString('en-IN')}
+                      {orderedQty.toLocaleString('en-IN')}
                     </td>
                     <td className="p-2.5 text-right font-mono text-slate-700">
-                      {line.receivedQuantity.toLocaleString('en-IN')}
+                      {receivedQty.toLocaleString('en-IN')}
                     </td>
                     <td className="p-2.5 text-right font-mono font-bold">
-                      <span className={isFullyIndented ? 'text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200' : 'text-emerald-700'}>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded ${
+                          isFullyIndented
+                            ? 'bg-slate-100 text-slate-500'
+                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        }`}
+                      >
                         {remaining.toLocaleString('en-IN')}
                       </span>
                     </td>
