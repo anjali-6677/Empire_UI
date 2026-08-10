@@ -31,6 +31,8 @@ export interface PORowActionsMenuProps {
   onWithdraw?: (po: PurchaseOrder) => void;
   onIssuePO?: (po: PurchaseOrder) => void;
   onDownload?: (po: PurchaseOrder) => void;
+  onRecordDelivery?: (po: PurchaseOrder) => void;
+  onViewDeliveryHistory?: (po: PurchaseOrder) => void;
   onViewComparison?: (rfqId?: string) => void;
   onViewGRNs?: (poId: string) => void;
   onViewActivity?: (poId: string) => void;
@@ -58,6 +60,8 @@ export function getPORowActions(
     onWithdraw?: () => void;
     onIssuePO?: () => void;
     onDownload?: () => void;
+    onRecordDelivery?: () => void;
+    onViewDeliveryHistory?: () => void;
     onViewComparison?: () => void;
     onViewGRNs?: () => void;
     onViewActivity?: () => void;
@@ -67,6 +71,8 @@ export function getPORowActions(
 ): POActionItem[] {
   const actions: POActionItem[] = [];
   const status = (po.status as string)?.toLowerCase();
+  const deliveryStatus = (po.deliveryStatus as string)?.toLowerCase() || 'not_received';
+  const isFullyReceived = deliveryStatus === 'received' || deliveryStatus === 'fully_received';
 
   // Always available: View PO
   actions.push({
@@ -144,9 +150,9 @@ export function getPORowActions(
     });
   }
 
-  // Status: Approved
-  else if (status === 'approved') {
-    if (callbacks.onIssuePO) {
+  // Status: Approved or Issued
+  else if (status === 'approved' || status === 'issued') {
+    if (status === 'approved' && callbacks.onIssuePO) {
       actions.push({
         id: 'issue_po',
         label: 'Issue PO to Vendor',
@@ -158,10 +164,29 @@ export function getPORowActions(
 
     actions.push({
       id: 'download',
-      label: 'Download Approved PO',
+      label: 'Download PO Document',
       icon: Download,
       onClick: callbacks.onDownload,
     });
+
+    if (!isFullyReceived && callbacks.onRecordDelivery) {
+      actions.push({
+        id: 'record_delivery',
+        label: 'Record Delivery',
+        icon: PackageCheck,
+        variant: 'primary',
+        onClick: callbacks.onRecordDelivery,
+      });
+    }
+
+    if (callbacks.onViewDeliveryHistory) {
+      actions.push({
+        id: 'delivery_history',
+        label: 'Delivery History',
+        icon: History,
+        onClick: callbacks.onViewDeliveryHistory,
+      });
+    }
 
     if (callbacks.onViewComparison && (po.rfqId || po.sourceRFQId)) {
       actions.push({
@@ -175,7 +200,7 @@ export function getPORowActions(
     if (callbacks.onCancel) {
       actions.push({
         id: 'cancel',
-        label: 'Cancel Approved PO',
+        label: 'Cancel PO',
         icon: XCircle,
         variant: 'destructive',
         onClick: callbacks.onCancel,
@@ -183,36 +208,8 @@ export function getPORowActions(
     }
   }
 
-  // Status: Issued
-  else if (status === 'issued') {
-    actions.push({
-      id: 'download',
-      label: 'Download Issued PO',
-      icon: Download,
-      onClick: callbacks.onDownload,
-    });
-
-    if (callbacks.onViewComparison && (po.rfqId || po.sourceRFQId)) {
-      actions.push({
-        id: 'view_comparison',
-        label: 'View Source Comparison',
-        icon: BarChart2,
-        onClick: callbacks.onViewComparison,
-      });
-    }
-
-    if (callbacks.onViewActivity) {
-      actions.push({
-        id: 'activity',
-        label: 'View Activity Log',
-        icon: History,
-        onClick: callbacks.onViewActivity,
-      });
-    }
-  }
-
   // Status: Partially Delivered / Received
-  else if (status === 'partially_delivered' || status === 'partially_received') {
+  else if (status === 'partially_delivered' || status === 'partially_received' || deliveryStatus === 'partial') {
     actions.push({
       id: 'download',
       label: 'Download PO Document',
@@ -220,19 +217,28 @@ export function getPORowActions(
       onClick: callbacks.onDownload,
     });
 
-    if (callbacks.onViewGRNs) {
+    if (!isFullyReceived && callbacks.onRecordDelivery) {
       actions.push({
-        id: 'view_grns',
-        label: 'View Goods Receipts (GRNs)',
+        id: 'record_delivery',
+        label: 'Record Delivery',
         icon: PackageCheck,
         variant: 'primary',
-        onClick: callbacks.onViewGRNs,
+        onClick: callbacks.onRecordDelivery,
+      });
+    }
+
+    if (callbacks.onViewDeliveryHistory) {
+      actions.push({
+        id: 'delivery_history',
+        label: 'Delivery History',
+        icon: History,
+        onClick: callbacks.onViewDeliveryHistory,
       });
     }
   }
 
-  // Status: Fully Delivered / Received
-  else if (status === 'fully_delivered' || status === 'fully_received') {
+  // Status: Fully Delivered / Received / Completed
+  else if (status === 'fully_delivered' || status === 'fully_received' || status === 'completed' || deliveryStatus === 'received') {
     actions.push({
       id: 'download',
       label: 'Download Completed PO',
@@ -240,12 +246,12 @@ export function getPORowActions(
       onClick: callbacks.onDownload,
     });
 
-    if (callbacks.onViewGRNs) {
+    if (callbacks.onViewDeliveryHistory) {
       actions.push({
-        id: 'view_grns',
-        label: 'View Goods Receipts (GRNs)',
-        icon: PackageCheck,
-        onClick: callbacks.onViewGRNs,
+        id: 'delivery_history',
+        label: 'Delivery History',
+        icon: History,
+        onClick: callbacks.onViewDeliveryHistory,
       });
     }
 
@@ -283,6 +289,8 @@ export const PORowActionsMenu: React.FC<PORowActionsMenuProps> = ({
   onWithdraw,
   onIssuePO,
   onDownload,
+  onRecordDelivery,
+  onViewDeliveryHistory,
   onViewComparison,
   onViewGRNs,
   onViewActivity,
@@ -297,6 +305,8 @@ export const PORowActionsMenu: React.FC<PORowActionsMenuProps> = ({
     onWithdraw: onWithdraw ? () => onWithdraw(po) : undefined,
     onIssuePO: onIssuePO ? () => onIssuePO(po) : undefined,
     onDownload: onDownload ? () => onDownload(po) : undefined,
+    onRecordDelivery: onRecordDelivery ? () => onRecordDelivery(po) : undefined,
+    onViewDeliveryHistory: onViewDeliveryHistory ? () => onViewDeliveryHistory(po) : undefined,
     onViewComparison: onViewComparison ? () => onViewComparison(po.rfqId || po.sourceRFQId) : undefined,
     onViewGRNs: onViewGRNs ? () => onViewGRNs(po.id) : undefined,
     onViewActivity: onViewActivity ? () => onViewActivity(po.id) : undefined,
@@ -311,7 +321,7 @@ export const PORowActionsMenu: React.FC<PORowActionsMenuProps> = ({
           type="button"
           aria-label={`Open actions for Purchase Order ${po.documentNumber}`}
           onClick={(e) => e.stopPropagation()}
-          className="w-9 h-9 flex items-center justify-center rounded-lg border border-transparent hover:border-slate-200 hover:bg-slate-100 active:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-500 hover:text-slate-900 transition"
+          className="w-9 h-9 flex items-center justify-center rounded-lg border border-transparent hover:border-slate-200 hover:bg-slate-100 active:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-500 hover:text-slate-900 transition cursor-pointer"
         >
           <MoreVertical className="h-4 w-4" />
         </button>

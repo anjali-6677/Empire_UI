@@ -21,6 +21,7 @@ import {
   DirectPurchase,
   PurchaseOrder,
   WorkOrder,
+  SubcontractWorkOrder,
   GoodsReceivedNote,
   GRNStatus,
   QualityInspection,
@@ -104,9 +105,15 @@ export interface ERPStoreContextType {
   createMaterialIssue: (issue: MaterialIssue, performedBy?: string) => { success: boolean; issue?: MaterialIssue; error?: string };
   createMaterialReturn: (ret: MaterialReturn, performedBy?: string) => { success: boolean; materialReturn?: MaterialReturn; error?: string };
   createMaterialConsumption: (consumption: MaterialConsumption, performedBy?: string) => { success: boolean; consumption?: MaterialConsumption; error?: string };
-  createSubcontractorWorkOrder: (wo: WorkOrder, performedBy?: string) => { success: boolean; workOrder?: WorkOrder; error?: string };
+  createSubcontractorWorkOrder: (wo: SubcontractWorkOrder | WorkOrder | any, performedBy?: string) => { success: boolean; workOrder?: any; error?: string };
+  updateSubcontractWorkOrder: (id: string, patch: Partial<SubcontractWorkOrder>, performedBy?: string) => void;
   createWIPEntry: (wip: SubcontractorWIP, performedBy?: string) => { success: boolean; wip?: SubcontractorWIP; error?: string };
+  createSubcontractWIP: (wip: any, _performedBy?: string) => { success: boolean; wip?: any; error?: string };
+  updateSubcontractWIPStatus: (wipId: string, status: string, performedBy?: string) => void;
   certifyWIP: (cert: WIPCertification, performedBy?: string) => { success: boolean; certification?: WIPCertification; error?: string };
+  recordSubcontractorPayment: (payment: any, performedBy?: string) => { success: boolean; error?: string };
+  createSubcontractorBill: (bill: any, performedBy?: string) => { success: boolean; error?: string };
+  updateSubcontractorBillStatus: (billId: string, status: string, performedBy?: string) => void;
 
   createCategory: (category: Category, performedBy?: string) => { success: boolean; category?: Category; error?: string };
   updateCategory: (categoryId: string, input: Partial<Category>, performedBy?: string) => { success: boolean; error?: string };
@@ -1529,18 +1536,34 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   // Stage 4 Store Action: Create Subcontractor Work Order
-  const createSubcontractorWorkOrder = (wo: WorkOrder, performedBy: string = 'Contracts Lead') => {
+  const createSubcontractorWorkOrder = (wo: SubcontractWorkOrder | WorkOrder | any, performedBy: string = 'Contracts Lead') => {
     addItem('workOrders', wo);
+    addItem('subcontractWorkOrders', wo);
+    const amount = wo.grandTotal ?? wo.totalAmount ?? wo.finalContractValue ?? 0;
     logAudit({
       documentType: 'work_order',
       documentId: wo.id,
-      documentNumber: wo.documentNumber,
+      documentNumber: wo.documentNumber || wo.woNumber,
       action: 'CREATED',
       performedBy,
       newStatus: wo.status,
-      details: `Created Subcontractor Work Order ${wo.documentNumber} for ${wo.subcontractorName} - ₹${wo.totalAmount.toLocaleString('en-IN')}`,
+      details: `Created Subcontractor Work Order ${wo.documentNumber || wo.woNumber} for ${wo.subcontractorName} - ₹${amount.toLocaleString('en-IN')}`,
     });
     return { success: true, workOrder: wo };
+  };
+
+  const updateSubcontractWorkOrder = (id: string, patch: Partial<SubcontractWorkOrder>, performedBy: string = 'User') => {
+    updateItem('subcontractWorkOrders', id, patch);
+    updateItem('workOrders', id, patch);
+    logAudit({
+      documentType: 'work_order',
+      documentId: id,
+      documentNumber: (patch as any).documentNumber || (patch as any).woNumber || id,
+      action: 'STATUS_CHANGED',
+      performedBy,
+      newStatus: patch.status,
+      details: `Updated Subcontract Work Order ${id} status to ${patch.status}`,
+    });
   };
 
   // Stage 4 Store Action: Create Subcontractor WIP Entry
@@ -1791,8 +1814,28 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         createMaterialReturn,
         createMaterialConsumption,
         createSubcontractorWorkOrder,
+        updateSubcontractWorkOrder,
         createWIPEntry,
+        createSubcontractWIP: (wip: SubcontractorWIP, _performedBy?: string) => {
+          updateItem('subcontractorWIPs', wip.id, wip);
+          addItem('subcontractorWIPs', wip);
+          return { success: true, wip };
+        },
+        updateSubcontractWIPStatus: (wipId: string, status: string, _performedBy?: string) => {
+          updateItem('subcontractorWIPs', wipId, { status } as any);
+        },
         certifyWIP,
+        recordSubcontractorPayment: (payment: any, _performedBy?: string) => {
+          addItem('subcontractorPayments', payment);
+          return { success: true };
+        },
+        createSubcontractorBill: (bill: any, _performedBy?: string) => {
+          addItem('subcontractorBills', bill);
+          return { success: true };
+        },
+        updateSubcontractorBillStatus: (billId: string, status: string, _performedBy?: string) => {
+          updateItem('subcontractorBills', billId, { status } as any);
+        },
         createCategory,
         updateCategory,
         deactivateCategory,

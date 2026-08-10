@@ -447,9 +447,9 @@ export const getSubcontractorWorkOrders = (state: ERPCollections, projectId?: st
 };
 
 export const getWIPEntries = (state: ERPCollections, projectId?: string): SubcontractorWIP[] => {
-  const wips = (state.wips || []) as SubcontractorWIP[];
-  if (!projectId || projectId === 'all') return wips;
-  return wips.filter((w) => w.projectId === projectId);
+  const wips = (state.wips || []) as any[];
+  if (!projectId || projectId === 'all') return wips as SubcontractorWIP[];
+  return wips.filter((w) => w.projectId === projectId) as SubcontractorWIP[];
 };
 
 export const getWIPCertifications = (state: ERPCollections, projectId?: string): WIPCertification[] => {
@@ -824,64 +824,10 @@ export const calculatePurchaseOrderTotals = (po: any): POTotalsBreakdown => {
   };
 };
 
+import { getCanonicalPODeliverySummary } from '../utils/poDelivery';
+
 export const getPODeliverySummary = (po: any, deliveries: any[] = []) => {
-  const lines = po?.lines || po?.items || [];
-  const poDeliveries = deliveries.length > 0 ? deliveries : (po?.deliveries || []);
-
-  const orderedQtyByLine: Record<string, number> = {};
-  const receivedQtyByLine: Record<string, number> = {};
-  const remainingQtyByLine: Record<string, number> = {};
-
-  lines.forEach((line: any, idx: number) => {
-    const lineKey = line.id || line.poLineId || `line-${idx}`;
-    const qty = Number(line.quantity ?? line.qty ?? 0);
-    orderedQtyByLine[lineKey] = qty;
-    receivedQtyByLine[lineKey] = 0;
-  });
-
-  poDeliveries.forEach((d: any) => {
-    const items = d.items || [];
-    items.forEach((item: any) => {
-      const key = item.poLineId || item.id;
-      if (key && receivedQtyByLine[key] !== undefined) {
-        receivedQtyByLine[key] += Number(item.qtyReceived || item.quantity || 0);
-      } else {
-        // Fallback match by productId
-        const line = lines.find((l: any) => l.productId === item.productId);
-        if (line) {
-          const lKey = line.id || line.poLineId;
-          receivedQtyByLine[lKey] = (receivedQtyByLine[lKey] || 0) + Number(item.qtyReceived || item.quantity || 0);
-        }
-      }
-    });
-  });
-
-  let totalOrdered = 0;
-  let totalReceived = 0;
-
-  Object.keys(orderedQtyByLine).forEach((key) => {
-    const ordered = orderedQtyByLine[key];
-    const received = receivedQtyByLine[key] || 0;
-    remainingQtyByLine[key] = Math.max(0, ordered - received);
-    totalOrdered += ordered;
-    totalReceived += received;
-  });
-
-  let deliveryStatus: 'not_received' | 'partial' | 'received' = 'not_received';
-  if (totalReceived > 0 && totalReceived < totalOrdered) {
-    deliveryStatus = 'partial';
-  } else if (totalOrdered > 0 && totalReceived >= totalOrdered) {
-    deliveryStatus = 'received';
-  }
-
-  return {
-    orderedQtyByLine,
-    receivedQtyByLine,
-    remainingQtyByLine,
-    totalOrdered,
-    totalReceived,
-    deliveryStatus,
-  };
+  return getCanonicalPODeliverySummary(po, deliveries);
 };
 
 export interface CategoryBudgetSummary {

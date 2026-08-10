@@ -35,11 +35,13 @@ import {
   MaterialIssue,
   MaterialReturn,
   MaterialConsumption,
-  SubcontractorWIP,
   WIPCertification,
   VendorAPInvoice,
   VendorPayment,
+  SubcontractWorkOrder,
+  SubcontractWIP,
   SubcontractorBill,
+  AccountsPayable,
   SubcontractorPayment,
   ClientRABill,
   ClientReceipt,
@@ -74,17 +76,19 @@ export interface ERPCollections {
   directPurchases: DirectPurchase[];
   purchaseOrders: PurchaseOrder[];
   workOrders: WorkOrder[];
+  subcontractWorkOrders?: SubcontractWorkOrder[];
   grns: GoodsReceivedNote[];
   stockLedger: StockLedgerEntry[];
   materialIssues: MaterialIssue[];
   materialReturns: MaterialReturn[];
   materialConsumptions: MaterialConsumption[];
-  subcontractorWIPs: SubcontractorWIP[];
-  wips: SubcontractorWIP[];
+  subcontractorWIPs: SubcontractWIP[];
+  wips: SubcontractWIP[];
   wipCertifications: WIPCertification[];
   vendorInvoices: VendorAPInvoice[];
   vendorPayments: VendorPayment[];
   subcontractorBills: SubcontractorBill[];
+  accountsPayable?: AccountsPayable[];
   subcontractorPayments: SubcontractorPayment[];
   clientRABills: ClientRABill[];
   clientReceipts: ClientReceipt[];

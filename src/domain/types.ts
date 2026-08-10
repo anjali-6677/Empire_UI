@@ -135,10 +135,14 @@ export interface Vendor {
   id: string;
   code: string;
   vendorCode?: string;
+  subcontractorCode?: string;
   name: string;
+  companyName?: string;
   legalName?: string;
   displayName?: string;
+  vendorType?: 'vendor' | 'subcontractor' | 'both';
   category: string;
+  workCategories?: string[];
   approvedCategoryIds?: string[];
   preferredCategoryIds?: string[];
   complianceStatus?: VendorComplianceStatus | string;
@@ -152,6 +156,10 @@ export interface Vendor {
   contactPerson: string;
   phone: string;
   email: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  paymentTerms?: string;
   bankAccountId?: string;
   rating?: string;
   paymentTermsDays?: number;
@@ -1027,6 +1035,8 @@ export interface PurchaseOrderLine {
   receivedQty?: number;
   invoicedQty?: number;
   indentLineId?: string;
+  poLineId?: string;
+  unit?: string;
   boqLineId?: string;
   categoryName?: string;
   specifications?: string;
@@ -1600,40 +1610,212 @@ export interface VendorPayment {
   createdBy: string;
 }
 
-export interface SubcontractorBill {
+export interface SubcontractWOItem {
   id: string;
-  documentNumber: string;
+  boqLineId?: string;
+  itemCode?: string;
+  scopeDescription: string;
+  categoryName?: string;
+  quantity: number;
+  unitSymbol: string;
+  unit?: string;
+  rate: number;
+  amount: number;
+  variationReason?: string;
+}
+
+export interface SubcontractWOAmendment {
+  id: string;
+  amendmentNumber: string; // e.g. A1, A2
+  amendmentDate: string;
+  reason: string;
+  revisedAmount: number;
+  differenceAmount: number;
+  approvedBy?: string;
+  approvedDate?: string;
+}
+
+export interface SubcontractWorkOrder {
+  id: string;
+  documentNumber: string; // SWO-2026-001
+  woNumber?: string;
+  projectId: string;
+  projectName: string;
+  clientName?: string;
+  siteName?: string;
+  subcontractorId: string;
+  subcontractorName: string;
+  workCategory?: string;
+  startDate: string;
+  completionDate: string;
+  paymentTerms?: string;
+  retentionPercentage?: number;
+  advancePercentage?: number;
+  taxPercentage?: number;
+  remarks?: string;
+  items: SubcontractWOItem[];
+  subtotal: number;
+  taxTotal: number;
+  grandTotal: number;
+  advanceAmount?: number;
+  retentionAmount?: number;
+  finalContractValue?: number;
+  amendments?: SubcontractWOAmendment[];
+  status:
+    | 'draft'
+    | 'submitted'
+    | 'pending_approval'
+    | 'approved'
+    | 'issued'
+    | 'work_started'
+    | 'partially_completed'
+    | 'completed'
+    | 'closed'
+    | 'rejected'
+    | 'cancelled';
+  createdBy: string;
+  createdAt: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  updatedBy?: string;
+  updatedAt?: string;
+}
+
+export interface SubcontractWIPItem {
+  id: string;
+  boqLineId?: string;
+  woItemId?: string;
+  scopeDescription: string;
+  unitSymbol: string;
+  unit?: string;
+  woQty: number;
+  previouslyApprovedQty: number;
+  claimedQty: number;
+  measuredQty: number;
+  approvedQty: number;
+  remainingWOQty: number;
+  rate: number;
+  approvedValue: number;
+  variationReason?: string;
+}
+
+export interface SubcontractWIP {
+  id: string;
+  wipNumber: string; // WIP-2026-001
+  projectId: string;
+  projectName: string;
   workOrderId: string;
   woNumber: string;
-  subcontractorWIPId: string;
+  subcontractorId: string;
+  subcontractorName: string;
+  wipDate: string;
+  siteEngineerName?: string;
+  supervisorName?: string;
+  measurementReference?: string;
+  remarks?: string;
+  items: SubcontractWIPItem[];
+  totalClaimedValue: number;
+  totalApprovedValue: number;
+  status: 'draft' | 'submitted' | 'site_verification' | 'approved' | 'rejected';
+  createdBy: string;
+  createdAt: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+}
+
+export interface SubcontractorBillItem {
+  id: string;
+  wipItemId?: string;
+  boqLineId?: string;
+  scopeDescription: string;
+  approvedWIPQty: number;
+  previouslyBilledQty: number;
+  currentBillQty: number;
+  rate: number;
+  grossAmount: number;
+}
+
+export interface SubcontractorBill {
+  id: string;
+  billNumber: string; // SBILL-2026-001
+  invoiceNumber: string; // Subcontractor's invoice/challan no.
+  invoiceDate: string;
+  dueDate: string;
+  workOrderId: string;
+  woNumber: string;
+  subcontractorWIPId?: string;
+  wipIds?: string[];
   subcontractorId: string;
   subcontractorName: string;
   projectId: string;
   projectName: string;
   billDate: string;
-  dueDate: string;
-  certifiedWIPAmount: number;
+  items?: SubcontractorBillItem[];
+  grossAmount: number;
   retentionDeducted: number;
+  advanceRecoveryDeducted?: number;
+  otherDeductions?: number;
   taxAmount: number;
   netBillAmount: number;
-  previousPaymentsAmount: number;
+  netPayable?: number;
+  paidAmount?: number;
   outstandingAmount: number;
-  status: DocumentStatus;
+  status:
+    | 'draft'
+    | 'submitted'
+    | 'verification_pending'
+    | 'approved'
+    | 'posted_to_ap'
+    | 'partially_paid'
+    | 'paid'
+    | 'rejected'
+    | 'cancelled';
   createdAt: string;
   createdBy: string;
+  approvedBy?: string;
+  approvedAt?: string;
+}
+
+export interface AccountsPayable {
+  id: string;
+  apNumber: string; // AP-2026-001
+  projectId: string;
+  projectName: string;
+  subcontractorId: string;
+  subcontractorName: string;
+  billId: string;
+  billNumber: string;
+  vendorInvoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string;
+  netPayable: number;
+  paidAmount: number;
+  outstandingAmount: number;
+  status: 'payment_pending' | 'partially_paid' | 'paid' | 'overdue';
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface SubcontractorPayment {
   id: string;
-  documentNumber: string;
+  documentNumber: string; // PAY-2026-001
+  paymentNumber?: string;
+  projectId: string;
+  projectName?: string;
   subcontractorId: string;
   subcontractorName: string;
   subcontractorBillId: string;
+  apId?: string;
   paymentDate: string;
-  paymentMethod: string;
-  bankAccountId: string;
-  paymentReference: string;
+  paymentMethod: 'Bank Transfer / RTGS' | 'Cheque' | 'Cash' | 'UPI' | 'Other' | string;
+  bankAccount?: string;
+  bankAccountId?: string;
+  paymentReference: string; // UTR or Cheque no.
   amountPaid: number;
+  remarks?: string;
+  status?: 'processed' | 'cancelled';
   createdAt: string;
   createdBy: string;
 }

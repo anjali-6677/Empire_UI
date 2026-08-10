@@ -57,6 +57,11 @@ import { CreateVendorQuotationPage } from './pages/procurement/CreateVendorQuota
 import { PurchaseOrderListPage } from './pages/procurement/PurchaseOrderListPage';
 import { CreatePurchaseOrderPage } from './pages/procurement/CreatePurchaseOrderPage';
 import { PurchaseOrderDetailsPage } from './pages/procurement/PurchaseOrderDetailsPage';
+import { SubcontractWorkOrdersPage } from './pages/procurement/SubcontractWorkOrdersPage';
+import { SubcontractWorkOrderFormPage } from './pages/procurement/SubcontractWorkOrderFormPage';
+import { SubcontractorWIPPage } from './pages/execution/SubcontractorWIPPage';
+import { SubcontractorBillsPage } from './pages/procurement/SubcontractorBillsPage';
+import { AccountsPayablePage } from './pages/finance/AccountsPayablePage';
 
 // Inventory & Movement Pages
 import { GRNListPage } from './pages/inventory/GRNListPage';
@@ -136,6 +141,15 @@ export const AppRouter: React.FC = () => {
             <Route path="procurement/purchase-orders" element={<PurchaseOrderListPage />} />
             <Route path="procurement/purchase-orders/new" element={<CreatePurchaseOrderPage />} />
             <Route path="procurement/purchase-orders/:poId" element={<PurchaseOrderDetailsPage />} />
+
+            {/* Subcontractor ERP Workflow Routes */}
+            <Route path="procurement/work-orders" element={<SubcontractWorkOrdersPage />} />
+            <Route path="procurement/work-orders/new" element={<SubcontractWorkOrderFormPage />} />
+            <Route path="procurement/work-orders/:woId" element={<SubcontractWorkOrdersPage />} />
+            <Route path="execution/subcontractor-wip" element={<SubcontractorWIPPage />} />
+            <Route path="procurement/subcontractor-bills" element={<SubcontractorBillsPage />} />
+            <Route path="finance/accounts-payable" element={<AccountsPayablePage />} />
+            <Route path="accounts-payable" element={<AccountsPayablePage />} />
 
             {/* Goods Received Notes (GRN) Routes */}
             <Route path="inventory/grns" element={<GRNListPage />} />

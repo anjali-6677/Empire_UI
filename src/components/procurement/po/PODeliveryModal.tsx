@@ -1,18 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PurchaseOrder, PODeliveryRecord } from '../../../domain/types';
-import { getPODeliverySummary } from '../../../domain/selectors';
 import { useERPStore } from '../../../store/ERPStoreContext';
+import {
+  getCanonicalPODeliverySummary,
+  getDeliveryItemDisplayName,
+} from '../../../utils/poDelivery';
 import { Truck, History, Calendar, CheckCircle2, ChevronRight, ArrowLeft, Plus, X } from 'lucide-react';
 
 interface PODeliveryModalProps {
   po: PurchaseOrder;
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: 'record' | 'history';
 }
 
-export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, onClose }) => {
+export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({
+  po,
+  isOpen,
+  onClose,
+  initialTab = 'record',
+}) => {
   const { addPODelivery } = useERPStore();
-  const [activeTab, setActiveTab] = useState<'record' | 'history'>('record');
+  const [activeTab, setActiveTab] = useState<'record' | 'history'>(initialTab);
   const [selectedDelivery, setSelectedDelivery] = useState<PODeliveryRecord | null>(null);
 
   // Form State
@@ -21,35 +30,80 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
   const [notes, setNotes] = useState<string>('');
   const [receivedQtyMap, setReceivedQtyMap] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Sync activeTab when initialTab changes on modal open
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+      setSelectedDelivery(null);
+      setError(null);
+      setIsSubmitting(false);
+    }
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
-  const summary = getPODeliverySummary(po);
-  const lines = po.lines || [];
+  const summary = getCanonicalPODeliverySummary(po);
+  const deliveryRecords = summary.deliveries;
 
-  const handleQtyChange = (lineId: string, val: string, maxQty: number) => {
+  const handleQtyChange = (lineKey: string, val: string, maxQty: number) => {
+    if (val === '') {
+      setReceivedQtyMap((prev) => ({ ...prev, [lineKey]: 0 }));
+      if (error) setError(null);
+      return;
+    }
+
     const parsed = parseFloat(val);
-    const qty = isNaN(parsed) ? 0 : Math.max(0, Math.min(parsed, maxQty));
-    setReceivedQtyMap((prev) => ({ ...prev, [lineId]: qty }));
-    if (error) setError(null);
+    if (isNaN(parsed)) {
+      setError('Please enter a valid number.');
+      return;
+    }
+
+    if (parsed < 0) {
+      setError('Received quantity cannot be negative.');
+      return;
+    }
+
+    if (parsed > maxQty) {
+      setError(`Received quantity cannot exceed remaining quantity of ${maxQty}.`);
+      return;
+    }
+
+    setError(null);
+    setReceivedQtyMap((prev) => ({ ...prev, [lineKey]: parsed }));
   };
 
   const handleRecordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!invoiceNumber.trim()) {
       setError('Invoice number or delivery note is required.');
       return;
     }
 
+    // Check for negative or over-limit inputs before processing
+    for (const itemSummary of summary.linesSummary) {
+      const inputVal = receivedQtyMap[itemSummary.lineKey] || 0;
+      if (inputVal > itemSummary.remainingQty) {
+        setError(`Received quantity for "${itemSummary.description}" exceeds remaining quantity of ${itemSummary.remainingQty} ${itemSummary.unit}.`);
+        return;
+      }
+    }
+
     const items = Object.entries(receivedQtyMap)
       .filter(([_, qty]) => qty > 0)
       .map(([poLineId, qtyReceived]) => {
-        const line = lines.find((l) => l.id === poLineId);
+        const itemSummary = summary.linesSummary.find((s) => s.lineKey === poLineId);
         return {
           poLineId,
-          productId: line?.productId || '',
+          productId: itemSummary?.poItemId || '',
+          boqLineId: itemSummary?.boqLineId || '',
+          description: itemSummary?.description || 'Material Item',
+          unit: itemSummary?.unit || 'sqft',
           qtyReceived,
+          receivedNowQty: qtyReceived,
         };
       });
 
@@ -58,9 +112,12 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
       return;
     }
 
+    setIsSubmitting(true);
+
+    const timestamp = Date.now();
     const newDelivery: PODeliveryRecord = {
-      id: `del-rec-${Date.now()}`,
-      deliveryId: `DEL-${Date.now().toString().slice(-5)}`,
+      id: `del-${timestamp}`,
+      deliveryId: `DEL-${timestamp.toString().slice(-5)}`,
       poId: po.id,
       deliveryDate,
       invoiceNumber: invoiceNumber.trim(),
@@ -71,7 +128,13 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
       items,
     };
 
-    addPODelivery(po.id, newDelivery);
+    const res = addPODelivery(po.id, newDelivery);
+    setIsSubmitting(false);
+
+    if (res && res.error) {
+      setError(res.error);
+      return;
+    }
 
     // Reset Form & Switch to History view showing the new record
     setInvoiceNumber('');
@@ -83,7 +146,6 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
   };
 
   const displayPONumber = po.documentNumber || po.poNumber || po.id;
-  const deliveryRecords = po.deliveries || [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
@@ -99,7 +161,10 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
                 {displayPONumber} Delivery Management
               </h3>
               <p className="text-[11px] text-slate-500 font-mono">
-                Vendor: {po.vendorName} | Delivery Status: <span className="uppercase font-bold text-slate-900">{summary.deliveryStatus.replace('_', ' ')}</span>
+                Vendor: {po.vendorName} | Delivery Status:{' '}
+                <span className="uppercase font-bold text-slate-900">
+                  {summary.deliveryStatus.replace('_', ' ')}
+                </span>
               </p>
             </div>
           </div>
@@ -111,16 +176,18 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
         {/* Navigation Tabs */}
         {!selectedDelivery && (
           <div className="flex border-b border-slate-100 bg-slate-50/50 px-4 pt-2 gap-4 text-xs font-bold">
-            <button
-              onClick={() => { setActiveTab('record'); setError(null); }}
-              className={`pb-2.5 border-b-2 transition flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'record'
-                  ? 'border-[#AB9570] text-[#AB9570]'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Plus className="h-3.5 w-3.5" /> Record Delivery
-            </button>
+            {summary.totalRemaining > 0 && (
+              <button
+                onClick={() => { setActiveTab('record'); setError(null); }}
+                className={`pb-2.5 border-b-2 transition flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'record'
+                    ? 'border-[#AB9570] text-[#AB9570]'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Plus className="h-3.5 w-3.5" /> Record Delivery
+              </button>
+            )}
             <button
               onClick={() => { setActiveTab('history'); setError(null); }}
               className={`pb-2.5 border-b-2 transition flex items-center gap-1.5 cursor-pointer ${
@@ -129,7 +196,7 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
-              <History className="h-3.5 w-3.5" /> Delivery History ({deliveryRecords.length})
+              <History className="h-3.5 w-3.5" /> Delivery History ({summary.deliveryCount})
             </button>
           </div>
         )}
@@ -148,33 +215,42 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
 
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-900">Delivery ID: {selectedDelivery.deliveryId}</span>
+                  <span className="font-bold text-slate-900">
+                    Delivery ID: {selectedDelivery.deliveryId || selectedDelivery.id}
+                  </span>
                   <span className="font-mono text-slate-500">{selectedDelivery.deliveryDate}</span>
                 </div>
                 <div className="text-xs text-slate-600 space-y-0.5">
-                  <div><strong>Invoice / Note:</strong> {selectedDelivery.invoiceNumber}</div>
-                  <div><strong>Recorded By:</strong> {selectedDelivery.recordedBy}</div>
+                  <div><strong>PO Number:</strong> {displayPONumber}</div>
+                  <div><strong>Invoice / Challan:</strong> {selectedDelivery.invoiceNumber}</div>
+                  <div><strong>Recorded By:</strong> {selectedDelivery.recordedBy || 'Sunil Mehta (Procurement Lead)'}</div>
+                  {selectedDelivery.recordedAt && <div><strong>Recorded At:</strong> {new Date(selectedDelivery.recordedAt).toLocaleString()}</div>}
                   {selectedDelivery.notes && <div><strong>Notes:</strong> {selectedDelivery.notes}</div>}
                 </div>
               </div>
 
               <div>
-                <h4 className="text-xs font-bold text-slate-900 mb-2 uppercase tracking-wider">Received Items</h4>
+                <h4 className="text-xs font-bold text-slate-900 mb-2 uppercase tracking-wider">Received Line Items</h4>
                 <table className="w-full text-left text-xs border-collapse border border-slate-200 rounded-lg overflow-hidden">
                   <thead>
                     <tr className="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
-                      <th className="p-2">Material / Product</th>
+                      <th className="p-2">Product / Material</th>
+                      <th className="p-2 text-center">Unit</th>
                       <th className="p-2 text-right">Qty Received</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium">
-                    {selectedDelivery.items.map((item, idx) => {
-                      const line = lines.find((l) => l.id === item.poLineId);
+                    {selectedDelivery.items.map((item: any, idx: number) => {
+                      const productName = getDeliveryItemDisplayName(item, po);
+                      const qty = Number(item.qtyReceived ?? item.receivedNowQty ?? item.quantity ?? 0);
+                      const unit = item.unit || 'sqft';
+
                       return (
                         <tr key={idx}>
-                          <td className="p-2 text-slate-900">{line?.productName || 'Material Item'}</td>
+                          <td className="p-2 text-slate-900 font-medium">{productName}</td>
+                          <td className="p-2 text-center font-mono text-slate-500">{unit}</td>
                           <td className="p-2 text-right font-mono font-bold text-emerald-800">
-                            +{item.qtyReceived} {line?.unitSymbol || 'sqft'}
+                            +{qty} {unit}
                           </td>
                         </tr>
                       );
@@ -249,30 +325,26 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium">
-                      {lines.map((line, idx) => {
-                        const lineKey = line.id || `line-${idx}`;
-                        const ordered = summary.orderedQtyByLine[lineKey] || 0;
-                        const received = summary.receivedQtyByLine[lineKey] || 0;
-                        const remaining = summary.remainingQtyByLine[lineKey] || 0;
-                        const inputVal = receivedQtyMap[lineKey] ?? '';
+                      {summary.linesSummary.map((itemSummary) => {
+                        const inputVal = receivedQtyMap[itemSummary.lineKey] !== undefined && receivedQtyMap[itemSummary.lineKey] !== 0 ? receivedQtyMap[itemSummary.lineKey] : '';
 
                         return (
-                          <tr key={lineKey} className="hover:bg-slate-50">
+                          <tr key={itemSummary.lineKey} className="hover:bg-slate-50">
                             <td className="p-2.5">
-                              <div className="font-bold text-slate-900">{line.productName}</div>
-                              <div className="text-[10px] text-slate-400 font-mono">{line.unitSymbol}</div>
+                              <div className="font-bold text-slate-900">{itemSummary.description}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">{itemSummary.unit}</div>
                             </td>
-                            <td className="p-2.5 text-center font-mono">{ordered}</td>
-                            <td className="p-2.5 text-center font-mono text-slate-600">{received}</td>
-                            <td className="p-2.5 text-center font-mono font-bold text-amber-800">{remaining}</td>
+                            <td className="p-2.5 text-center font-mono">{itemSummary.orderedQty}</td>
+                            <td className="p-2.5 text-center font-mono text-slate-600">{itemSummary.receivedQty}</td>
+                            <td className="p-2.5 text-center font-mono font-bold text-amber-800">{itemSummary.remainingQty}</td>
                             <td className="p-2.5 text-right">
                               <input
                                 type="number"
                                 min={0}
-                                max={remaining}
+                                max={itemSummary.remainingQty}
                                 value={inputVal}
-                                onChange={(e) => handleQtyChange(lineKey, e.target.value, remaining)}
-                                disabled={remaining === 0}
+                                onChange={(e) => handleQtyChange(itemSummary.lineKey, e.target.value, itemSummary.remainingQty)}
+                                disabled={itemSummary.remainingQty === 0 || isSubmitting}
                                 placeholder="0"
                                 className="w-20 p-1.5 text-xs border border-slate-300 rounded-lg text-center font-mono font-bold text-slate-900 focus:ring-2 focus:ring-[#AB9570] disabled:bg-slate-100 disabled:opacity-50"
                               />
@@ -289,21 +361,23 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
               <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#AB9570] hover:bg-[#927D5E] text-slate-950 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  disabled={Boolean(error) || isSubmitting}
+                  className="px-4 py-2 bg-[#AB9570] hover:bg-[#927D5E] text-slate-950 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  <CheckCircle2 className="h-4 w-4 stroke-[2.5]" /> Record Delivery
+                  <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
+                  {isSubmitting ? 'Recording...' : 'Record Delivery'}
                 </button>
               </div>
             </form>
           ) : (
             /* History Tab */
             <div className="space-y-3">
-              {(!po.deliveries || po.deliveries.length === 0) ? (
+              {deliveryRecords.length === 0 ? (
                 <div className="p-8 text-center text-slate-500 text-xs font-medium">
                   No delivery records found for this Purchase Order.
                 </div>
               ) : (
-                po.deliveries.map((del) => (
+                deliveryRecords.map((del) => (
                   <div
                     key={del.id}
                     onClick={() => setSelectedDelivery(del)}
@@ -314,11 +388,11 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
                         <Calendar className="h-3.5 w-3.5 text-slate-400" />
                         <span>Delivery on {del.deliveryDate}</span>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                          Invoice: {del.invoiceNumber}
+                          Invoice / Challan: {del.invoiceNumber}
                         </span>
                       </div>
                       <div className="text-[11px] text-slate-500 font-medium">
-                        Recorded by {del.recordedBy} • {del.items.length} items received
+                        Recorded by {del.recordedBy || 'Sunil Mehta'} • {del.items?.length || 0} item(s) received
                       </div>
                     </div>
                     <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-[#AB9570] transition" />
@@ -332,3 +406,4 @@ export const PODeliveryModal: React.FC<PODeliveryModalProps> = ({ po, isOpen, on
     </div>
   );
 };
+

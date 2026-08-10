@@ -3,3 +3,11 @@ dist
 .env
 .env.local
 .vscode
+
+# Generated Diagnostic Logs
+ts_errors.txt
+tsc_err.txt
+tsc_errors.log
+tsc_errors.txt
+tsc_output.txt
+typescript_errors.txt

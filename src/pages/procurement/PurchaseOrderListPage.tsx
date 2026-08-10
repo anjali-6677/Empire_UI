@@ -36,6 +36,7 @@ export const PurchaseOrderListPage: React.FC = () => {
   const [approvalModalOpen, setApprovalModalOpen] = useState<boolean>(false);
   const [approvalMode, setApprovalMode] = useState<'approve' | 'reject'>('approve');
   const [deliveryModalOpen, setDeliveryModalOpen] = useState<boolean>(false);
+  const [deliveryInitialTab, setDeliveryInitialTab] = useState<'record' | 'history'>('record');
 
   const purchaseOrders = state.purchaseOrders || [];
 
@@ -76,10 +77,15 @@ export const PurchaseOrderListPage: React.FC = () => {
     setApprovalModalOpen(true);
   };
 
-  const handleOpenDelivery = (po: PurchaseOrder) => {
+  const handleOpenDelivery = (po: PurchaseOrder, tab: 'record' | 'history' = 'record') => {
     setSelectedPO(po);
+    setDeliveryInitialTab(tab);
     setDeliveryModalOpen(true);
   };
+
+  const activePO = selectedPO
+    ? state.purchaseOrders.find((p) => p.id === selectedPO.id) || selectedPO
+    : null;
 
   const handleConfirmApproval = (reason?: string) => {
     if (!selectedPO) return;
@@ -381,8 +387,10 @@ export const PurchaseOrderListPage: React.FC = () => {
                           onReviewApproval={() => handleOpenApproval(po, 'approve')}
                           onIssuePO={() => handleOpenDetails(po)}
                           onDownload={() => downloadPurchaseOrderPDF(po, vendor)}
+                          onRecordDelivery={() => handleOpenDelivery(po, 'record')}
+                          onViewDeliveryHistory={() => handleOpenDelivery(po, 'history')}
                           onViewComparison={(rfqId) => navigate(`/procurement/rfqs/${rfqId || po.rfqId}?tab=vendors`)}
-                          onViewGRNs={() => handleOpenDelivery(po)}
+                          onViewGRNs={() => handleOpenDelivery(po, 'history')}
                           onViewActivity={() => handleOpenDetails(po)}
                           onCancel={handleCancelPO}
                         />
@@ -397,20 +405,20 @@ export const PurchaseOrderListPage: React.FC = () => {
       </div>
 
       {/* Modals */}
-      {selectedPO && detailsModalOpen && (
+      {activePO && detailsModalOpen && (
         <PODetailsModal
-          po={selectedPO}
+          po={activePO}
           isOpen={detailsModalOpen}
           onClose={() => { setDetailsModalOpen(false); setSelectedPO(null); }}
-          onApprove={() => { setDetailsModalOpen(false); handleOpenApproval(selectedPO, 'approve'); }}
-          onReject={() => { setDetailsModalOpen(false); handleOpenApproval(selectedPO, 'reject'); }}
-          onRecordDelivery={() => { setDetailsModalOpen(false); handleOpenDelivery(selectedPO); }}
+          onApprove={() => { setDetailsModalOpen(false); handleOpenApproval(activePO, 'approve'); }}
+          onReject={() => { setDetailsModalOpen(false); handleOpenApproval(activePO, 'reject'); }}
+          onRecordDelivery={() => { setDetailsModalOpen(false); handleOpenDelivery(activePO, 'record'); }}
         />
       )}
 
-      {selectedPO && approvalModalOpen && (
+      {activePO && approvalModalOpen && (
         <POApprovalModal
-          po={selectedPO}
+          po={activePO}
           mode={approvalMode}
           isOpen={approvalModalOpen}
           onClose={() => { setApprovalModalOpen(false); setSelectedPO(null); }}
@@ -418,10 +426,11 @@ export const PurchaseOrderListPage: React.FC = () => {
         />
       )}
 
-      {selectedPO && deliveryModalOpen && (
+      {activePO && deliveryModalOpen && (
         <PODeliveryModal
-          po={selectedPO}
+          po={activePO}
           isOpen={deliveryModalOpen}
+          initialTab={deliveryInitialTab}
           onClose={() => { setDeliveryModalOpen(false); setSelectedPO(null); }}
         />
       )}
