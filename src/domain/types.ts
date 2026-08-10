@@ -1183,7 +1183,7 @@ export interface HistoricalRate {
 // 5. INVENTORY AND EXECUTION (STAGE 4 CONNECTED MODELS)
 // ==========================================
 
-export type GRNStatus =
+export type LegacyGRNStatus =
   | 'draft'
   | 'pending_inspection'
   | 'inspected'
@@ -1194,7 +1194,16 @@ export type GRNStatus =
 
 export type QualityInspectionStatus = 'pending' | 'passed' | 'failed' | 'partial';
 
-export type MaterialIssueStatus = 'draft' | 'issued' | 'cancelled';
+export type MaterialIssueStatus =
+  | 'Draft'
+  | 'Ready to Issue'
+  | 'Dispatched'
+  | 'Partially Received'
+  | 'Received at Site'
+  | 'Completed'
+  | 'Cancelled'
+  | 'draft'
+  | 'issued';
 
 export type MaterialReturnStatus = 'draft' | 'approved' | 'completed' | 'cancelled';
 
@@ -1221,109 +1230,82 @@ export type WIPCertificationStatus =
 
 export interface WarehouseLocation {
   id: string;
-  locationCode: string;
+  code?: string;
+  locationCode?: string;
   name: string;
   projectId?: string;
-  type: 'central_store' | 'site_store' | 'project_work_package' | 'subcontractor_yard';
+  type:
+    | 'MAIN_WAREHOUSE'
+    | 'IN_TRANSIT'
+    | 'PROJECT_SITE_STORE'
+    | 'OTHER'
+    | 'central_store'
+    | 'site_store'
+    | 'project_work_package'
+    | 'subcontractor_yard'
+    | string;
   address?: string;
   isActive: boolean;
 }
 
-export interface QualityInspection {
-  id: string;
-  grnId: string;
-  inspectedBy: string;
-  inspectionDate: string;
-  testResult: QualityInspectionStatus;
-  qcStatus: QualityInspectionStatus;
-  acceptedReason?: string;
-  rejectedReason?: string;
-  inspectionNotes?: string;
-  certificateAttachment?: string;
-}
-
-export interface GRNLine {
-  id: string;
-  poLineId: string;
-  productId: string;
-  productCode: string;
-  productName: string;
-  unitSymbol: string;
-  orderedQty: number;
-  previouslyReceivedQty: number;
-  pendingPOQty: number;
-  currentReceivedQty: number;
-  acceptedQty: number;
-  rejectedQty: number;
-  underInspectionQty: number;
-  unitRate: number;
-  rejectionReason?: string;
-  batchNumber?: string;
-}
-
-export interface GoodsReceivedNote {
-  id: string;
-  documentNumber: string;
-  purchaseOrderId: string;
-  poNumber: string;
-  vendorId: string;
-  vendorName: string;
-  projectId: string;
-  projectName: string;
-  deliveryChallanNo: string;
-  vehicleNumber?: string;
-  destinationLocationId: string;
-  destinationLocationName: string;
-  receivedDate: string;
-  receivedBy: string;
-  lines: GRNLine[];
-  qualityInspection?: QualityInspection;
-  qualityCheck?: {
-    inspectedBy: string;
-    inspectionDate: string;
-    qcStatus: 'passed' | 'failed' | 'partial';
-    inspectionNotes?: string;
-  };
-  isPostedToStock: boolean;
-  postedAt?: string;
-  postedBy?: string;
-  status: GRNStatus | DocumentStatus;
-  createdAt: string;
-  createdBy: string;
-  updatedAt?: string;
-  updatedBy?: string;
-}
+export type StockTransactionType =
+  | 'OPENING'
+  | 'GRN_RECEIPT'
+  | 'MATERIAL_ISSUE'
+  | 'TRANSFER_IN'
+  | 'TRANSFER_OUT'
+  | 'SITE_RETURN'
+  | 'ADJUSTMENT'
+  | 'grn_accepted'
+  | 'material_issue'
+  | 'material_return'
+  | 'material_consumption'
+  | 'reversal';
 
 export interface StockLedgerEntry {
   id: string;
+  transactionNumber?: string;
+  transactionType?: StockTransactionType;
+  entryType?: StockTransactionType | string;
+  transactionDate?: string;
+  transactionTime?: string;
+  createdTime?: string;
+  entryDate?: string;
+  itemId?: string;
   productId: string;
-  productCode: string;
-  productName: string;
-  projectId: string;
-  locationId: string;
-  locationName: string;
-  entryType:
-    | 'grn_accepted'
-    | 'material_issue'
-    | 'material_return'
-    | 'material_consumption'
-    | 'transfer_in'
-    | 'transfer_out'
-    | 'adjustment'
-    | 'reversal';
-  inQuantity: number;
-  outQuantity: number;
+  productCode?: string;
+  productName?: string;
+  productDescription?: string;
+  categoryId?: string;
+  categoryName?: string;
+  warehouseId?: string;
+  warehouseName?: string;
+  locationId?: string;
+  locationName?: string;
+  projectId?: string;
+  projectName?: string;
+  siteId?: string;
+  quantityIn?: number;
+  quantityOut?: number;
+  inQuantity?: number;
+  outQuantity?: number;
   runningBalance: number;
+  unit?: string;
+  unitSymbol?: string;
   unitRate: number;
-  totalValue: number;
-  unitSymbol: string;
-  sourceDocumentId: string;
-  sourceDocumentNumber: string;
-  entryDate: string;
-  createdTime: string;
-  isImmutable: boolean;
+  transactionValue?: number;
+  totalValue?: number;
+  sourceType?: 'GRN' | 'MATERIAL_ISSUE' | 'OPENING' | 'ADJUSTMENT' | 'SITE_RECEIPT' | 'SITE_RETURN' | string;
+  sourceId?: string;
+  sourceNumber?: string;
+  sourceDocumentId?: string;
+  sourceDocumentNumber?: string;
+  isImmutable?: boolean;
   reversalOfEntryId?: string;
-  recordedBy: string;
+  remarks?: string;
+  createdBy?: string;
+  recordedBy?: string;
+  createdAt?: string;
 }
 
 export interface StockBalance {
@@ -1358,25 +1340,43 @@ export interface MaterialIssueLine {
 
 export interface MaterialIssue {
   id: string;
-  documentNumber: string;
+  issueNumber: string;
+  documentNumber?: string;
   indentId?: string;
   indentNumber?: string;
   projectId: string;
   projectName: string;
-  sourceLocationId: string;
-  sourceLocationName: string;
-  destinationLocationId: string;
-  destinationAreaName: string;
-  issuedBy: string;
+  sourceWarehouseId?: string;
+  sourceWarehouseName?: string;
+  sourceLocationId?: string;
+  sourceLocationName?: string;
+  destinationStoreId?: string;
+  destinationStoreName?: string;
+  destinationLocationId?: string;
+  destinationAreaName?: string;
+  issuedBy?: string;
+  requestedBy?: string;
+  dispatchedBy?: string;
+  dispatchedAt?: string;
+  receivedBy?: string;
+  receivedAt?: string;
   receiverName?: string;
   receivedBySubcontractor?: string;
   subcontractorId?: string;
-  issueDate: string;
-  lines: MaterialIssueLine[];
-  status: MaterialIssueStatus;
+  requiredByDate?: string;
+  issueDate?: string;
+  purpose?: string;
+  costCode?: string;
+  materialRequestId?: string;
+  lines?: MaterialIssueLine[] | any[];
+  items?: MaterialIssueItem[];
+  status: MaterialIssueStatus | any;
+  totalIssueValue?: number;
+  activityLog?: MaterialIssueActivity[];
   remarks?: string;
   createdAt: string;
   createdBy: string;
+  updatedAt?: string;
 }
 
 export interface MaterialReturnLine {
@@ -1930,6 +1930,408 @@ export interface DocumentReference {
   createdAt?: string;
   createdBy?: string;
 }
+
+// ==========================================
+// 8. GOODS RECEIPT (GRN) & QUALITY CONTROL (QC)
+// ==========================================
+
+export type GRNStatus = 'qc_pending' | 'partially_inspected' | 'qc_completed' | 'cancelled';
+export type QCInspectionStatus = 'draft' | 'in_progress' | 'submitted' | 'completed' | 'cancelled';
+export type QCDisposition = 'APPROVED' | 'HOLD' | 'REJECTED';
+export type NCRStatus = 'open' | 'vendor_notified' | 'return_planned' | 'returned' | 'replacement_awaited' | 'replacement_received' | 'closed';
+
+export type MaterialEntryTokenStatus =
+  | 'GATE_ENTRY_CREATED'
+  | 'RECEIVING_CHECK_IN_PROGRESS'
+  | 'QC_PENDING'
+  | 'QC_IN_PROGRESS'
+  | 'ADMIN_APPROVAL_REQUIRED'
+  | 'APPROVED'
+  | 'GRN_GENERATED'
+  | 'HOLD'
+  | 'CANCELLED'
+  | 'TOKEN_GENERATED' // Backward-compatibility alias
+  | 'RECEIVING_CHECKED' // Backward-compatibility alias
+  | 'REJECTED';
+
+export type TokenActivityType =
+  | 'TOKEN_CREATED'
+  | 'TOKEN_HELD'
+  | 'TOKEN_RESUMED'
+  | 'TOKEN_CANCELLED'
+  | 'RECEIVING_STARTED'
+  | 'PO_LINKED'
+  | 'RECEIVING_COMPLETED'
+  | 'QC_STARTED'
+  | 'QC_SAVED'
+  | 'QC_SUBMITTED'
+  | 'QC_ADMIN_APPROVAL_REQUIRED'
+  | 'QC_ADMIN_APPROVED'
+  | 'QC_ADMIN_REJECTED'
+  | 'QC_COMPLETED'
+  | 'GRN_GENERATED';
+
+export interface TokenActivity {
+  id: string;
+  tokenId: string;
+  tokenNumber: string;
+  eventType: TokenActivityType;
+  timestamp: string;
+  userId?: string;
+  userName: string;
+  title: string;
+  description: string;
+  referenceType?: 'PO' | 'RECEIVING' | 'QC' | 'GRN';
+  referenceId?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface MaterialEntryToken {
+  id: string;
+  tokenNumber: string;
+  vehicleNumber: string;
+  driverName: string;
+  driverMobile?: string;
+  productId: string;
+  materialName: string;
+  categoryId?: string;
+  categoryName?: string;
+  entryDate: string;
+  entryTime: string;
+  remarks?: string;
+  status: MaterialEntryTokenStatus;
+  currentStage?: 'Gate Entry' | 'Initial Receiving' | 'Quality Control' | 'Admin Approval' | 'GRN' | 'Hold' | 'Cancelled';
+  holdReason?: string;
+  heldBy?: string;
+  heldAt?: string;
+  cancellationReason?: string;
+  cancelledBy?: string;
+  cancelledAt?: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface MaterialReceivingCheck {
+  id: string;
+  tokenId: string;
+  tokenNumber: string;
+  poId: string;
+  poNumber: string;
+  vendorId?: string;
+  vendorName?: string;
+  projectId?: string;
+  projectName?: string;
+  productId: string;
+  productName: string;
+  unit: string;
+  poQty: number;
+  receivedQty: number;
+  damagedQty: number;
+  shortQty: number;
+  excessQty: number;
+  excessReason?: string;
+  qcPendingQty: number;
+  checkedBy: string;
+  checkedAt: string;
+}
+
+export interface QCChecklistParameter {
+  id: string;
+  parameterName: string;
+  expectedValue: string;
+  inspectionType: 'Text' | 'Numeric' | 'Pass / Fail' | 'Yes / No' | 'Dropdown' | 'Range' | 'Visual Check';
+  isRequired: boolean;
+  tolerance?: string;
+  sequence: number;
+  critical?: boolean;
+}
+
+export interface QCChecklistTemplate {
+  id: string;
+  templateName: string;
+  categoryName: string;
+  applicableProducts?: string[];
+  isActive: boolean;
+  parameters: QCChecklistParameter[];
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface GRNItem {
+  id: string;
+  poItemId?: string;
+  productId: string;
+  projectBOQLineId?: string;
+  description: string;
+  categoryId?: string;
+  categoryName: string;
+  specifications?: {
+    brand?: string;
+    grade?: string;
+    thickness?: string;
+    size?: string;
+    finish?: string;
+    [key: string]: any;
+  };
+  unit: string;
+  orderedQty: number;
+  receivedQty: number;
+  qcPendingQty: number;
+  qcApprovedQty: number;
+  qcRejectedQty: number;
+  qcHoldQty: number;
+  poLineId?: string;
+  poUnitRate?: number;
+  unitRate?: number;
+  taxRate?: number;
+  lineAcceptedBaseValue?: number;
+  lineTaxAmount?: number;
+  lineNetPayable?: number;
+}
+
+export interface GoodsReceipt {
+  id: string;
+  grnNumber: string;
+  documentNumber?: string;
+  tokenId?: string;
+  receivingCheckId?: string;
+  qcInspectionId?: string;
+  poId: string;
+  purchaseOrderId?: string;
+  poNumber: string;
+  poLineId?: string;
+  deliveryId?: string;
+  projectId: string;
+  projectName?: string;
+  vendorId: string;
+  vendorName?: string;
+  warehouseId?: string;
+  warehouseName?: string;
+  destinationLocationId?: string;
+  destinationLocationName?: string;
+  grnDate: string;
+  receivedDate?: string;
+  dueDate?: string;
+  invoiceChallanNo: string;
+  receivedByEmployeeId?: string;
+  receivedByName?: string;
+  status: GRNStatus | any;
+  paymentStatus?: string;
+  rateStatus?: 'OK' | 'MISSING_RATE';
+  poUnitRate?: number;
+  unitRate?: number;
+  baseAcceptedValue?: number;
+  taxRate?: number;
+  taxAmount?: number;
+  netPayable?: number;
+  paidAmount?: number;
+  outstandingAmount?: number;
+  items: GRNItem[];
+  lines?: any[];
+  isPostedToStock?: boolean;
+  postedAt?: string;
+  postedBy?: string;
+  receivedQty?: number;
+  acceptedQty?: number;
+  rejectedQty?: number;
+  holdQty?: number;
+  remarks?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export type GoodsReceivedNote = GoodsReceipt;
+
+export interface GRNPayment {
+  id: string;
+  paymentNumber?: string;
+  grnId: string;
+  grnNumber?: string;
+  poId?: string;
+  poNumber?: string;
+  vendorId?: string;
+  vendorName?: string;
+  paymentDate: string;
+  amount: number;
+  paymentMode: 'Bank Transfer' | 'Cheque' | 'UPI' | 'Cash' | 'Credit Card' | string;
+  bankAccountId?: string;
+  referenceNumber?: string;
+  remarks?: string;
+  recordedBy?: string;
+  recordedAt?: string;
+  createdAt?: string;
+  createdBy?: string;
+}
+
+export interface QCParameterResult {
+  parameterId: string;
+  parameterName: string;
+  requirement: string;
+  actualObservation: string;
+  result: 'PASS' | 'FAIL' | 'NA';
+  remarks?: string;
+  critical?: boolean;
+}
+
+export interface QCInspectionItem {
+  id: string;
+  grnItemId?: string;
+  productId: string;
+  productDescription: string;
+  categoryName: string;
+  unit: string;
+  receivedQty: number;
+  previouslyInspectedQty: number;
+  inspectionQty: number;
+  approvedQty: number;
+  rejectedQty: number;
+  holdQty: number;
+  rejectionReason?: string;
+  dispositionAction?: 'Return to Vendor' | 'Replacement Required' | 'Accept With Concession' | 'Scrap' | 'Rework' | 'Hold for Review';
+  parameterResults: QCParameterResult[];
+  remarks?: string;
+}
+
+export interface QualityInspection {
+  id: string;
+  qcNumber: string;
+  tokenId?: string;
+  tokenNumber?: string;
+  receivingCheckId?: string;
+  grnId?: string;
+  grnNumber?: string;
+  poId: string;
+  poNumber: string;
+  projectId: string;
+  projectName: string;
+  vendorId: string;
+  vendorName: string;
+  vehicleNumber?: string;
+  driverName?: string;
+  warehouseId?: string;
+  warehouseName?: string;
+  inspectionDate: string;
+  inspectorName: string;
+  inspectedBy?: string;
+  qcStatus?: string;
+  testResult?: 'PASS' | 'FAIL' | 'PARTIAL';
+  status: QCInspectionStatus | 'ADMIN_APPROVAL_REQUIRED' | 'ADMIN_APPROVED' | 'ADMIN_REJECTED';
+  items: QCInspectionItem[];
+  failedCount?: number;
+  criticalFailure?: boolean;
+  requiresAdminApproval?: boolean;
+  adminDecision?: 'APPROVED' | 'REJECTED' | 'REINSPECT' | 'HOLD';
+  adminRemarks?: string;
+  adminApprovedBy?: string;
+  adminApprovedAt?: string;
+  overallRemarks?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface NCR {
+  id: string;
+  ncrNumber: string;
+  qcInspectionId: string;
+  qcNumber: string;
+  grnId: string;
+  grnNumber: string;
+  poId: string;
+  poNumber: string;
+  projectId: string;
+  projectName: string;
+  vendorId: string;
+  vendorName: string;
+  productId: string;
+  productDescription: string;
+  categoryName: string;
+  rejectedQty: number;
+  unit: string;
+  reason: string;
+  observedDefect: string;
+  raisedBy: string;
+  raisedDate: string;
+  disposition: string;
+  status: NCRStatus;
+  rtvNumber?: string;
+  replacementGrnNumber?: string;
+  createdAt: string;
+}
+
+export interface QuarantineItem {
+  id: string;
+  ncrId?: string;
+  grnId: string;
+  grnNumber: string;
+  poId: string;
+  poNumber: string;
+  projectId: string;
+  projectName: string;
+  vendorId: string;
+  vendorName: string;
+  productId: string;
+  productDescription: string;
+  categoryName: string;
+  quantity: number;
+  unit: string;
+  type: 'REJECTED' | 'HOLD';
+  reason: string;
+  qcDate: string;
+  disposition: string;
+  status: 'in_quarantine' | 'rtv_created' | 'scrapped' | 'released_with_concession';
+}
+
+export interface ReturnToVendor {
+  id: string;
+  rtvNumber: string;
+  ncrId?: string;
+  grnId: string;
+  grnNumber: string;
+  poId: string;
+  poNumber: string;
+  vendorId: string;
+  vendorName: string;
+  projectId: string;
+  projectName: string;
+  returnDate: string;
+  items: {
+    productId: string;
+    productDescription: string;
+    quantity: number;
+    unit: string;
+    reason: string;
+  }[];
+  transporterDetails?: string;
+  status: 'draft' | 'dispatched' | 'acknowledged_by_vendor';
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface MaterialIssueItem {
+  id: string;
+  productId: string;
+  productDescription: string;
+  categoryName: string;
+  unit: string;
+  availableStock: number;
+  issueQty: number;
+  receivedQty: number;
+  unitRate: number;
+  issueValue: number;
+  remarks?: string;
+}
+
+export interface MaterialIssueActivity {
+  id: string;
+  timestamp: string;
+  user: string;
+  action: 'ISSUE_CREATED' | 'ISSUE_UPDATED' | 'ISSUE_DISPATCHED' | 'SITE_PARTIAL_RECEIPT' | 'SITE_RECEIPT_COMPLETED' | 'ISSUE_CANCELLED';
+  description: string;
+  reference?: string;
+}
+
+
+
 
 
 

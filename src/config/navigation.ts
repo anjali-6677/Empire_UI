@@ -93,6 +93,8 @@ export const ROUTES = {
 
   // Inventory & Execution
   INVENTORY: '/inventory/stock-ledger',
+  INVENTORY_GATE_ENTRY: '/inventory/gate-tokens',
+  INVENTORY_RECEIVING_CHECK: '/inventory/receiving-check',
   INVENTORY_GRNS: '/inventory/grns',
   INVENTORY_STOCK_LEDGER: '/inventory/stock-ledger',
   INVENTORY_MATERIAL_ISSUES: '/inventory/material-issues',
@@ -278,7 +280,11 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
     id: 'inventory-execution-group',
     label: '4. Inventory & Execution',
     items: [
-      { id: 'inv-grn', label: 'GRNs & Quality Check', path: ROUTES.INVENTORY_GRNS, icon: PackageCheck, projectContext: 'required' },
+      { id: 'inv-gate', label: 'Material Gate Tokens', path: ROUTES.INVENTORY_GATE_ENTRY, icon: Truck, projectContext: 'required' },
+      { id: 'inv-rcv', label: 'Initial Receiving Check', path: ROUTES.INVENTORY_RECEIVING_CHECK, icon: PackageCheck, projectContext: 'required' },
+      { id: 'inv-qc', label: 'Quality Control (QC)', path: '/inventory/qc', icon: ShieldCheck, projectContext: 'required' },
+      { id: 'inv-grn', label: 'Goods Receipt Notes (GRN)', path: '/inventory/grn', icon: PackageCheck, projectContext: 'required' },
+      // { id: 'inv-quar', label: 'Material Quarantine & NCR', path: '/inventory/quarantine', icon: AlertTriangle, projectContext: 'required' },
       { id: 'inv-stk', label: 'Stock Ledger', path: ROUTES.INVENTORY_STOCK_LEDGER, icon: Boxes, projectContext: 'required' },
       { id: 'inv-isu', label: 'Material Issues to Site', path: ROUTES.INVENTORY_MATERIAL_ISSUES, icon: Truck, projectContext: 'required' },
       { id: 'exe-wip', label: 'Subcontractor WIP', path: ROUTES.EXECUTION_SUBCONTRACTOR_WIP, icon: HardHat, projectContext: 'required' },

@@ -24,15 +24,23 @@ import {
   SubcontractWorkOrder,
   GoodsReceivedNote,
   GRNStatus,
+  GoodsReceipt,
+  GRNItem,
   QualityInspection,
+  MaterialEntryToken,
+  MaterialEntryTokenStatus,
+  MaterialReceivingCheck,
+  TokenActivity,
   StockLedgerEntry,
   MaterialIssue,
+  MaterialIssueItem,
   MaterialReturn,
   MaterialConsumption,
   SubcontractorWIP,
   WIPCertification,
   RFQStatus,
   POStatus,
+  GRNPayment,
 } from '../domain/types';
 import { normalizeEstimate } from '../utils/normalizeEstimate';
 import {
@@ -97,12 +105,27 @@ export interface ERPStoreContextType {
   rejectPurchaseOrder: (poId: string, rejectorId: string, reason: string) => { success: boolean; error?: string };
   cancelPurchaseOrder: (poId: string, performedBy: string, reason: string) => { success: boolean; error?: string };
   addPODelivery: (poId: string, delivery: any) => { success: boolean; error?: string };
+  // Inward Flow Store Actions
+  createMaterialEntryToken: (tokenData: Partial<MaterialEntryToken>, createdBy?: string) => { success: boolean; token?: MaterialEntryToken; error?: string };
+  holdMaterialToken: (tokenId: string, reason: string, remarks?: string, performedBy?: string) => { success: boolean; error?: string };
+  resumeMaterialToken: (tokenId: string, remarks?: string, performedBy?: string) => { success: boolean; error?: string };
+  cancelMaterialToken: (tokenId: string, reason: string, performedBy?: string) => { success: boolean; error?: string };
+  createMaterialReceivingCheck: (checkData: Partial<MaterialReceivingCheck>, checkedBy?: string) => { success: boolean; receivingCheck?: MaterialReceivingCheck; error?: string };
+  completeQCInspection: (inspectionData: Partial<QualityInspection>, inspectorName?: string) => { success: boolean; inspection?: QualityInspection; requiresAdminApproval?: boolean; error?: string };
+  approveAdminQC: (qcId: string, decision: 'APPROVED' | 'REJECTED' | 'HOLD', adminRemarks: string, adminName?: string) => { success: boolean; grn?: GoodsReceipt | null; error?: string };
+  addTokenActivity: (activity: Omit<TokenActivity, 'id' | 'timestamp'>) => void;
+  isAwaitingReceiving: (token: MaterialEntryToken) => boolean;
+  isAwaitingQC: (token: MaterialEntryToken) => boolean;
   // Stage 4 Store Actions
   createGRN: (grn: GoodsReceivedNote, performedBy?: string) => { success: boolean; grn?: GoodsReceivedNote; error?: string };
   inspectGRN: (grnId: string, inspection: QualityInspection, performedBy?: string) => { success: boolean; error?: string };
   approveGRN: (grnId: string, approverId?: string, comments?: string) => { success: boolean; error?: string };
   postGRNToStock: (grnId: string, postedBy?: string) => { success: boolean; error?: string };
-  createMaterialIssue: (issue: MaterialIssue, performedBy?: string) => { success: boolean; issue?: MaterialIssue; error?: string };
+  getStockBalance: (params: { productId: string; warehouseId?: string; locationId?: string }) => number;
+  getPerLocationStock: (productId: string) => { productId: string; breakdown: { warehouseId: string; warehouseName: string; type: string; balance: number }[]; totalCompanyStock: number };
+  createMaterialIssue: (issue: Partial<MaterialIssue>, performedBy?: string) => { success: boolean; materialIssue?: MaterialIssue; error?: string };
+  dispatchMaterialIssue: (issueId: string, dispatchedBy?: string) => { success: boolean; error?: string };
+  recordSiteReceipt: (issueId: string, receipts: { productId: string; receiveNowQty: number }[], receivedBy?: string, remarks?: string) => { success: boolean; error?: string };
   createMaterialReturn: (ret: MaterialReturn, performedBy?: string) => { success: boolean; materialReturn?: MaterialReturn; error?: string };
   createMaterialConsumption: (consumption: MaterialConsumption, performedBy?: string) => { success: boolean; consumption?: MaterialConsumption; error?: string };
   createSubcontractorWorkOrder: (wo: SubcontractWorkOrder | WorkOrder | any, performedBy?: string) => { success: boolean; workOrder?: any; error?: string };
@@ -112,6 +135,7 @@ export interface ERPStoreContextType {
   updateSubcontractWIPStatus: (wipId: string, status: string, performedBy?: string) => void;
   certifyWIP: (cert: WIPCertification, performedBy?: string) => { success: boolean; certification?: WIPCertification; error?: string };
   recordSubcontractorPayment: (payment: any, performedBy?: string) => { success: boolean; error?: string };
+  recordGRNPayment: (paymentInput: any, performedBy?: string) => { success: boolean; payment?: any; error?: string };
   createSubcontractorBill: (bill: any, performedBy?: string) => { success: boolean; error?: string };
   updateSubcontractorBillStatus: (billId: string, status: string, performedBy?: string) => void;
 
@@ -256,6 +280,194 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         repository.saveCollection('projects', repairedProjects);
         repository.saveCollection('purchaseOrders', merged.purchaseOrders);
         repository.saveCollection('projectSetupDrafts' as any, updatedSetupDrafts);
+
+        // Auto-reconcile GRN commercial rates and financial snapshot totals
+        if (Array.isArray(merged.goodsReceipts) && Array.isArray(merged.purchaseOrders)) {
+          let grnUpdated = false;
+          const grnPayments = merged.grnPayments || [];
+          merged.goodsReceipts = merged.goodsReceipts.map((grn: any) => {
+            const po = merged.purchaseOrders.find(
+              (p: any) => p.id === grn.poId || p.poNumber === grn.poNumber || p.documentNumber === grn.poNumber
+            );
+            if (!po) return grn;
+
+            let totalBaseAcceptedValue = 0;
+            let totalTaxAmount = 0;
+            let mainPoUnitRate = grn.poUnitRate || 0;
+            let mainPoLineId = grn.poLineId;
+
+            const items = (grn.items || []).map((item: any, idx: number) => {
+              let matchedPOLine: any = null;
+              if (po?.lines?.length) {
+                if (item.poLineId) {
+                  matchedPOLine = po.lines.find((l: any) => l.id === item.poLineId);
+                }
+                if (!matchedPOLine && item.productId) {
+                  matchedPOLine = po.lines.find((l: any) => l.productId === item.productId || l.materialId === item.productId);
+                }
+                if (!matchedPOLine && (item.description || item.productDescription)) {
+                  const descLower = (item.description || item.productDescription).toLowerCase();
+                  matchedPOLine = po.lines.find((l: any) => {
+                    const nameLower = (l.materialName || l.productName || l.description || '').toLowerCase();
+                    return nameLower.includes(descLower) || descLower.includes(nameLower) || (nameLower && descLower.split(' ')[0] === nameLower.split(' ')[0]);
+                  });
+                }
+                if (!matchedPOLine && po.lines.length === 1) {
+                  matchedPOLine = po.lines[0];
+                }
+              }
+
+              const poUnitRate = matchedPOLine
+                ? Number(matchedPOLine.unitRate ?? matchedPOLine.finalRate ?? matchedPOLine.negotiatedRate ?? matchedPOLine.basicRate ?? matchedPOLine.baseRate ?? 0)
+                : item.poUnitRate || item.unitRate || 0;
+
+              const taxRate = matchedPOLine
+                ? Number(matchedPOLine.taxPercent ?? matchedPOLine.gstRate ?? (po as any).taxRate ?? 18)
+                : item.taxRate || 18;
+
+              const approvedQty = item.qcApprovedQty ?? item.acceptedQty ?? grn.acceptedQty ?? 0;
+              const lineAcceptedBaseValue = approvedQty * poUnitRate;
+              const lineTaxAmount = lineAcceptedBaseValue * (taxRate / 100);
+              const lineNetPayable = lineAcceptedBaseValue + lineTaxAmount;
+
+              totalBaseAcceptedValue += lineAcceptedBaseValue;
+              totalTaxAmount += lineTaxAmount;
+
+              if (idx === 0) {
+                mainPoUnitRate = poUnitRate;
+                mainPoLineId = matchedPOLine?.id || mainPoLineId;
+              }
+
+              return {
+                ...item,
+                poLineId: matchedPOLine?.id || item.poLineId,
+                poUnitRate,
+                unitRate: poUnitRate,
+                taxRate,
+                lineAcceptedBaseValue,
+                lineTaxAmount,
+                lineNetPayable,
+              };
+            });
+
+            const netPayable = totalBaseAcceptedValue + totalTaxAmount;
+            const paidAmount = grnPayments
+              .filter((p: any) => p.grnId === grn.id)
+              .reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+            const outstandingAmount = Math.max(0, netPayable - paidAmount);
+            const paymentStatus = netPayable === 0 ? 'no_payment_required' : paidAmount === 0 ? 'payment_pending' : paidAmount >= netPayable ? 'paid' : 'partially_paid';
+
+            if (grn.poUnitRate !== mainPoUnitRate || grn.netPayable !== netPayable || grn.paidAmount !== paidAmount) {
+              grnUpdated = true;
+            }
+
+            return {
+              ...grn,
+              poLineId: mainPoLineId,
+              poUnitRate: mainPoUnitRate,
+              unitRate: mainPoUnitRate,
+              rateStatus: mainPoUnitRate > 0 ? 'OK' : 'MISSING_RATE',
+              baseAcceptedValue: totalBaseAcceptedValue,
+              taxRate: 18,
+              taxAmount: totalTaxAmount,
+              netPayable,
+              paidAmount,
+              outstandingAmount,
+              paymentStatus,
+              items,
+            };
+          });
+
+          if (grnUpdated) {
+            repository.saveCollection('goodsReceipts', merged.goodsReceipts);
+          }
+        }
+
+        // Default Warehouse Locations
+        if (!merged.warehouseLocations || !Array.isArray(merged.warehouseLocations) || merged.warehouseLocations.length === 0) {
+          merged.warehouseLocations = [
+            { id: 'wh-main', code: 'WH-MAIN', name: 'Main Warehouse', type: 'MAIN_WAREHOUSE', isActive: true },
+            { id: 'wh-in-transit', code: 'WH-TRANSIT', name: 'In Transit', type: 'IN_TRANSIT', isActive: true },
+            { id: 'wh-site-p1', code: 'WH-SITE-P1', name: 'Nouveau Penthouse Site Store', type: 'PROJECT_SITE_STORE', projectId: 'p-1', isActive: true },
+            { id: 'wh-site-p2', code: 'WH-SITE-P2', name: 'Corporate HQ Site Store', type: 'PROJECT_SITE_STORE', projectId: 'p-2', isActive: true },
+          ];
+        }
+
+        // Auto-reconcile GRN Accepted Stock Posting into Stock Ledger (Idempotent)
+        if (Array.isArray(merged.goodsReceipts)) {
+          const currentLedger = merged.stockLedger || [];
+          const newLedgerEntries: any[] = [];
+
+          merged.goodsReceipts.forEach((grn: any) => {
+            const grnItems = grn.items || [];
+            grnItems.forEach((item: any) => {
+              const acceptedQty = Number(item.qcApprovedQty ?? item.acceptedQty ?? item.receivedQty ?? 0);
+              if (acceptedQty <= 0) return;
+
+              // Check if stock ledger entry already exists for this GRN + Product
+              const exists = currentLedger.some(
+                (entry: any) =>
+                  (entry.sourceId === grn.id || entry.sourceDocumentId === grn.id || entry.sourceNumber === grn.grnNumber || entry.sourceDocumentNumber === grn.grnNumber) &&
+                  entry.productId === item.productId
+              ) || newLedgerEntries.some(
+                (entry: any) => entry.sourceId === grn.id && entry.productId === item.productId
+              );
+
+              if (!exists) {
+                const unitRate = Number(item.poUnitRate ?? item.unitRate ?? grn.poUnitRate ?? 0);
+                const entryId = `stk-grn-${grn.id}-${item.productId}`;
+                const nowStr = new Date().toISOString();
+
+                newLedgerEntries.push({
+                  id: entryId,
+                  transactionNumber: `TXN-${Date.now().toString().slice(-6)}-${newLedgerEntries.length + 1}`,
+                  transactionType: 'GRN_RECEIPT',
+                  entryType: 'GRN_RECEIPT',
+                  transactionDate: grn.grnDate || grn.createdAt?.split('T')[0] || nowStr.split('T')[0],
+                  transactionTime: '10:00:00',
+                  entryDate: grn.grnDate || grn.createdAt?.split('T')[0] || nowStr.split('T')[0],
+                  createdTime: nowStr,
+                  productId: item.productId,
+                  productCode: item.productCode || item.productId,
+                  productName: item.description || item.productDescription || 'Material Item',
+                  productDescription: item.description || item.productDescription || 'Material Item',
+                  categoryId: item.categoryId || 'cat-general',
+                  categoryName: item.categoryName || 'General Material',
+                  warehouseId: 'wh-main',
+                  warehouseName: 'Main Warehouse',
+                  locationId: 'wh-main',
+                  locationName: 'Main Warehouse',
+                  projectId: grn.projectId,
+                  projectName: grn.projectName,
+                  quantityIn: acceptedQty,
+                  quantityOut: 0,
+                  inQuantity: acceptedQty,
+                  outQuantity: 0,
+                  runningBalance: acceptedQty,
+                  unit: item.unit || 'sqft',
+                  unitSymbol: item.unit || 'sqft',
+                  unitRate,
+                  transactionValue: acceptedQty * unitRate,
+                  totalValue: acceptedQty * unitRate,
+                  sourceType: 'GRN',
+                  sourceId: grn.id,
+                  sourceNumber: grn.grnNumber || grn.documentNumber || grn.id,
+                  sourceDocumentId: grn.id,
+                  sourceDocumentNumber: grn.grnNumber || grn.documentNumber || grn.id,
+                  remarks: `Auto GRN stock receipt from ${grn.grnNumber}`,
+                  createdBy: grn.createdBy || 'System Auto-GRN',
+                  recordedBy: grn.createdBy || 'System Auto-GRN',
+                  createdAt: grn.createdAt || nowStr,
+                });
+              }
+            });
+          });
+
+          if (newLedgerEntries.length > 0) {
+            merged.stockLedger = [...currentLedger, ...newLedgerEntries];
+            repository.saveCollection('stockLedger', merged.stockLedger);
+          }
+        }
 
         setState(merged);
 
@@ -1167,11 +1379,581 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
       documentId: po.id,
       documentNumber: po.documentNumber,
       action: 'DELIVERY_RECORDED',
-      performedBy: delivery.recordedBy || 'Procurement User',
-      details: `Recorded delivery ${delivery.deliveryId} (Invoice: ${delivery.invoiceNumber}) for PO ${po.documentNumber}`,
+      performedBy: delivery.recordedBy || 'Stores Officer',
+      newStatus: deliveryStatus,
+      details: `Recorded delivery of ${delivery.items.reduce((s: number, i: any) => s + i.qtyReceived, 0)} units for PO ${po.documentNumber}`,
     });
 
     return { success: true };
+  };
+
+  // Helper action: Generate Unique Material Entry Token
+  const createMaterialEntryToken = (tokenData: Partial<MaterialEntryToken>, createdBy: string = 'Gate Officer') => {
+    const tokens = state.materialEntryTokens || [];
+    const dateStr = tokenData.entryDate
+      ? tokenData.entryDate.replace(/-/g, '')
+      : new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
+    // Get prefix shortcode from materialName or category
+    const materialNameUpper = (tokenData.materialName || 'MAT').toUpperCase();
+    let prefix = 'MAT';
+    if (materialNameUpper.includes('PLYWOOD') || materialNameUpper.includes('PLY')) prefix = 'PLY';
+    else if (materialNameUpper.includes('LAMINATE') || materialNameUpper.includes('LAM')) prefix = 'LAM';
+    else if (materialNameUpper.includes('HARDWARE') || materialNameUpper.includes('HDW')) prefix = 'HDW';
+    else if (materialNameUpper.includes('GLASS')) prefix = 'GLS';
+    else if (materialNameUpper.includes('TILE') || materialNameUpper.includes('CERAMIC')) prefix = 'TLE';
+    else if (materialNameUpper.includes('PAINT')) prefix = 'PNT';
+    else prefix = materialNameUpper.slice(0, 3).replace(/[^A-Z]/g, 'MAT');
+
+    // Count existing tokens for same prefix & date to format sequence
+    const pattern = `${prefix}-${dateStr}-`;
+    const countOnDate = tokens.filter((t) => t.tokenNumber.startsWith(pattern)).length;
+    const seqStr = String(countOnDate + 1).padStart(3, '0');
+    const tokenNumber = `${prefix}-${dateStr}-${seqStr}`;
+
+    const newToken: MaterialEntryToken = {
+      id: `tok-${Date.now()}`,
+      tokenNumber,
+      vehicleNumber: tokenData.vehicleNumber || 'N/A',
+      driverName: tokenData.driverName || 'N/A',
+      driverMobile: tokenData.driverMobile || '',
+      productId: tokenData.productId || '',
+      materialName: tokenData.materialName || 'Material',
+      categoryId: tokenData.categoryId,
+      categoryName: tokenData.categoryName,
+      entryDate: tokenData.entryDate || new Date().toISOString().split('T')[0],
+      entryTime: tokenData.entryTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      remarks: tokenData.remarks || '',
+      status: 'GATE_ENTRY_CREATED',
+      currentStage: 'Gate Entry',
+      createdBy,
+      createdAt: new Date().toISOString(),
+    };
+
+    addItem('materialEntryTokens', newToken);
+
+    // Auto-create Token Activity Log event
+    addTokenActivity({
+      tokenId: newToken.id,
+      tokenNumber: newToken.tokenNumber,
+      eventType: 'TOKEN_CREATED',
+      userName: createdBy,
+      title: 'TOKEN CREATED',
+      description: `Gate Entry Token generated for vehicle ${newToken.vehicleNumber} bringing ${newToken.materialName}.`,
+    });
+
+    logAudit({
+      documentType: 'material_entry_token',
+      documentId: newToken.id,
+      documentNumber: newToken.tokenNumber,
+      action: 'CREATED',
+      performedBy: createdBy,
+      newStatus: 'GATE_ENTRY_CREATED',
+      details: `Generated material entry token ${tokenNumber} for vehicle ${newToken.vehicleNumber}`,
+    });
+
+    return { success: true, token: newToken };
+  };
+
+  // Central Eligibility Helpers for Material Inward Workflow
+  const isAwaitingReceiving = (token: MaterialEntryToken): boolean => {
+    if (!token) return false;
+    if (token.status === 'HOLD' || token.status === 'CANCELLED') return false;
+    // Check if an initial receiving check already exists
+    const checks = state.materialReceivingChecks || [];
+    const hasCheck = checks.some((c) => c.tokenId === token.id || c.tokenNumber === token.tokenNumber);
+    if (hasCheck) return false;
+
+    return (
+      token.status === 'GATE_ENTRY_CREATED' ||
+      token.status === 'TOKEN_GENERATED' ||
+      token.status === 'RECEIVING_CHECK_IN_PROGRESS'
+    );
+  };
+
+  const isAwaitingQC = (token: MaterialEntryToken): boolean => {
+    if (!token) return false;
+    if (token.status === 'HOLD' || token.status === 'CANCELLED') return false;
+
+    // MANDATORY GATING RULE: Must have a completed Initial Receiving Check
+    const checks = state.materialReceivingChecks || [];
+    const hasCheck = checks.some((c) => c.tokenId === token.id || c.tokenNumber === token.tokenNumber);
+    if (!hasCheck) return false;
+
+    return (
+      token.status === 'QC_PENDING' ||
+      token.status === 'QC_IN_PROGRESS' ||
+      token.status === 'ADMIN_APPROVAL_REQUIRED' ||
+      token.status === 'RECEIVING_CHECKED'
+    );
+  };
+
+  // Helper action: Add Token Activity Log Entry
+  const addTokenActivity = (activity: Omit<TokenActivity, 'id' | 'timestamp'>) => {
+    const newActivity: TokenActivity = {
+      ...activity,
+      id: `act-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toISOString(),
+    };
+    addItem('tokenActivities', newActivity);
+  };
+
+  // Action: Put Token on Hold
+  const holdMaterialToken = (tokenId: string, reason: string, remarks?: string, performedBy: string = 'Security/Admin') => {
+    const tokens = state.materialEntryTokens || [];
+    const token = tokens.find((t) => t.id === tokenId || t.tokenNumber === tokenId);
+    if (!token) return { success: false, error: 'Token not found' };
+
+    const updatedToken: MaterialEntryToken = {
+      ...token,
+      status: 'HOLD',
+      currentStage: 'Hold',
+      holdReason: reason,
+      heldBy: performedBy,
+      heldAt: new Date().toISOString(),
+      remarks: remarks ? `${token.remarks || ''}\n[HOLD]: ${remarks}` : token.remarks,
+    };
+
+    updateItem('materialEntryTokens', updatedToken.id, updatedToken);
+
+    addTokenActivity({
+      tokenId: token.id,
+      tokenNumber: token.tokenNumber,
+      eventType: 'TOKEN_HELD',
+      userName: performedBy,
+      title: 'TOKEN HELD',
+      description: `Token placed on hold. Reason: ${reason}${remarks ? ` (${remarks})` : ''}`,
+    });
+
+    return { success: true };
+  };
+
+  // Action: Resume Held Token
+  const resumeMaterialToken = (tokenId: string, remarks?: string, performedBy: string = 'Security/Admin') => {
+    const tokens = state.materialEntryTokens || [];
+    const token = tokens.find((t) => t.id === tokenId || t.tokenNumber === tokenId);
+    if (!token) return { success: false, error: 'Token not found' };
+
+    // Determine target status based on receiving checks
+    const checks = state.materialReceivingChecks || [];
+    const hasReceiving = checks.some((c) => c.tokenId === token.id);
+
+    const targetStatus: MaterialEntryTokenStatus = hasReceiving ? 'RECEIVING_CHECKED' : 'TOKEN_GENERATED';
+    const targetStage = hasReceiving ? 'Initial Receiving' : 'Gate Entry';
+
+    const updatedToken: MaterialEntryToken = {
+      ...token,
+      status: targetStatus,
+      currentStage: targetStage,
+      remarks: remarks ? `${token.remarks || ''}\n[RESUMED]: ${remarks}` : token.remarks,
+    };
+
+    updateItem('materialEntryTokens', updatedToken.id, updatedToken);
+
+    addTokenActivity({
+      tokenId: token.id,
+      tokenNumber: token.tokenNumber,
+      eventType: 'TOKEN_RESUMED',
+      userName: performedBy,
+      title: 'TOKEN RESUMED',
+      description: `Token hold released. Resumed to stage: ${targetStage}${remarks ? ` (${remarks})` : ''}`,
+    });
+
+    return { success: true };
+  };
+
+  // Action: Cancel Token
+  const cancelMaterialToken = (tokenId: string, reason: string, performedBy: string = 'Security/Admin') => {
+    const tokens = state.materialEntryTokens || [];
+    const token = tokens.find((t) => t.id === tokenId || t.tokenNumber === tokenId);
+    if (!token) return { success: false, error: 'Token not found' };
+
+    const updatedToken: MaterialEntryToken = {
+      ...token,
+      status: 'CANCELLED',
+      currentStage: 'Cancelled',
+      cancellationReason: reason,
+      cancelledBy: performedBy,
+      cancelledAt: new Date().toISOString(),
+    };
+
+    updateItem('materialEntryTokens', updatedToken.id, updatedToken);
+
+    addTokenActivity({
+      tokenId: token.id,
+      tokenNumber: token.tokenNumber,
+      eventType: 'TOKEN_CANCELLED',
+      userName: performedBy,
+      title: 'TOKEN CANCELLED',
+      description: `Token cancelled. Reason: ${reason}`,
+    });
+
+    return { success: true };
+  };
+
+  // Helper action: Record First Material Receiving Check
+  const createMaterialReceivingCheck = (checkData: Partial<MaterialReceivingCheck>, checkedBy: string = 'Storekeeper') => {
+    state.materialReceivingChecks || [];
+    const checkId = `rcv-${Date.now()}`;
+    const newCheck: MaterialReceivingCheck = {
+      id: checkId,
+      tokenId: checkData.tokenId || '',
+      tokenNumber: checkData.tokenNumber || '',
+      poId: checkData.poId || '',
+      poNumber: checkData.poNumber || '',
+      vendorId: checkData.vendorId,
+      vendorName: checkData.vendorName,
+      projectId: checkData.projectId,
+      projectName: checkData.projectName,
+      productId: checkData.productId || '',
+      productName: checkData.productName || 'Material',
+      unit: checkData.unit || 'nos',
+      poQty: checkData.poQty || 0,
+      receivedQty: checkData.receivedQty || 0,
+      damagedQty: checkData.damagedQty || 0,
+      shortQty: checkData.shortQty || 0,
+      excessQty: checkData.excessQty || 0,
+      excessReason: checkData.excessReason || '',
+      qcPendingQty: checkData.qcPendingQty || Math.max(0, (checkData.receivedQty || 0) - (checkData.damagedQty || 0)),
+      checkedBy,
+      checkedAt: new Date().toISOString(),
+    };
+
+    addItem('materialReceivingChecks', newCheck);
+
+    // Update Token status to QC_PENDING & Current Stage to Quality Control
+    if (checkData.tokenId) {
+      updateItem('materialEntryTokens', checkData.tokenId, {
+        status: 'RECEIVING_CHECKED',
+        currentStage: 'Quality Control',
+        updatedAt: new Date().toISOString(),
+      });
+
+      addTokenActivity({
+        tokenId: checkData.tokenId,
+        tokenNumber: newCheck.tokenNumber,
+        eventType: 'RECEIVING_COMPLETED',
+        userName: checkedBy,
+        title: 'INITIAL RECEIVING CHECK COMPLETED',
+        description: `Received ${newCheck.receivedQty} ${newCheck.unit} (Damaged: ${newCheck.damagedQty}, QC Pending: ${newCheck.qcPendingQty}). Linked to PO ${newCheck.poNumber}.`,
+        referenceType: 'RECEIVING',
+        referenceId: newCheck.id,
+      });
+    }
+
+    logAudit({
+      documentType: 'receiving_check',
+      documentId: newCheck.id,
+      documentNumber: newCheck.tokenNumber,
+      action: 'COMPLETED',
+      performedBy: checkedBy,
+      newStatus: 'QC_PENDING',
+      details: `Completed receiving check for token ${newCheck.tokenNumber}. QC Pending: ${newCheck.qcPendingQty} ${newCheck.unit}`,
+    });
+
+    return { success: true, receivingCheck: newCheck };
+  };
+
+  // Internal Helper: Auto-Generate GRN from Final QC Decision
+  const _autoGenerateGRNFromQC = (qc: QualityInspection, createdBy: string = 'System Auto-GRN') => {
+    const grns = state.goodsReceipts || [];
+    // Idempotency Guard: prevent duplicate GRN for same QC inspection
+    const existing = grns.find((g) => g.qcInspectionId === qc.id || (g.tokenId && g.tokenId === qc.tokenId));
+    if (existing) {
+      return existing;
+    }
+
+    const po = (state.purchaseOrders || []).find(
+      (p) => p.id === qc.poId || p.poNumber === qc.poNumber || p.documentNumber === qc.poNumber
+    );
+
+    const grnNumber = `GRN-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
+    const acceptedQty = qc.items.reduce((sum, item) => sum + (item.approvedQty || 0), 0);
+    const rejectedQty = qc.items.reduce((sum, item) => sum + (item.rejectedQty || 0), 0);
+    const holdQty = qc.items.reduce((sum, item) => sum + (item.holdQty || 0), 0);
+    const totalReceived = qc.items.reduce((sum, item) => sum + (item.receivedQty || 0), 0);
+
+    let totalBaseAcceptedValue = 0;
+    let totalTaxAmount = 0;
+    let mainPoUnitRate = 0;
+    let mainPoLineId: string | undefined = undefined;
+    let mainRateStatus: 'OK' | 'MISSING_RATE' = 'MISSING_RATE';
+
+    const grnItems: GRNItem[] = qc.items.map((qItem, idx) => {
+      // Resolve exact PO line commercial rate
+      let matchedPOLine: any = null;
+      if (po?.lines?.length) {
+        if ((qItem as any).poLineId) {
+          matchedPOLine = po.lines.find((l: any) => l.id === (qItem as any).poLineId);
+        }
+        if (!matchedPOLine && qItem.productId) {
+          matchedPOLine = po.lines.find((l: any) => l.productId === qItem.productId || l.materialId === qItem.productId);
+        }
+        if (!matchedPOLine && qItem.productDescription) {
+          const descLower = qItem.productDescription.toLowerCase();
+          matchedPOLine = po.lines.find((l: any) => {
+            const nameLower = (l.materialName || l.productName || l.description || '').toLowerCase();
+            return nameLower.includes(descLower) || descLower.includes(nameLower) || (nameLower && descLower.split(' ')[0] === nameLower.split(' ')[0]);
+          });
+        }
+        if (!matchedPOLine && po.lines.length === 1) {
+          matchedPOLine = po.lines[0];
+        }
+      }
+
+      const poUnitRate = matchedPOLine
+        ? Number(matchedPOLine.unitRate ?? matchedPOLine.finalRate ?? matchedPOLine.negotiatedRate ?? matchedPOLine.basicRate ?? matchedPOLine.baseRate ?? 0)
+        : 0;
+
+      const taxRate = matchedPOLine
+        ? Number(matchedPOLine.taxPercent ?? matchedPOLine.gstRate ?? (po as any)?.taxRate ?? 18)
+        : Number((po as any)?.taxRate ?? 18);
+
+      const lineApprovedQty = qItem.approvedQty || 0;
+      const lineAcceptedBaseValue = lineApprovedQty * poUnitRate;
+      const lineTaxAmount = lineAcceptedBaseValue * (taxRate / 100);
+      const lineNetPayable = lineAcceptedBaseValue + lineTaxAmount;
+
+      totalBaseAcceptedValue += lineAcceptedBaseValue;
+      totalTaxAmount += lineTaxAmount;
+
+      if (idx === 0) {
+        mainPoUnitRate = poUnitRate;
+        mainPoLineId = matchedPOLine?.id;
+        mainRateStatus = poUnitRate > 0 ? 'OK' : 'MISSING_RATE';
+      }
+
+      return {
+        id: `grn-item-${Date.now()}-${idx}`,
+        productId: qItem.productId,
+        description: qItem.productDescription,
+        categoryName: qItem.categoryName || 'General Material',
+        unit: qItem.unit || 'nos',
+        orderedQty: qItem.receivedQty,
+        receivedQty: qItem.receivedQty,
+        qcPendingQty: 0,
+        qcApprovedQty: qItem.approvedQty,
+        qcRejectedQty: qItem.rejectedQty,
+        qcHoldQty: qItem.holdQty,
+        poLineId: matchedPOLine?.id,
+        poUnitRate,
+        unitRate: poUnitRate,
+        taxRate,
+        lineAcceptedBaseValue,
+        lineTaxAmount,
+        lineNetPayable,
+      };
+    });
+
+    const netPayable = totalBaseAcceptedValue + totalTaxAmount;
+    const grnDate = new Date().toISOString().split('T')[0];
+
+    // Calculate Due Date based on PO Payment Terms (e.g. "30 Days Net" -> +30 days)
+    let dueDate: string | undefined = undefined;
+    const pTerms = (po as any)?.paymentTerms || (po as any)?.paymentTermsDays;
+    if (pTerms) {
+      const match = String(pTerms).match(/(\d+)\s*Days/i);
+      const days = match && match[1] ? parseInt(match[1], 10) : typeof pTerms === 'number' ? pTerms : 30;
+      const d = new Date(grnDate);
+      d.setDate(d.getDate() + days);
+      dueDate = d.toISOString().split('T')[0];
+    }
+    if (!dueDate) {
+      const d = new Date(grnDate);
+      d.setDate(d.getDate() + 30); // Default 30 days
+      dueDate = d.toISOString().split('T')[0];
+    }
+
+    const newGRN: GoodsReceipt = {
+      id: `grn-${Date.now()}`,
+      grnNumber,
+      tokenId: qc.tokenId,
+      receivingCheckId: qc.receivingCheckId,
+      qcInspectionId: qc.id,
+      poId: qc.poId,
+      poNumber: qc.poNumber,
+      poLineId: mainPoLineId,
+      projectId: qc.projectId,
+      projectName: qc.projectName,
+      vendorId: qc.vendorId,
+      vendorName: qc.vendorName,
+      grnDate,
+      dueDate,
+      invoiceChallanNo: `CH-${qc.tokenNumber || 'AUTO'}`,
+      receivedByName: qc.inspectorName || createdBy,
+      status: 'qc_completed',
+      rateStatus: mainRateStatus,
+      poUnitRate: mainPoUnitRate,
+      unitRate: mainPoUnitRate,
+      baseAcceptedValue: totalBaseAcceptedValue,
+      taxRate: 18,
+      taxAmount: totalTaxAmount,
+      netPayable,
+      paidAmount: 0,
+      outstandingAmount: netPayable,
+      paymentStatus: netPayable > 0 ? 'payment_pending' : 'no_payment_required',
+      items: grnItems,
+      receivedQty: totalReceived,
+      acceptedQty,
+      rejectedQty,
+      holdQty,
+      remarks: `Auto-generated GRN from QC inspection ${qc.qcNumber}. Accepted: ${acceptedQty}, Rejected: ${rejectedQty}`,
+      createdAt: new Date().toISOString(),
+      createdBy,
+    };
+
+    addItem('goodsReceipts', newGRN);
+
+    // Update Token Status to GRN_GENERATED
+    if (qc.tokenId) {
+      updateItem('materialEntryTokens', qc.tokenId, {
+        status: 'GRN_GENERATED',
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    logAudit({
+      documentType: 'goods_receipt',
+      documentId: newGRN.id,
+      documentNumber: newGRN.grnNumber,
+      action: 'AUTO_GENERATED',
+      performedBy: createdBy,
+      newStatus: 'qc_completed',
+      details: `Auto-generated GRN ${newGRN.grnNumber} for token ${qc.tokenNumber || 'N/A'}. Accepted Qty: ${acceptedQty}, Net Payable: ₹${netPayable}`,
+    });
+
+    return newGRN;
+  };
+
+  // Action: Complete Quality Inspection (Normal or Admin Approval Required)
+  const completeQCInspection = (inspectionData: Partial<QualityInspection>, inspectorName: string = 'QC Inspector') => {
+    const qcNumber = `QCI-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
+    
+    // Evaluate failure count & critical failure
+    let failedCount = 0;
+    let criticalFailure = false;
+
+    (inspectionData.items || []).forEach((item) => {
+      (item.parameterResults || []).forEach((res) => {
+        if (res.result === 'FAIL') {
+          failedCount++;
+          if (res.critical) {
+            criticalFailure = true;
+          }
+        }
+      });
+    });
+
+    // Admin approval trigger condition: Critical failure OR > 1 parameter failed
+    const requiresAdminApproval = criticalFailure || failedCount > 1;
+    const finalStatus = requiresAdminApproval ? 'ADMIN_APPROVAL_REQUIRED' : 'completed';
+
+    const newInspection: QualityInspection = {
+      id: `qci-${Date.now()}`,
+      qcNumber,
+      tokenId: inspectionData.tokenId,
+      tokenNumber: inspectionData.tokenNumber,
+      receivingCheckId: inspectionData.receivingCheckId,
+      poId: inspectionData.poId || '',
+      poNumber: inspectionData.poNumber || '',
+      projectId: inspectionData.projectId || '',
+      projectName: inspectionData.projectName || 'Project Site',
+      vendorId: inspectionData.vendorId || '',
+      vendorName: inspectionData.vendorName || 'Vendor',
+      vehicleNumber: inspectionData.vehicleNumber,
+      driverName: inspectionData.driverName,
+      inspectionDate: inspectionData.inspectionDate || new Date().toISOString().split('T')[0],
+      inspectorName,
+      inspectedBy: inspectorName,
+      testResult: failedCount > 0 ? (failedCount === (inspectionData.items?.length || 1) ? 'FAIL' : 'PARTIAL') : 'PASS',
+      status: finalStatus,
+      items: inspectionData.items || [],
+      failedCount,
+      criticalFailure,
+      requiresAdminApproval,
+      overallRemarks: inspectionData.overallRemarks || '',
+      createdAt: new Date().toISOString(),
+      createdBy: inspectorName,
+    };
+
+    addItem('qualityInspections', newInspection);
+
+    // If Admin Approval is required, update Token status to ADMIN_APPROVAL_REQUIRED
+    if (requiresAdminApproval && inspectionData.tokenId) {
+      updateItem('materialEntryTokens', inspectionData.tokenId, {
+        status: 'ADMIN_APPROVAL_REQUIRED',
+        updatedAt: new Date().toISOString(),
+      });
+    } else if (!requiresAdminApproval) {
+      // Normal Pass: Auto-generate GRN!
+      const generatedGRN = _autoGenerateGRNFromQC(newInspection, inspectorName);
+      newInspection.grnId = generatedGRN.id;
+      newInspection.grnNumber = generatedGRN.grnNumber;
+    }
+
+    logAudit({
+      documentType: 'quality_inspection',
+      documentId: newInspection.id,
+      documentNumber: newInspection.qcNumber,
+      action: 'COMPLETED',
+      performedBy: inspectorName,
+      newStatus: finalStatus,
+      details: requiresAdminApproval
+        ? `QC Inspection ${qcNumber} requires Admin Approval due to ${failedCount} parameter failures.`
+        : `QC Inspection ${qcNumber} completed. Auto-generated GRN.`,
+    });
+
+    return { success: true, inspection: newInspection, requiresAdminApproval };
+  };
+
+  // Action: Admin Review & Approve/Reject QC Decision
+  const approveAdminQC = (
+    qcId: string,
+    decision: 'APPROVED' | 'REJECTED' | 'HOLD',
+    adminRemarks: string,
+    adminName: string = 'Store Admin'
+  ) => {
+    const inspections = state.qualityInspections || [];
+    const qc = inspections.find((q) => q.id === qcId);
+    if (!qc) return { success: false, error: 'QC Inspection record not found.' };
+
+    const now = new Date().toISOString();
+    const updatedStatus = decision === 'APPROVED' ? 'ADMIN_APPROVED' : decision === 'REJECTED' ? 'ADMIN_REJECTED' : 'in_progress';
+
+    let generatedGRN = null;
+    if (decision === 'APPROVED') {
+      generatedGRN = _autoGenerateGRNFromQC(qc, adminName);
+    }
+
+    updateItem('qualityInspections', qc.id, {
+      status: updatedStatus,
+      adminDecision: decision,
+      adminRemarks,
+      adminApprovedBy: adminName,
+      adminApprovedAt: now,
+      grnId: generatedGRN ? generatedGRN.id : qc.grnId,
+      grnNumber: generatedGRN ? generatedGRN.grnNumber : qc.grnNumber,
+      updatedAt: now,
+    });
+
+    if (qc.tokenId) {
+      updateItem('materialEntryTokens', qc.tokenId, {
+        status: decision === 'APPROVED' ? 'GRN_GENERATED' : 'REJECTED',
+        updatedAt: now,
+      });
+    }
+
+    logAudit({
+      documentType: 'quality_inspection',
+      documentId: qc.id,
+      documentNumber: qc.qcNumber,
+      action: `ADMIN_${decision}`,
+      performedBy: adminName,
+      newStatus: updatedStatus,
+      details: `Admin ${decision} QC decision for ${qc.qcNumber}. ${adminRemarks}`,
+    });
+
+    return { success: true, grn: generatedGRN };
   };
 
   // Stage 4 Store Action: Create Goods Received Note (GRN)
@@ -1182,8 +1964,10 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
       return { success: false, error: 'Domain Guard Rejected: GRN can only reference an issued or approved Purchase Order.' };
     }
 
+    const grnLines = grn.lines || grn.items || [];
+
     // Line Validation: Received now cannot exceed pending quantity
-    for (const line of grn.lines) {
+    for (const line of grnLines) {
       if (line.currentReceivedQty > line.pendingPOQty) {
         return {
           success: false,
@@ -1203,11 +1987,11 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     logAudit({
       documentType: 'grn',
       documentId: grn.id,
-      documentNumber: grn.documentNumber,
+      documentNumber: grn.documentNumber || grn.grnNumber || grn.id,
       action: 'CREATED',
       performedBy,
       newStatus: grn.status,
-      details: `Created GRN ${grn.documentNumber} for PO ${grn.poNumber} at ${grn.destinationLocationName}`,
+      details: `Created GRN ${grn.documentNumber || grn.grnNumber} for PO ${grn.poNumber} at ${grn.destinationLocationName}`,
     });
 
     return { success: true, grn };
@@ -1218,7 +2002,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     const grn = (state.grns || []).find((g) => g.id === grnId);
     if (!grn) return { success: false, error: 'GRN not found' };
 
-    const newStatus: GRNStatus = inspection.testResult === 'failed' ? 'rejected' : 'inspected';
+    const newStatus: GRNStatus = inspection.testResult === 'FAIL' ? 'qc_completed' : 'qc_completed';
 
     updateItem('grns', grn.id, {
       qualityInspection: inspection,
@@ -1230,11 +2014,11 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     logAudit({
       documentType: 'grn',
       documentId: grn.id,
-      documentNumber: grn.documentNumber,
+      documentNumber: grn.documentNumber || grn.grnNumber || grn.id,
       action: 'INSPECTED',
       performedBy,
       newStatus,
-      details: `Quality Inspection completed for GRN ${grn.documentNumber}. Result: ${inspection.testResult.toUpperCase()}`,
+      details: `Quality Inspection completed for GRN ${grn.documentNumber || grn.grnNumber}. Result: ${inspection.testResult || 'PASS'}`,
     });
 
     return { success: true };
@@ -1245,10 +2029,6 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     const grn = (state.grns || []).find((g) => g.id === grnId);
     if (!grn) return { success: false, error: 'GRN not found' };
 
-    if (grn.status === 'rejected') {
-      return { success: false, error: 'Cannot approve a quality-rejected GRN.' };
-    }
-
     updateItem('grns', grn.id, {
       status: 'approved',
       updatedAt: new Date().toISOString(),
@@ -1258,7 +2038,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     logAudit({
       documentType: 'grn',
       documentId: grn.id,
-      documentNumber: grn.documentNumber,
+      documentNumber: grn.documentNumber || grn.grnNumber || grn.id,
       action: 'APPROVED',
       performedBy: approverId,
       newStatus: 'approved',
@@ -1270,56 +2050,72 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Stage 4 Store Action: Post GRN to Stock (IDEMPOTENT GUARD ENFORCED)
   const postGRNToStock = (grnId: string, postedBy: string = 'Warehouse Manager') => {
-    const grn = (state.grns || []).find((g) => g.id === grnId);
+    const grn = (state.goodsReceipts || state.grns || []).find((g: any) => g.id === grnId);
     if (!grn) return { success: false, error: 'GRN not found' };
 
     // Idempotency Guard
     if (grn.isPostedToStock) {
-      return { success: false, error: 'IDEMPOTENCY GUARD REJECTED: GRN is already posted to stock. Double posting is strictly prohibited.' };
-    }
-
-    if (grn.status !== 'approved' && grn.status !== 'inspected') {
-      return { success: false, error: 'Domain Guard Rejected: GRN must be inspected or approved before stock posting.' };
+      return { success: false, error: 'IDEMPOTENCY GUARD REJECTED: GRN is already posted to stock.' };
     }
 
     const now = new Date().toISOString();
+    const currentLedger = state.stockLedger || [];
     const newStockEntries: StockLedgerEntry[] = [];
+    const grnItems = grn.items || grn.lines || [];
 
-    // Create immutable stock ledger entries ONLY for accepted quantities
-    grn.lines.forEach((line) => {
-      if (line.acceptedQty > 0) {
+    grnItems.forEach((item: any, idx: number) => {
+      const acceptedQty = Number(item.qcApprovedQty ?? item.acceptedQty ?? item.receivedQty ?? 0);
+      if (acceptedQty > 0) {
+        const unitRate = Number(item.poUnitRate ?? item.unitRate ?? grn.poUnitRate ?? 0);
         const entry: StockLedgerEntry = {
-          id: `stk-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          productId: line.productId,
-          productCode: line.productCode,
-          productName: line.productName,
-          projectId: grn.projectId,
-          locationId: grn.destinationLocationId || 'loc-001',
-          locationName: grn.destinationLocationName || 'Central Site Warehouse',
-          entryType: 'grn_accepted',
-          inQuantity: line.acceptedQty,
-          outQuantity: 0,
-          runningBalance: 0, // Will be computed by selector
-          unitRate: line.unitRate || 0,
-          totalValue: line.acceptedQty * (line.unitRate || 0),
-          unitSymbol: line.unitSymbol,
-          sourceDocumentId: grn.id,
-          sourceDocumentNumber: grn.documentNumber,
-          entryDate: grn.receivedDate || now.split('T')[0],
+          id: `stk-grn-${grn.id}-${item.productId || idx}`,
+          transactionNumber: `TXN-${Date.now().toString().slice(-6)}-${idx + 1}`,
+          transactionType: 'GRN_RECEIPT',
+          entryType: 'GRN_RECEIPT',
+          transactionDate: grn.grnDate || grn.createdAt?.split('T')[0] || now.split('T')[0],
+          transactionTime: '10:00:00',
+          entryDate: grn.grnDate || grn.createdAt?.split('T')[0] || now.split('T')[0],
           createdTime: now,
+          productId: item.productId,
+          productCode: item.productCode || item.productId,
+          productName: item.description || item.productDescription || item.productName || 'Material Item',
+          productDescription: item.description || item.productDescription || 'Material Item',
+          categoryId: item.categoryId || 'cat-general',
+          categoryName: item.categoryName || 'General Material',
+          warehouseId: 'wh-main',
+          warehouseName: 'Main Warehouse',
+          locationId: 'wh-main',
+          locationName: 'Main Warehouse',
+          projectId: grn.projectId,
+          projectName: grn.projectName,
+          quantityIn: acceptedQty,
+          quantityOut: 0,
+          inQuantity: acceptedQty,
+          outQuantity: 0,
+          runningBalance: acceptedQty,
+          unit: item.unit || item.unitSymbol || 'sqft',
+          unitSymbol: item.unit || item.unitSymbol || 'sqft',
+          unitRate,
+          transactionValue: acceptedQty * unitRate,
+          totalValue: acceptedQty * unitRate,
+          sourceType: 'GRN',
+          sourceId: grn.id,
+          sourceNumber: grn.grnNumber || grn.documentNumber || grn.id,
+          sourceDocumentId: grn.id,
+          sourceDocumentNumber: grn.grnNumber || grn.documentNumber || grn.id,
           isImmutable: true,
+          remarks: `GRN stock posting for ${grn.grnNumber}`,
+          createdBy: postedBy,
           recordedBy: postedBy,
+          createdAt: now,
         };
         newStockEntries.push(entry);
       }
     });
 
-    // Save stock ledger entries
-    const currentLedger = state.stockLedger || [];
     updateCollection('stockLedger', [...currentLedger, ...newStockEntries]);
 
-    // Update GRN status
-    updateItem('grns', grn.id, {
+    updateItem('goodsReceipts', grn.id, {
       isPostedToStock: true,
       postedAt: now,
       postedBy,
@@ -1329,105 +2125,442 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
 
     logAudit({
-      documentType: 'grn',
+      documentType: 'goods_receipt',
       documentId: grn.id,
-      documentNumber: grn.documentNumber,
+      documentNumber: grn.grnNumber || grn.id,
       action: 'POSTED_TO_STOCK',
       performedBy: postedBy,
       newStatus: 'posted',
-      details: `Posted ${newStockEntries.length} accepted stock ledger entries for GRN ${grn.documentNumber}`,
+      details: `Posted ${newStockEntries.length} accepted stock ledger entries for GRN ${grn.grnNumber}`,
     });
 
     return { success: true };
   };
 
-  // Stage 4 Store Action: Create Material Issue (Available stock validation & location transfer)
-  const createMaterialIssue = (issue: MaterialIssue, performedBy: string = 'Stores Officer') => {
+  // Helper: Get available stock balance
+  const getStockBalance = (params: { productId: string; warehouseId?: string; locationId?: string }): number => {
+    const ledger = state.stockLedger || [];
+    const wId = params.warehouseId || params.locationId;
+    let balance = 0;
+    ledger.forEach((entry: any) => {
+      if (entry.productId === params.productId) {
+        if (!wId || entry.warehouseId === wId || entry.locationId === wId) {
+          const qtyIn = Number(entry.quantityIn ?? entry.inQuantity ?? 0);
+          const qtyOut = Number(entry.quantityOut ?? entry.outQuantity ?? 0);
+          balance += qtyIn - qtyOut;
+        }
+      }
+    });
+    return Math.max(0, balance);
+  };
+
+  // Helper: Get stock per location breakdown for a product
+  const getPerLocationStock = (productId: string) => {
+    const locations = state.warehouseLocations || [
+      { id: 'wh-main', code: 'WH-MAIN', name: 'Main Warehouse', type: 'MAIN_WAREHOUSE', isActive: true },
+      { id: 'wh-in-transit', code: 'WH-TRANSIT', name: 'In Transit', type: 'IN_TRANSIT', isActive: true },
+      { id: 'wh-site-p1', code: 'WH-SITE-P1', name: 'Nouveau Penthouse Site Store', type: 'PROJECT_SITE_STORE', projectId: 'p-1', isActive: true },
+      { id: 'wh-site-p2', code: 'WH-SITE-P2', name: 'Corporate HQ Site Store', type: 'PROJECT_SITE_STORE', projectId: 'p-2', isActive: true },
+    ];
+
+    const breakdown = locations.map((loc) => {
+      const bal = getStockBalance({ productId, warehouseId: loc.id });
+      return {
+        warehouseId: loc.id,
+        warehouseName: loc.name,
+        type: loc.type,
+        balance: bal,
+      };
+    });
+
+    const totalCompanyStock = breakdown.reduce((sum, item) => sum + item.balance, 0);
+
+    return {
+      productId,
+      breakdown,
+      totalCompanyStock,
+    };
+  };
+
+  // Create Material Issue (Draft status)
+  const createMaterialIssue = (issueData: Partial<MaterialIssue>, createdBy: string = 'Stores Officer') => {
+    const issueCount = (state.materialIssues || []).length + 1;
+    const issueNumber = `MI-${new Date().getFullYear()}-${issueCount.toString().padStart(3, '0')}`;
+    const now = new Date().toISOString();
+
+    const items: MaterialIssueItem[] = (issueData.items || []).map((it: any, idx: number) => {
+      const avail = getStockBalance({ productId: it.productId, warehouseId: issueData.sourceWarehouseId || 'wh-main' });
+      const issueQty = Number(it.issueQty || 0);
+      const unitRate = Number(it.unitRate || 0);
+      return {
+        id: `mii-${Date.now()}-${idx}`,
+        productId: it.productId,
+        productDescription: it.productDescription || 'Material Item',
+        categoryName: it.categoryName || 'General Material',
+        unit: it.unit || 'sqft',
+        availableStock: avail,
+        issueQty,
+        receivedQty: 0,
+        unitRate,
+        issueValue: issueQty * unitRate,
+        remarks: it.remarks || '',
+      };
+    });
+
+    const totalValue = items.reduce((sum, item) => sum + item.issueValue, 0);
+
+    const newIssue: MaterialIssue = {
+      id: `mi-${Date.now()}`,
+      issueNumber,
+      projectId: issueData.projectId || '',
+      projectName: issueData.projectName || '',
+      sourceWarehouseId: issueData.sourceWarehouseId || 'wh-main',
+      sourceWarehouseName: issueData.sourceWarehouseName || 'Main Warehouse',
+      destinationStoreId: issueData.destinationStoreId || `wh-site-${issueData.projectId || 'p-1'}`,
+      destinationStoreName: issueData.destinationStoreName || `${issueData.projectName || 'Project'} Site Store`,
+      requiredByDate: issueData.requiredByDate || new Date().toISOString().split('T')[0],
+      purpose: issueData.purpose || 'Site fitout material transfer',
+      costCode: issueData.costCode || '',
+      requestedBy: issueData.requestedBy || createdBy,
+      status: 'Ready to Issue',
+      items,
+      totalIssueValue: totalValue,
+      activityLog: [
+        {
+          id: `act-${Date.now()}`,
+          timestamp: now,
+          user: createdBy,
+          action: 'ISSUE_CREATED',
+          description: `Created Material Issue ${issueNumber} with ${items.length} item(s)`,
+        },
+      ],
+      remarks: issueData.remarks || '',
+      createdAt: now,
+      createdBy,
+    };
+
+    addItem('materialIssues', newIssue);
+
+    logAudit({
+      documentType: 'material_issue',
+      documentId: newIssue.id,
+      documentNumber: newIssue.issueNumber,
+      action: 'CREATED',
+      performedBy: createdBy,
+      newStatus: newIssue.status,
+      details: `Created material issue ${newIssue.issueNumber} for project ${newIssue.projectName}`,
+    });
+
+    return { success: true, materialIssue: newIssue };
+  };
+
+  // Dispatch Material Issue (Posts Main Warehouse -> In Transit)
+  const dispatchMaterialIssue = (issueId: string, dispatchedBy: string = 'Warehouse Supervisor') => {
+    const issue = (state.materialIssues || []).find((m) => m.id === issueId);
+    if (!issue) return { success: false, error: 'Material issue not found' };
+
+    if (issue.status !== 'Draft' && issue.status !== 'Ready to Issue') {
+      return { success: false, error: `Material issue is already in status '${issue.status}'` };
+    }
+
     const currentLedger = state.stockLedger || [];
     const now = new Date().toISOString();
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
     const newStockEntries: StockLedgerEntry[] = [];
 
-    // Verify stock availability at source location
-    for (const line of issue.lines) {
-      let avail = 0;
-      currentLedger.forEach((e) => {
-        if (e.locationId === issue.sourceLocationId && e.productId === line.productId) {
-          avail += (e.inQuantity || 0) - (e.outQuantity || 0);
-        }
-      });
+    const issueItems = issue.items || issue.lines || [];
 
-      if (line.issuedQty > avail) {
+    // Stock availability validation
+    for (const item of issueItems) {
+      const avail = getStockBalance({ productId: item.productId, warehouseId: issue.sourceWarehouseId });
+      if (item.issueQty > avail) {
         return {
           success: false,
-          error: `Stock Guard Violation: Cannot issue ${line.issuedQty} ${line.unitSymbol} of ${line.productName}. Available stock at ${issue.sourceLocationName} is only ${avail}.`,
+          error: `Stock Guard Violation: Only ${avail} ${item.unit} of '${item.productDescription}' is available in ${issue.sourceWarehouseName}. Cannot issue ${item.issueQty} ${item.unit}.`,
         };
       }
 
-      // Outbound entry at source location
-      const outEntry: StockLedgerEntry = {
-        id: `stk-out-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        productId: line.productId,
-        productCode: line.productCode,
-        productName: line.productName,
+      // OUT entry at Main Warehouse
+      newStockEntries.push({
+        id: `stk-out-${issue.id}-${item.productId}`,
+        transactionNumber: `TXN-${Date.now().toString().slice(-6)}-OUT`,
+        transactionType: 'TRANSFER_OUT',
+        entryType: 'TRANSFER_OUT',
+        transactionDate: now.split('T')[0],
+        transactionTime: timeStr,
+        entryDate: now.split('T')[0],
+        createdTime: now,
+        productId: item.productId,
+        productCode: item.productId,
+        productName: item.productDescription,
+        productDescription: item.productDescription,
+        categoryName: item.categoryName,
+        warehouseId: issue.sourceWarehouseId,
+        warehouseName: issue.sourceWarehouseName,
+        locationId: issue.sourceWarehouseId,
+        locationName: issue.sourceWarehouseName,
         projectId: issue.projectId,
-        locationId: issue.sourceLocationId,
-        locationName: issue.sourceLocationName,
-        entryType: 'material_issue',
+        projectName: issue.projectName,
+        quantityIn: 0,
+        quantityOut: item.issueQty,
         inQuantity: 0,
-        outQuantity: line.issuedQty,
-        runningBalance: 0,
-        unitRate: 0,
-        totalValue: 0,
-        unitSymbol: line.unitSymbol,
+        outQuantity: item.issueQty,
+        runningBalance: avail - item.issueQty,
+        unit: item.unit,
+        unitSymbol: item.unit,
+        unitRate: item.unitRate,
+        transactionValue: item.issueQty * item.unitRate,
+        totalValue: item.issueQty * item.unitRate,
+        sourceType: 'MATERIAL_ISSUE',
+        sourceId: issue.id,
+        sourceNumber: issue.issueNumber,
         sourceDocumentId: issue.id,
-        sourceDocumentNumber: issue.documentNumber,
-        entryDate: issue.issueDate || now.split('T')[0],
-        createdTime: now,
+        sourceDocumentNumber: issue.issueNumber,
         isImmutable: true,
-        recordedBy: performedBy,
-      };
+        remarks: `Dispatched to ${issue.projectName} (In Transit)`,
+        createdBy: dispatchedBy,
+        recordedBy: dispatchedBy,
+        createdAt: now,
+      });
 
-      // Inbound transfer entry at destination location (work package / site area)
-      const inEntry: StockLedgerEntry = {
-        id: `stk-in-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        productId: line.productId,
-        productCode: line.productCode,
-        productName: line.productName,
+      // IN entry at In Transit
+      newStockEntries.push({
+        id: `stk-in-transit-${issue.id}-${item.productId}`,
+        transactionNumber: `TXN-${Date.now().toString().slice(-6)}-TRANSIT`,
+        transactionType: 'TRANSFER_IN',
+        entryType: 'TRANSFER_IN',
+        transactionDate: now.split('T')[0],
+        transactionTime: timeStr,
+        entryDate: now.split('T')[0],
+        createdTime: now,
+        productId: item.productId,
+        productCode: item.productId,
+        productName: item.productDescription,
+        productDescription: item.productDescription,
+        categoryName: item.categoryName,
+        warehouseId: 'wh-in-transit',
+        warehouseName: 'In Transit',
+        locationId: 'wh-in-transit',
+        locationName: 'In Transit',
         projectId: issue.projectId,
-        locationId: issue.destinationLocationId || 'loc-dest-001',
-        locationName: issue.destinationAreaName || 'Site Work Package',
-        entryType: 'transfer_in',
-        inQuantity: line.issuedQty,
+        projectName: issue.projectName,
+        quantityIn: item.issueQty,
+        quantityOut: 0,
+        inQuantity: item.issueQty,
         outQuantity: 0,
-        runningBalance: 0,
-        unitRate: 0,
-        totalValue: 0,
-        unitSymbol: line.unitSymbol,
+        runningBalance: item.issueQty,
+        unit: item.unit,
+        unitSymbol: item.unit,
+        unitRate: item.unitRate,
+        transactionValue: item.issueQty * item.unitRate,
+        totalValue: item.issueQty * item.unitRate,
+        sourceType: 'MATERIAL_ISSUE',
+        sourceId: issue.id,
+        sourceNumber: issue.issueNumber,
         sourceDocumentId: issue.id,
-        sourceDocumentNumber: issue.documentNumber,
-        entryDate: issue.issueDate || now.split('T')[0],
-        createdTime: now,
+        sourceDocumentNumber: issue.issueNumber,
         isImmutable: true,
-        recordedBy: performedBy,
-      };
-
-      newStockEntries.push(outEntry, inEntry);
+        remarks: `In transit for ${issue.projectName}`,
+        createdBy: dispatchedBy,
+        recordedBy: dispatchedBy,
+        createdAt: now,
+      });
     }
 
-    addItem('materialIssues', issue);
     updateCollection('stockLedger', [...currentLedger, ...newStockEntries]);
+
+    const activityLog = [
+      ...(issue.activityLog || []),
+      {
+        id: `act-${Date.now()}`,
+        timestamp: now,
+        user: dispatchedBy,
+        action: 'ISSUE_DISPATCHED' as const,
+        description: `Dispatched ${issueItems.length} item(s) from ${issue.sourceWarehouseName} to In Transit`,
+      },
+    ];
+
+    updateItem('materialIssues', issue.id, {
+      status: 'Dispatched',
+      dispatchedBy,
+      dispatchedAt: now,
+      activityLog,
+      updatedAt: now,
+    });
 
     logAudit({
       documentType: 'material_issue',
       documentId: issue.id,
-      documentNumber: issue.documentNumber,
-      action: 'ISSUED',
-      performedBy,
-      newStatus: 'issued',
-      details: `Issued ${issue.lines.length} material lines from ${issue.sourceLocationName} to ${issue.destinationAreaName}`,
+      documentNumber: issue.issueNumber,
+      action: 'DISPATCHED',
+      performedBy: dispatchedBy,
+      newStatus: 'Dispatched',
+      details: `Dispatched material issue ${issue.issueNumber}. Posted stock from Main Warehouse to In Transit.`,
     });
 
-    return { success: true, issue };
+    return { success: true };
+  };
+
+  // Record Site Receipt (Posts In Transit -> Project Site Store)
+  const recordSiteReceipt = (
+    issueId: string,
+    receipts: { productId: string; receiveNowQty: number }[],
+    receivedBy: string = 'Site Storekeeper',
+    remarks?: string
+  ) => {
+    const issue = (state.materialIssues || []).find((m) => m.id === issueId);
+    if (!issue) return { success: false, error: 'Material issue not found' };
+
+    if (issue.status !== 'Dispatched' && issue.status !== 'Partially Received') {
+      return { success: false, error: `Cannot record receipt for material issue in status '${issue.status}'` };
+    }
+
+    const currentLedger = state.stockLedger || [];
+    const now = new Date().toISOString();
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const newStockEntries: StockLedgerEntry[] = [];
+    const issueItems = issue.items || issue.lines || [];
+
+    const updatedItems = issueItems.map((item: any) => {
+      const match = receipts.find((r) => r.productId === item.productId);
+      const rQty = Number(match?.receiveNowQty || 0);
+
+      if (rQty > 0) {
+        const remainingTransit = item.issueQty - (item.receivedQty || 0);
+        const actualReceipt = Math.min(rQty, remainingTransit);
+
+        // OUT entry from In Transit
+        newStockEntries.push({
+          id: `stk-out-transit-${issue.id}-${item.productId}-${Date.now()}`,
+          transactionNumber: `TXN-${Date.now().toString().slice(-6)}-RCV-OUT`,
+          transactionType: 'TRANSFER_OUT',
+          entryType: 'TRANSFER_OUT',
+          transactionDate: now.split('T')[0],
+          transactionTime: timeStr,
+          entryDate: now.split('T')[0],
+          createdTime: now,
+          productId: item.productId,
+          productCode: item.productId,
+          productName: item.productDescription,
+          productDescription: item.productDescription,
+          categoryName: item.categoryName,
+          warehouseId: 'wh-in-transit',
+          warehouseName: 'In Transit',
+          locationId: 'wh-in-transit',
+          locationName: 'In Transit',
+          projectId: issue.projectId,
+          projectName: issue.projectName,
+          quantityIn: 0,
+          quantityOut: actualReceipt,
+          inQuantity: 0,
+          outQuantity: actualReceipt,
+          runningBalance: 0,
+          unit: item.unit,
+          unitSymbol: item.unit,
+          unitRate: item.unitRate,
+          transactionValue: actualReceipt * item.unitRate,
+          totalValue: actualReceipt * item.unitRate,
+          sourceType: 'SITE_RECEIPT',
+          sourceId: issue.id,
+          sourceNumber: issue.issueNumber,
+          sourceDocumentId: issue.id,
+          sourceDocumentNumber: issue.issueNumber,
+          isImmutable: true,
+          remarks: `Received at ${issue.destinationStoreName}`,
+          createdBy: receivedBy,
+          recordedBy: receivedBy,
+          createdAt: now,
+        });
+
+        // IN entry at Destination Project Site Store
+        newStockEntries.push({
+          id: `stk-in-site-${issue.id}-${item.productId}-${Date.now()}`,
+          transactionNumber: `TXN-${Date.now().toString().slice(-6)}-RCV-IN`,
+          transactionType: 'TRANSFER_IN',
+          entryType: 'TRANSFER_IN',
+          transactionDate: now.split('T')[0],
+          transactionTime: timeStr,
+          entryDate: now.split('T')[0],
+          createdTime: now,
+          productId: item.productId,
+          productCode: item.productId,
+          productName: item.productDescription,
+          productDescription: item.productDescription,
+          categoryName: item.categoryName,
+          warehouseId: issue.destinationStoreId,
+          warehouseName: issue.destinationStoreName,
+          locationId: issue.destinationStoreId,
+          locationName: issue.destinationStoreName,
+          projectId: issue.projectId,
+          projectName: issue.projectName,
+          quantityIn: actualReceipt,
+          quantityOut: 0,
+          inQuantity: actualReceipt,
+          outQuantity: 0,
+          runningBalance: (item.receivedQty || 0) + actualReceipt,
+          unit: item.unit,
+          unitSymbol: item.unit,
+          unitRate: item.unitRate,
+          transactionValue: actualReceipt * item.unitRate,
+          totalValue: actualReceipt * item.unitRate,
+          sourceType: 'SITE_RECEIPT',
+          sourceId: issue.id,
+          sourceNumber: issue.issueNumber,
+          sourceDocumentId: issue.id,
+          sourceDocumentNumber: issue.issueNumber,
+          isImmutable: true,
+          remarks: `Site receipt confirmed for ${issue.projectName}`,
+          createdBy: receivedBy,
+          recordedBy: receivedBy,
+          createdAt: now,
+        });
+
+        return {
+          ...item,
+          receivedQty: (item.receivedQty || 0) + actualReceipt,
+        };
+      }
+      return item;
+    });
+
+    if (newStockEntries.length > 0) {
+      updateCollection('stockLedger', [...currentLedger, ...newStockEntries]);
+    }
+
+    const isFullyReceived = updatedItems.every((it) => it.receivedQty >= it.issueQty);
+    const newStatus = isFullyReceived ? 'Received at Site' : 'Partially Received';
+
+    const activityLog = [
+      ...(issue.activityLog || []),
+      {
+        id: `act-${Date.now()}`,
+        timestamp: now,
+        user: receivedBy,
+        action: (isFullyReceived ? 'SITE_RECEIPT_COMPLETED' : 'SITE_PARTIAL_RECEIPT') as any,
+        description: `Site receipt recorded by ${receivedBy}. Status: ${newStatus}.${remarks ? ` Remarks: ${remarks}` : ''}`,
+      },
+    ];
+
+    updateItem('materialIssues', issue.id, {
+      status: newStatus,
+      items: updatedItems,
+      receivedBy,
+      receivedAt: now,
+      activityLog,
+      updatedAt: now,
+    });
+
+    logAudit({
+      documentType: 'material_issue',
+      documentId: issue.id,
+      documentNumber: issue.issueNumber,
+      action: isFullyReceived ? 'SITE_RECEIPT_COMPLETED' : 'SITE_PARTIAL_RECEIPT',
+      performedBy: receivedBy,
+      newStatus,
+      details: `Recorded site receipt for ${issue.issueNumber} at ${issue.destinationStoreName}`,
+    });
+
+    return { success: true };
   };
 
   // Stage 4 Store Action: Create Material Return
@@ -1620,6 +2753,104 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     return { success: true, certification: cert };
   };
 
+  // Stage 4 Store Action: Record GRN Payment
+  const recordGRNPayment = (paymentInput: any, performedBy: string = 'Accounts Officer') => {
+    const grn = (state.goodsReceipts || []).find((g) => g.id === paymentInput.grnId || g.grnNumber === paymentInput.grnId);
+    if (!grn) {
+      return { success: false, error: 'Goods Receipt Note not found' };
+    }
+
+    const po = (state.purchaseOrders || []).find((p) => p.id === grn.poId || p.poNumber === grn.poNumber || p.documentNumber === grn.poNumber);
+    const poLine = po && (po as any).lines && (po as any).lines.length > 0 ? (po as any).lines[0] : null;
+    const firstItem = (grn.items && grn.items.length > 0) ? grn.items[0] : null;
+    const rate = grn.poUnitRate ?? firstItem?.poUnitRate ?? firstItem?.unitRate ?? (poLine ? Number(poLine.unitRate ?? poLine.finalRate ?? poLine.basicRate ?? 0) : 0);
+    const acceptedQty = grn.acceptedQty ?? firstItem?.qcApprovedQty ?? 0;
+    const baseVal = grn.baseAcceptedValue ?? (acceptedQty * rate);
+    const taxVal = grn.taxAmount ?? (baseVal * 0.18);
+    const netPayable = grn.netPayable ?? (baseVal + taxVal);
+
+    const existingPayments = (state.grnPayments || []).filter((p) => p.grnId === grn.id || p.grnId === grn.grnNumber);
+    const alreadyPaid = existingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const outstanding = Math.max(0, Math.round((netPayable - alreadyPaid) * 100) / 100);
+
+    const paymentAmt = Number(paymentInput.amount);
+    if (isNaN(paymentAmt) || paymentAmt <= 0) {
+      return { success: false, error: 'Payment amount must be greater than zero.' };
+    }
+
+    if (paymentAmt > outstanding + 0.01) {
+      return { success: false, error: `Payment amount cannot exceed the outstanding amount of ₹${outstanding.toLocaleString('en-IN')}.` };
+    }
+
+    const payCount = (state.grnPayments || []).length + 1;
+    const paymentNumber = `PAY-2026-${String(payCount).padStart(3, '0')}`;
+    const newPayment: GRNPayment = {
+      id: `pay-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      paymentNumber,
+      grnId: grn.id,
+      vendorId: grn.vendorId || po?.vendorId || '',
+      poId: grn.poId || po?.id || '',
+      paymentDate: paymentInput.paymentDate || new Date().toISOString().split('T')[0],
+      amount: paymentAmt,
+      paymentMode: paymentInput.paymentMode || 'Bank Transfer',
+      referenceNumber: paymentInput.referenceNumber || '',
+      bankAccountId: paymentInput.bankAccountId || '',
+      remarks: paymentInput.remarks || '',
+      createdAt: new Date().toISOString(),
+      createdBy: performedBy,
+    };
+
+    addItem('grnPayments', newPayment);
+
+    // Update GRN cumulative payment status and outstanding
+    const totalPaidAfter = Math.round((alreadyPaid + paymentAmt) * 100) / 100;
+    const newOutstanding = Math.max(0, Math.round((netPayable - totalPaidAfter) * 100) / 100);
+
+    let newPaymentStatus = 'Partially Paid';
+    if (totalPaidAfter >= netPayable - 0.01) {
+      newPaymentStatus = 'Paid';
+    } else if (totalPaidAfter === 0) {
+      newPaymentStatus = 'Payment Pending';
+    }
+
+    updateItem('goodsReceipts', grn.id, {
+      netPayable,
+      paidAmount: totalPaidAfter,
+      outstandingAmount: newOutstanding,
+      paymentStatus: newPaymentStatus,
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Token Activity Log update if token linked
+    if (grn.tokenId) {
+      const token = (state.materialEntryTokens || []).find((t) => t.id === grn.tokenId || t.tokenNumber === grn.tokenId);
+      if (token) {
+        addTokenActivity({
+          tokenId: token.id,
+          tokenNumber: token.tokenNumber,
+          eventType: 'GRN_GENERATED',
+          userName: performedBy,
+          title: `GRN Payment Recorded (${paymentNumber})`,
+          description: `Recorded payment ${paymentNumber} of ₹${paymentAmt.toLocaleString('en-IN')} (${paymentInput.paymentMode}). Total Paid: ₹${totalPaidAfter.toLocaleString('en-IN')}, Outstanding: ₹${newOutstanding.toLocaleString('en-IN')}`,
+          referenceType: 'GRN',
+          referenceId: grn.id,
+        });
+      }
+    }
+
+    logAudit({
+      documentType: 'grn' as any,
+      documentId: grn.id,
+      documentNumber: grn.grnNumber || grn.id,
+      action: 'PAYMENT_RECORDED',
+      performedBy,
+      newStatus: newPaymentStatus,
+      details: `Recorded ${paymentInput.paymentMode} payment ${paymentNumber} of ₹${paymentAmt.toLocaleString('en-IN')} against GRN ${grn.grnNumber}`,
+    });
+
+    return { success: true, payment: newPayment };
+  };
+
   // Master Data Action: Create Category
   const createCategory = (category: Category, performedBy: string = 'Master Data Lead') => {
     // Uniqueness validation check
@@ -1806,11 +3037,25 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         rejectPurchaseOrder,
         cancelPurchaseOrder,
         addPODelivery,
+        createMaterialEntryToken,
+        holdMaterialToken,
+        resumeMaterialToken,
+        cancelMaterialToken,
+        createMaterialReceivingCheck,
+        completeQCInspection,
+        approveAdminQC,
+        addTokenActivity,
+        isAwaitingReceiving,
+        isAwaitingQC,
         createGRN,
         inspectGRN,
         approveGRN,
         postGRNToStock,
+        getStockBalance,
+        getPerLocationStock,
         createMaterialIssue,
+        dispatchMaterialIssue,
+        recordSiteReceipt,
         createMaterialReturn,
         createMaterialConsumption,
         createSubcontractorWorkOrder,
@@ -1829,6 +3074,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
           addItem('subcontractorPayments', payment);
           return { success: true };
         },
+        recordGRNPayment,
         createSubcontractorBill: (bill: any, _performedBy?: string) => {
           addItem('subcontractorBills', bill);
           return { success: true };

@@ -31,6 +31,15 @@ import {
   PurchaseOrder,
   WorkOrder,
   GoodsReceivedNote,
+  GoodsReceipt,
+  QualityInspection,
+  QCChecklistTemplate,
+  NCR,
+  QuarantineItem,
+  ReturnToVendor,
+  MaterialEntryToken,
+  MaterialReceivingCheck,
+  TokenActivity,
   StockLedgerEntry,
   MaterialIssue,
   MaterialReturn,
@@ -46,6 +55,7 @@ import {
   ClientRABill,
   ClientReceipt,
   AuditEvent,
+  WarehouseLocation,
 } from '../domain/types';
 
 export interface ERPCollections {
@@ -90,11 +100,38 @@ export interface ERPCollections {
   subcontractorBills: SubcontractorBill[];
   accountsPayable?: AccountsPayable[];
   subcontractorPayments: SubcontractorPayment[];
+  materialEntryTokens: MaterialEntryToken[];
+  materialReceivingChecks: MaterialReceivingCheck[];
+  tokenActivities: TokenActivity[];
+  goodsReceipts?: GoodsReceipt[];
+  qualityInspections?: QualityInspection[];
+  qcChecklistTemplates?: QCChecklistTemplate[];
+  ncrs?: NCR[];
+  quarantineItems?: QuarantineItem[];
+  returnToVendors?: ReturnToVendor[];
+  warehouseLocations?: WarehouseLocation[];
   clientRABills: ClientRABill[];
   clientReceipts: ClientReceipt[];
   auditEvents: AuditEvent[];
   projectCategories?: string[];
   propertyTypes?: string[];
+  grnPayments?: GRNPayment[];
+}
+
+export interface GRNPayment {
+  id: string;
+  paymentNumber: string;
+  grnId: string;
+  vendorId?: string;
+  poId?: string;
+  paymentDate: string;
+  amount: number;
+  paymentMode: 'Bank Transfer' | 'NEFT' | 'RTGS' | 'IMPS' | 'Cheque' | 'Cash' | 'Other' | string;
+  referenceNumber?: string;
+  bankAccountId?: string;
+  remarks?: string;
+  createdBy?: string;
+  createdAt?: string;
 }
 
 export interface IERPRepository {
@@ -123,24 +160,44 @@ export class LocalStorageERPRepository implements IERPRepository {
       'estimates',
       'tenderDecisions',
       'projects',
+      'projectSetupDrafts',
+      'projectBOQs',
+      'projectBOQLines',
+      'projectSchedule',
+      'projectMilestones',
       'indents',
       'materialIndents',
       'rfqs',
       'vendorQuotations',
       'rateComparisons',
+      'directPurchases',
       'purchaseOrders',
       'workOrders',
+      'subcontractWorkOrders',
       'grns',
+      'goodsReceipts',
+      'qualityInspections',
+      'materialEntryTokens',
+      'materialReceivingChecks',
+      'tokenActivities',
+      'grnPayments',
       'stockLedger',
       'materialIssues',
+      'materialReturns',
+      'materialConsumptions',
       'subcontractorWIPs',
+      'wips',
+      'wipCertifications',
       'vendorInvoices',
       'vendorPayments',
       'subcontractorBills',
+      'accountsPayable',
       'subcontractorPayments',
       'clientRABills',
       'clientReceipts',
       'auditEvents',
+      'projectCategories',
+      'propertyTypes',
     ];
 
     for (const key of keys) {

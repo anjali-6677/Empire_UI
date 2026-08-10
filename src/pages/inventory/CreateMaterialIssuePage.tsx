@@ -47,25 +47,49 @@ export const CreateMaterialIssuePage: React.FC = () => {
   const [issueDate, setIssueDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Compute Available Stock per Product at selected source location
+  // Compute Available Stock per Product at selected source location (Only QC-Approved stock is issueable)
   const availableStockMap = useMemo(() => {
     const map = new Map<string, { productCode: string; productName: string; unitSymbol: string; available: number }>();
 
-    stockLedger.forEach((entry) => {
-      if (entry.locationId === sourceLocationId) {
-        const existing = map.get(entry.productId) || {
-          productCode: entry.productCode,
-          productName: entry.productName,
-          unitSymbol: entry.unitSymbol || 'units',
-          available: 0,
-        };
-        existing.available += (entry.inQuantity || 0) - (entry.outQuantity || 0);
-        map.set(entry.productId, existing);
+    // Calculate usable stock directly from GoodsReceipt items (qcApprovedQty)
+    const grns = state.goodsReceipts || [];
+    grns.forEach((grn) => {
+      if (grn.status === 'qc_completed' || grn.status === 'partially_inspected') {
+        (grn.items || []).forEach((gItem) => {
+          const approved = gItem.qcApprovedQty || 0;
+          if (approved > 0) {
+            const pId = gItem.productId;
+            const existing = map.get(pId) || {
+              productCode: pId.slice(-6).toUpperCase(),
+              productName: gItem.description,
+              unitSymbol: gItem.unit || 'units',
+              available: 0,
+            };
+            existing.available += approved;
+            map.set(pId, existing);
+          }
+        });
       }
     });
 
+    // Fallback to stock ledger if no GRNs recorded yet for backwards compatibility
+    if (map.size === 0) {
+      stockLedger.forEach((entry) => {
+        if (entry.locationId === sourceLocationId) {
+          const existing = map.get(entry.productId) || {
+            productCode: entry.productCode,
+            productName: entry.productName,
+            unitSymbol: entry.unitSymbol || 'units',
+            available: 0,
+          };
+          existing.available += (entry.inQuantity || 0) - (entry.outQuantity || 0);
+          map.set(entry.productId, existing);
+        }
+      });
+    }
+
     return map;
-  }, [stockLedger, sourceLocationId]);
+  }, [stockLedger, sourceLocationId, state.goodsReceipts]);
 
   const availableProductsList = useMemo(() => {
     return Array.from(availableStockMap.entries()).map(([prodId, info]) => ({

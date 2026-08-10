@@ -368,10 +368,11 @@ export const getPORemainingLineQty = (
   let acceptedQty = 0;
 
   poGRNs.forEach((grn) => {
-    const grnLine = grn.lines.find((gl) => gl.poLineId === poLineId || gl.productId === line.productId);
+    const grnLines = grn.lines || grn.items || [];
+    const grnLine = grnLines.find((gl: any) => gl.poLineId === poLineId || gl.productId === line.productId);
     if (grnLine) {
-      totalReceivedQty += grnLine.currentReceivedQty || 0;
-      acceptedQty += grnLine.acceptedQty || 0;
+      totalReceivedQty += grnLine.currentReceivedQty ?? grnLine.receivedQty ?? 0;
+      acceptedQty += grnLine.acceptedQty ?? grnLine.qcApprovedQty ?? 0;
     }
   });
 
@@ -389,7 +390,7 @@ export const calculateStockLedgerRunningBalances = (
 ): StockLedgerEntry[] => {
   // Group by location and product, sort chronologically
   const sorted = [...entries].sort(
-    (a, b) => new Date(a.createdTime || a.entryDate).getTime() - new Date(b.createdTime || b.entryDate).getTime()
+    (a, b) => new Date(a.createdTime || a.entryDate || a.createdAt || 0).getTime() - new Date(b.createdTime || b.entryDate || b.createdAt || 0).getTime()
   );
 
   const balanceMap = new Map<string, number>();

@@ -63,10 +63,15 @@ import { SubcontractorWIPPage } from './pages/execution/SubcontractorWIPPage';
 import { SubcontractorBillsPage } from './pages/procurement/SubcontractorBillsPage';
 import { AccountsPayablePage } from './pages/finance/AccountsPayablePage';
 
-// Inventory & Movement Pages
+import { MaterialEntryTokensPage } from './pages/inventory/MaterialEntryTokensPage';
+import { MaterialReceivingCheckPage } from './pages/inventory/MaterialReceivingCheckPage';
 import { GRNListPage } from './pages/inventory/GRNListPage';
 import { CreateGRNPage } from './pages/inventory/CreateGRNPage';
 import { GRNDetailsPage } from './pages/inventory/GRNDetailsPage';
+import { QCListPage } from './pages/inventory/QCListPage';
+import { QCInspectionFormPage } from './pages/inventory/QCInspectionFormPage';
+import { QuarantinePage } from './pages/inventory/QuarantinePage';
+import QCChecklistTemplatesPage from './pages/master/QCChecklistTemplatesPage';
 import { StockLedgerPage } from './pages/inventory/StockLedgerPage';
 import { MaterialMovementPage } from './pages/inventory/MaterialMovementPage';
 import { CreateMaterialIssuePage } from './pages/inventory/CreateMaterialIssuePage';
@@ -152,9 +157,21 @@ export const AppRouter: React.FC = () => {
             <Route path="accounts-payable" element={<AccountsPayablePage />} />
 
             {/* Goods Received Notes (GRN) Routes */}
+            <Route path="inventory/gate-tokens" element={<MaterialEntryTokensPage />} />
+            <Route path="inventory/receiving-check" element={<MaterialReceivingCheckPage />} />
+            <Route path="inventory/grn" element={<GRNListPage />} />
             <Route path="inventory/grns" element={<GRNListPage />} />
+            <Route path="inventory/grn/new" element={<CreateGRNPage />} />
             <Route path="inventory/grns/new" element={<CreateGRNPage />} />
+            <Route path="inventory/grn/:grnId" element={<GRNDetailsPage />} />
             <Route path="inventory/grns/:grnId" element={<GRNDetailsPage />} />
+
+            {/* Quality Control (QC) & Inspection Routes */}
+            <Route path="inventory/qc" element={<QCListPage />} />
+            <Route path="inventory/qc/new" element={<QCInspectionFormPage />} />
+            <Route path="inventory/qc/:qcId" element={<QCListPage />} />
+            <Route path="inventory/quarantine" element={<QuarantinePage />} />
+            <Route path="master-data/qc-templates" element={<QCChecklistTemplatesPage />} />
 
             {/* Stock Ledger & Material Movement Routes */}
             <Route path="inventory/stock-ledger" element={<StockLedgerPage />} />
