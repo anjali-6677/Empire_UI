@@ -51,6 +51,7 @@ export const StockLedgerPage: React.FC = () => {
     }>();
 
     stockLedger.forEach((entry) => {
+      if (!entry.locationId || !entry.productId) return;
       if (selectedLocation !== 'all' && entry.locationId !== selectedLocation) return;
       if (selectedProject !== 'all' && entry.projectId !== selectedProject) return;
 
@@ -59,8 +60,8 @@ export const StockLedgerPage: React.FC = () => {
         locationId: entry.locationId,
         locationName: entry.locationName || 'Location',
         productId: entry.productId,
-        productCode: entry.productCode,
-        productName: entry.productName,
+        productCode: entry.productCode || 'PROD',
+        productName: entry.productName || 'Material',
         unitSymbol: entry.unitSymbol || 'units',
         totalIn: 0,
         totalOut: 0,
@@ -97,9 +98,9 @@ export const StockLedgerPage: React.FC = () => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
-        entry.productName.toLowerCase().includes(q) ||
-        entry.productCode.toLowerCase().includes(q) ||
-        entry.sourceDocumentNumber.toLowerCase().includes(q)
+        (entry.productName || '').toLowerCase().includes(q) ||
+        (entry.productCode || '').toLowerCase().includes(q) ||
+        (entry.sourceDocumentNumber || '').toLowerCase().includes(q)
       );
     });
   }, [stockLedger, selectedLocation, selectedProject, searchQuery]);
@@ -349,40 +350,40 @@ export const StockLedgerPage: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 font-semibold">
-                        {entry.inQuantity > 0 ? (
+                        {(entry.inQuantity || 0) > 0 ? (
                           <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[10px] border border-emerald-200 font-bold">
                             <ArrowDownLeft className="w-3 h-3" />
-                            {entry.entryType.replace(/_/g, ' ').toUpperCase()}
+                            {(entry.entryType || 'entry').replace(/_/g, ' ').toUpperCase()}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-rose-700 bg-rose-50 px-2 py-0.5 rounded text-[10px] border border-rose-200 font-bold">
                             <ArrowUpRight className="w-3 h-3" />
-                            {entry.entryType.replace(/_/g, ' ').toUpperCase()}
+                            {(entry.entryType || 'entry').replace(/_/g, ' ').toUpperCase()}
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-4 font-medium text-stone-900">{entry.locationName}</td>
+                      <td className="py-3 px-4 font-medium text-stone-900">{entry.locationName || 'Location'}</td>
 
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-stone-900">{entry.productName}</div>
-                        <div className="text-[10px] font-mono text-stone-500">{entry.productCode}</div>
+                        <div className="font-semibold text-stone-900">{entry.productName || 'Material'}</div>
+                        <div className="text-[10px] font-mono text-stone-500">{entry.productCode || 'PROD'}</div>
                       </td>
 
                       <td className="py-3 px-4 text-right font-mono font-bold text-emerald-700">
-                        {entry.inQuantity > 0 ? `+${entry.inQuantity} ${entry.unitSymbol}` : '-'}
+                        {(entry.inQuantity || 0) > 0 ? `+${entry.inQuantity} ${entry.unitSymbol || 'units'}` : '-'}
                       </td>
 
                       <td className="py-3 px-4 text-right font-mono font-bold text-rose-700">
-                        {entry.outQuantity > 0 ? `-${entry.outQuantity} ${entry.unitSymbol}` : '-'}
+                        {(entry.outQuantity || 0) > 0 ? `-${entry.outQuantity} ${entry.unitSymbol || 'units'}` : '-'}
                       </td>
 
                       <td className="py-3 px-4 text-right font-mono text-stone-600">
-                        ₹{entry.unitRate.toLocaleString('en-IN')}
+                        ₹{(entry.unitRate || 0).toLocaleString('en-IN')}
                       </td>
 
                       <td className="py-3 px-4 text-right font-mono font-semibold text-stone-900">
-                        ₹{entry.totalValue.toLocaleString('en-IN')}
+                        ₹{(entry.totalValue || 0).toLocaleString('en-IN')}
                       </td>
 
                       <td className="py-3 px-4 text-stone-500 text-[11px]">{entry.recordedBy}</td>

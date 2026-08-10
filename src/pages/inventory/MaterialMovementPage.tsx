@@ -41,9 +41,9 @@ export const MaterialMovementPage: React.FC = () => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
-        item.documentNumber.toLowerCase().includes(q) ||
-        item.sourceLocationName.toLowerCase().includes(q) ||
-        item.destinationAreaName.toLowerCase().includes(q)
+        (item.documentNumber || '').toLowerCase().includes(q) ||
+        (item.sourceLocationName || '').toLowerCase().includes(q) ||
+        (item.destinationAreaName || '').toLowerCase().includes(q)
       );
     });
   }, [issues, projectFilter, searchQuery]);
@@ -55,9 +55,9 @@ export const MaterialMovementPage: React.FC = () => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
-        item.documentNumber.toLowerCase().includes(q) ||
-        item.originalIssueNumber.toLowerCase().includes(q) ||
-        item.returnedBy.toLowerCase().includes(q)
+        (item.documentNumber || '').toLowerCase().includes(q) ||
+        (item.originalIssueNumber || '').toLowerCase().includes(q) ||
+        (item.returnedBy || '').toLowerCase().includes(q)
       );
     });
   }, [returns, projectFilter, searchQuery]);
@@ -69,9 +69,9 @@ export const MaterialMovementPage: React.FC = () => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
-        item.documentNumber.toLowerCase().includes(q) ||
+        (item.documentNumber || '').toLowerCase().includes(q) ||
         (item.workPackageName || '').toLowerCase().includes(q) ||
-        item.recordedBy.toLowerCase().includes(q)
+        (item.recordedBy || '').toLowerCase().includes(q)
       );
     });
   }, [consumptions, projectFilter, searchQuery]);
@@ -221,28 +221,44 @@ export const MaterialMovementPage: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredIssues.map((issue) => (
-                    <tr key={issue.id} className="hover:bg-stone-50">
-                      <td className="py-3 px-4 font-mono font-bold text-amber-700">{issue.documentNumber}</td>
+                  filteredIssues.map((issue) => {
+                    if (!issue || typeof issue !== 'object') {
+                      console.warn('Material Issue record is invalid:', issue);
+                      return (
+                        <tr key={Math.random()} className="bg-rose-50/50">
+                          <td colSpan={7} className="py-3 px-4 text-rose-700 font-mono text-[11px]">
+                            ⚠️ Data Incomplete (Invalid Record)
+                          </td>
+                        </tr>
+                      );
+                    }
 
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-stone-900">{issue.projectName}</div>
-                        <div className="text-[10px] text-stone-500 font-medium">{issue.destinationAreaName}</div>
-                      </td>
+                    const lineCount = (issue.lines || issue.items || []).length;
+                    const docNumber = issue.documentNumber || issue.issueNumber || issue.id;
 
-                      <td className="py-3 px-4 text-stone-700">{issue.sourceLocationName}</td>
+                    return (
+                      <tr key={issue.id} className="hover:bg-stone-50">
+                        <td className="py-3 px-4 font-mono font-bold text-amber-700">{docNumber}</td>
 
-                      <td className="py-3 px-4 font-semibold text-stone-700">{issue.issueDate}</td>
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-stone-900">{issue.projectName || 'Project Site'}</div>
+                          <div className="text-[10px] text-stone-500 font-medium">{issue.destinationAreaName || 'Site Store'}</div>
+                        </td>
 
-                      <td className="py-3 px-4 text-center font-mono font-bold text-stone-900">
-                        {issue.lines.length} Line(s)
-                      </td>
+                        <td className="py-3 px-4 text-stone-700">{issue.sourceLocationName || 'Central Store'}</td>
 
-                      <td className="py-3 px-4 text-center">{getMaterialIssueStatusBadge(issue.status)}</td>
+                        <td className="py-3 px-4 font-semibold text-stone-700">{issue.issueDate || 'N/A'}</td>
 
-                      <td className="py-3 px-4 text-right text-stone-600">{issue.issuedBy}</td>
-                    </tr>
-                  ))
+                        <td className="py-3 px-4 text-center font-mono font-bold text-stone-900">
+                          {lineCount} Line(s)
+                        </td>
+
+                        <td className="py-3 px-4 text-center">{getMaterialIssueStatusBadge(issue.status || 'issued')}</td>
+
+                        <td className="py-3 px-4 text-right text-stone-600">{issue.issuedBy || 'Stores Officer'}</td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

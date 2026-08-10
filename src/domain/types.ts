@@ -2096,7 +2096,7 @@ export interface GoodsReceipt {
   tokenId?: string;
   receivingCheckId?: string;
   qcInspectionId?: string;
-  poId: string;
+  poId?: string;
   purchaseOrderId?: string;
   poNumber: string;
   poLineId?: string;
@@ -2112,9 +2112,13 @@ export interface GoodsReceipt {
   grnDate: string;
   receivedDate?: string;
   dueDate?: string;
-  invoiceChallanNo: string;
+  invoiceChallanNo?: string;
+  deliveryChallanNo?: string;
+  vehicleNumber?: string;
   receivedByEmployeeId?: string;
   receivedByName?: string;
+  receivedBy?: string;
+  qualityInspection?: any;
   status: GRNStatus | any;
   paymentStatus?: string;
   rateStatus?: 'OK' | 'MISSING_RATE';
@@ -2126,7 +2130,7 @@ export interface GoodsReceipt {
   netPayable?: number;
   paidAmount?: number;
   outstandingAmount?: number;
-  items: GRNItem[];
+  items?: GRNItem[];
   lines?: any[];
   isPostedToStock?: boolean;
   postedAt?: string;

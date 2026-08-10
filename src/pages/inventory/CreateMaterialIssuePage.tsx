@@ -75,10 +75,10 @@ export const CreateMaterialIssuePage: React.FC = () => {
     // Fallback to stock ledger if no GRNs recorded yet for backwards compatibility
     if (map.size === 0) {
       stockLedger.forEach((entry) => {
-        if (entry.locationId === sourceLocationId) {
+        if (entry.locationId === sourceLocationId && entry.productId) {
           const existing = map.get(entry.productId) || {
-            productCode: entry.productCode,
-            productName: entry.productName,
+            productCode: entry.productCode || 'PROD',
+            productName: entry.productName || 'Material',
             unitSymbol: entry.unitSymbol || 'units',
             available: 0,
           };
@@ -184,6 +184,7 @@ export const CreateMaterialIssuePage: React.FC = () => {
 
     const newIssue: MaterialIssue = {
       id: `issue-${Date.now()}`,
+      issueNumber: docNum,
       documentNumber: docNum,
       projectId,
       projectName: selectedProj?.projectName || 'Project Site',

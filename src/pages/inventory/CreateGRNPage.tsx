@@ -144,6 +144,8 @@ export const CreateGRNPage: React.FC = () => {
 
     const newGRN: GoodsReceivedNote = {
       id: `grn-${Date.now()}`,
+      grnNumber: grnDocumentNumber,
+      grnDate: receivedDate,
       documentNumber: grnDocumentNumber,
       purchaseOrderId: selectedPO.id,
       poNumber: selectedPO.documentNumber,

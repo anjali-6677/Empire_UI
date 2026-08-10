@@ -43,6 +43,7 @@ import {
   GRNPayment,
 } from '../domain/types';
 import { normalizeEstimate } from '../utils/normalizeEstimate';
+import { normalizeMaterialIssue } from '../utils/materialIssueHelpers';
 import {
   migrateIncompleteProjectsToDrafts,
   reconcileCRMProjectLinks,
@@ -218,6 +219,12 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
           const normalized = merged.estimates.map(normalizeEstimate);
           merged.estimates = normalized;
           repository.saveCollection('estimates', normalized);
+        }
+
+        if (Array.isArray(merged.materialIssues)) {
+          const normalizedIssues = merged.materialIssues.map(normalizeMaterialIssue);
+          merged.materialIssues = normalizedIssues;
+          repository.saveCollection('materialIssues', normalizedIssues);
         }
 
         if (storedSchemaVersion !== CURRENT_SCHEMA_VERSION) {
@@ -2239,19 +2246,21 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
       createdBy,
     };
 
-    addItem('materialIssues', newIssue);
+    const normalizedNewIssue = normalizeMaterialIssue(newIssue);
+
+    addItem('materialIssues', normalizedNewIssue);
 
     logAudit({
       documentType: 'material_issue',
-      documentId: newIssue.id,
-      documentNumber: newIssue.issueNumber,
+      documentId: normalizedNewIssue.id,
+      documentNumber: normalizedNewIssue.issueNumber,
       action: 'CREATED',
       performedBy: createdBy,
-      newStatus: newIssue.status,
-      details: `Created material issue ${newIssue.issueNumber} for project ${newIssue.projectName}`,
+      newStatus: normalizedNewIssue.status,
+      details: `Created material issue ${normalizedNewIssue.issueNumber} for project ${normalizedNewIssue.projectName}`,
     });
 
-    return { success: true, materialIssue: newIssue };
+    return { success: true, materialIssue: normalizedNewIssue };
   };
 
   // Dispatch Material Issue (Posts Main Warehouse -> In Transit)
