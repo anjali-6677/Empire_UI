@@ -56,6 +56,7 @@ import {
   ClientReceipt,
   AuditEvent,
   WarehouseLocation,
+  VendorAP,
 } from '../domain/types';
 
 export interface ERPCollections {
@@ -116,6 +117,7 @@ export interface ERPCollections {
   projectCategories?: string[];
   propertyTypes?: string[];
   grnPayments?: GRNPayment[];
+  vendorAPs?: VendorAP[];
 }
 
 export interface GRNPayment {
@@ -198,6 +200,7 @@ export class LocalStorageERPRepository implements IERPRepository {
       'auditEvents',
       'projectCategories',
       'propertyTypes',
+      'vendorAPs',
     ];
 
     for (const key of keys) {

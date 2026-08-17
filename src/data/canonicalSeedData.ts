@@ -23,11 +23,13 @@ import {
   DEMO_MATERIAL_RECEIVING_CHECKS,
   DEMO_QUALITY_INSPECTIONS,
   DEMO_GOODS_RECEIPTS,
+  DEMO_VENDOR_APS,
   DEMO_STOCK_LEDGER,
   DEMO_MATERIAL_ISSUES,
   DEMO_SUBCONTRACT_WORK_ORDERS,
   DEMO_SUBCONTRACT_WIPS,
   DEMO_SUBCONTRACTOR_BILLS,
+  DEMO_CLIENT_RA_BILLS,
 } from './demoData';
 
 export const CANONICAL_SEED_DATA: any = {
@@ -113,11 +115,12 @@ export const CANONICAL_SEED_DATA: any = {
   subcontractWorkOrders: DEMO_SUBCONTRACT_WORK_ORDERS,
   subcontractorWIPs: DEMO_SUBCONTRACT_WIPS,
   wips: DEMO_SUBCONTRACT_WIPS,
+  vendorAPs: DEMO_VENDOR_APS,
   vendorInvoices: [],
   vendorPayments: [],
   subcontractorBills: DEMO_SUBCONTRACTOR_BILLS,
   subcontractorPayments: [],
-  clientRABills: [],
+  clientRABills: DEMO_CLIENT_RA_BILLS,
   clientReceipts: [],
   auditEvents: [],
 };

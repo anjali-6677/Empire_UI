@@ -585,17 +585,24 @@ export const VendorBillSnapshotSection: React.FC<{ site: SiteSchema | null }> = 
   );
 };
 
+import { useERPStore } from '../store/ERPStoreContext';
+
 // ==========================================
 // Section 6: Approval Pending Counts
 // ==========================================
 export const ApprovalPendingSection: React.FC = () => {
   const navigate = useNavigate();
+  const { state } = useERPStore();
+  const pendingRABillsCount = (state.clientRABills || []).filter(
+    (b) => b.billStatus === 'Pending Approval'
+  ).length;
+
   const items = [
+    { label: 'Client RA Bills', count: pendingRABillsCount, route: '/finance/client-ra-bills' },
     { label: 'Indent Approval', count: 4, route: '/settings?mod=indents' },
     { label: 'Rate Finalization', count: 2, route: '/settings?mod=rate-inquiry' },
-    { label: 'Payment Approval', count: 5, route: '/settings?mod=payments' },
-    { label: 'Budget Approval', count: 1, route: '/sites' },
-    { label: 'Site Approval', count: 3, route: '/sites' },
+    { label: 'Payment Approval', count: 5, route: '/finance/vendor-ap' },
+    { label: 'Budget Approval', count: 1, route: '/projects' },
     { label: 'Task Approval', count: 6, route: '/settings?mod=tasks' }
   ];
 

@@ -27,9 +27,7 @@ import {
   Receipt,
   CreditCard,
   FileCheck2,
-  Banknote,
   ReceiptText,
-  DollarSign,
   FolderTree,
   Package,
   Store,
@@ -101,6 +99,7 @@ export const ROUTES = {
   EXECUTION_WIP_CERTIFICATION: '/execution/wip-certification',
 
   // Finance, Billing & Payments
+  FINANCE_VENDOR_AP: '/finance/accounts-payable',
   ON_ACCOUNT_DASHBOARD: '/finance/on-account',
   UTILITY_BILLS: '/finance/utility-bills',
   SALARY: '/finance/salary',
@@ -286,19 +285,15 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
       // { id: 'inv-quar', label: 'Material Quarantine & NCR', path: '/inventory/quarantine', icon: AlertTriangle, projectContext: 'required' },
       { id: 'inv-stk', label: 'Stock Ledger', path: ROUTES.INVENTORY_STOCK_LEDGER, icon: Boxes, projectContext: 'required' },
       { id: 'inv-isu', label: 'Material Issues to Site', path: ROUTES.INVENTORY_MATERIAL_ISSUES, icon: Truck, projectContext: 'required' },
-      { id: 'exe-wip', label: 'Subcontractor WIP', path: ROUTES.EXECUTION_SUBCONTRACTOR_WIP, icon: HardHat, projectContext: 'required' },
     ],
   },
   {
     id: 'finance-group',
     label: '5. Finance, Billing & Payments',
     items: [
-      { id: 'fin-vinv', label: '3-Way Match Vendor Invoices', path: ROUTES.FINANCE_VENDOR_INVOICES, icon: Receipt, projectContext: 'required' },
-      { id: 'fin-vpay', label: 'Vendor Payments', path: ROUTES.FINANCE_VENDOR_PAYMENTS, icon: CreditCard, projectContext: 'required' },
+      { id: 'fin-ap', label: 'Vendor AP', path: ROUTES.FINANCE_VENDOR_AP, icon: CreditCard, projectContext: 'required' },
       { id: 'fin-sbil', label: 'Subcontractor Bills', path: ROUTES.FINANCE_SUBCONTRACTOR_BILLS, icon: FileCheck2, projectContext: 'required' },
-      { id: 'fin-spay', label: 'Subcontractor Payments', path: ROUTES.FINANCE_SUBCONTRACTOR_PAYMENTS, icon: Banknote, projectContext: 'required' },
       { id: 'fin-rab', label: 'Client RA Bills', path: ROUTES.FINANCE_CLIENT_RA_BILLS, icon: ReceiptText, projectContext: 'required' },
-      { id: 'fin-rec', label: 'Client Payment Receipts', path: ROUTES.FINANCE_CLIENT_RECEIPTS, icon: DollarSign, projectContext: 'required' },
     ],
   },
   {

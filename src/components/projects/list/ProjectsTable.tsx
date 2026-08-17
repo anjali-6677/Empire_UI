@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, User, FileText, CheckCircle2, ArrowUpRight, Calendar } from 'lucide-react';
+import { MapPin, User, FileText, CheckCircle2, ArrowUpRight, Calendar, Clock, Receipt, DollarSign } from 'lucide-react';
 import { Project, ProjectExecutionStatus } from '../../../domain/types';
 import { formatIndianCurrency } from '../../../utils/format';
 import { ProjectRowActionsMenu } from './ProjectRowActionsMenu';
@@ -37,6 +37,65 @@ export const ProjectsTable: React.FC<ProjectsTableProps> = ({
     }
   };
 
+  const getBillingStatusBadge = (project: Project) => {
+    const milestones = project.billingMilestones || [];
+    if (milestones.length === 0) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+          No Milestones
+        </span>
+      );
+    }
+
+    const pendingApprovalCount = milestones.filter((m) => m.billingStatus === 'RA_PENDING_APPROVAL').length;
+    const approvedCount = milestones.filter((m) => m.billingStatus === 'RA_APPROVED').length;
+    const sentCount = milestones.filter((m) => m.billingStatus === 'SENT_TO_CLIENT').length;
+    const partiallyPaidCount = milestones.filter((m) => m.billingStatus === 'PARTIALLY_PAID').length;
+    const paidCount = milestones.filter((m) => m.billingStatus === 'PAID').length;
+
+    if (pendingApprovalCount > 0) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
+          <Clock className="h-3 w-3 text-amber-600" /> RA Bill Pending Approval ({pendingApprovalCount})
+        </span>
+      );
+    }
+    if (sentCount > 0) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+          <Receipt className="h-3 w-3 text-sky-600" /> Bill Sent to Client ({sentCount})
+        </span>
+      );
+    }
+    if (approvedCount > 0) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+          <CheckCircle2 className="h-3 w-3 text-blue-600" /> RA Approved ({approvedCount})
+        </span>
+      );
+    }
+    if (partiallyPaidCount > 0) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+          <DollarSign className="h-3 w-3 text-indigo-600" /> Partially Paid
+        </span>
+      );
+    }
+    if (paidCount === milestones.length && milestones.length > 0) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Fully Billed & Paid
+        </span>
+      );
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[#AB9570]/10 text-[#AB9570] border border-[#AB9570]/30">
+        <CheckCircle2 className="h-3 w-3 text-[#AB9570]" /> Baseline Active ({milestones.length} Stages)
+      </span>
+    );
+  };
+
   if (projects.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-xs">
@@ -62,7 +121,7 @@ export const ProjectsTable: React.FC<ProjectsTableProps> = ({
               <th className="py-3 px-4">Start / Completion</th>
               <th className="py-3 px-4 text-center">Progress</th>
               <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4">Commercial Baseline</th>
+              <th className="py-3 px-4">Billing Milestone Status</th>
               <th className="py-3 px-4 text-right">Contract Value</th>
               <th className="py-3 px-4 text-right">Actions</th>
             </tr>
@@ -144,11 +203,9 @@ export const ProjectsTable: React.FC<ProjectsTableProps> = ({
                     {getProjectStatusBadge(project.status)}
                   </td>
 
-                  {/* Commercial Baseline Tag */}
+                  {/* Billing Status Badge */}
                   <td className="py-3 px-4 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[#AB9570]/10 text-[#AB9570] border border-[#AB9570]/30">
-                      <CheckCircle2 className="h-3 w-3 text-[#AB9570]" /> Accepted Baseline Imported
-                    </span>
+                    {getBillingStatusBadge(project)}
                   </td>
 
                   {/* Contract Budget */}

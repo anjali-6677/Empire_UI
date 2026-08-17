@@ -298,9 +298,9 @@ export interface ApprovalSegmentItem {
 export const APPROVAL_PIPELINE_DATA: ApprovalSegmentItem[] = [
   { name: 'PO Approvals', count: 5, color: '#ab9570', route: '/procurement/po' },
   { name: 'Indent Approvals', count: 4, color: '#3b82f6', route: '/procurement/indents' },
-  { name: 'Invoice Approvals', count: 4, color: '#8b5cf6', route: '/finance/invoices' },
+  { name: 'Invoice Approvals', count: 4, color: '#8b5cf6', route: '/finance/accounts-payable' },
   { name: 'Site Approvals', count: 3, color: '#10b981', route: '/sites' },
-  { name: 'Payment Approvals', count: 5, color: '#ec4899', route: '/finance/payments' },
+  { name: 'Payment Approvals', count: 5, color: '#ec4899', route: '/finance/accounts-payable' },
   { name: 'Rate Finalisations', count: 2, color: '#f59e0b', route: '/procurement/rfq' },
   { name: 'Budget Approvals', count: 1, color: '#06b6d4', route: '/reports/budget' }
 ];

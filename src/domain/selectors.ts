@@ -22,6 +22,7 @@ import {
   WorkOrder,
   SubcontractorWIP,
   WIPCertification,
+  VendorAP,
 } from './types';
 import { ERPCollections } from '../repositories/erpRepository';
 
@@ -1021,6 +1022,76 @@ export const getGRNKPISummary = (
     openGRNs,
     totalNetPayable: Math.round(totalNetPayable * 100) / 100,
     totalOutstanding: Math.round(totalOutstanding * 100) / 100,
+  };
+};
+
+// ==========================================
+// CANONICAL VENDOR AP SELECTORS & KPI METRICS
+// ==========================================
+
+export const getVendorAPs = (state: ERPCollections, projectId?: string): VendorAP[] => {
+  const aps = (state.vendorAPs || []) as VendorAP[];
+  if (!projectId || projectId === 'all') return aps;
+  return aps.filter((ap) => ap.projectId === projectId);
+};
+
+export const getVendorAPById = (state: ERPCollections, apId: string): VendorAP | undefined => {
+  const aps = (state.vendorAPs || []) as VendorAP[];
+  return aps.find((a) => a.id === apId || a.apNumber === apId);
+};
+
+export const getVendorAPByGRNId = (state: ERPCollections, grnId: string): VendorAP | undefined => {
+  const aps = (state.vendorAPs || []) as VendorAP[];
+  return aps.find((a) => a.grnId === grnId || a.grnNumber === grnId);
+};
+
+export interface VendorAPKPISummary {
+  totalAPCount: number;
+  pendingApprovalCount: number;
+  approvedOutstandingAmount: number;
+  overdueCount: number;
+  totalPayableAmount: number;
+  totalPaidAmount: number;
+}
+
+export const getVendorAPKPISummary = (
+  aps: VendorAP[] = [],
+  todayISO?: string
+): VendorAPKPISummary => {
+  const today = todayISO || new Date().toISOString().split('T')[0];
+  let totalAPCount = 0;
+  let pendingApprovalCount = 0;
+  let approvedOutstandingAmount = 0;
+  let overdueCount = 0;
+  let totalPayableAmount = 0;
+  let totalPaidAmount = 0;
+
+  aps.forEach((ap) => {
+    totalAPCount += 1;
+    const net = ap.netPayable || 0;
+    const paid = ap.paidAmount || 0;
+    const outstanding = ap.outstandingAmount ?? Math.max(0, net - paid);
+
+    totalPayableAmount += net;
+    totalPaidAmount += paid;
+
+    if (ap.apStatus === 'Pending Approval') {
+      pendingApprovalCount += 1;
+    } else if (ap.apStatus === 'Approved') {
+      approvedOutstandingAmount += outstanding;
+      if (outstanding > 0.01 && ap.dueDate && ap.dueDate !== 'Not Set' && ap.dueDate < today) {
+        overdueCount += 1;
+      }
+    }
+  });
+
+  return {
+    totalAPCount,
+    pendingApprovalCount,
+    approvedOutstandingAmount: Math.round(approvedOutstandingAmount * 100) / 100,
+    overdueCount,
+    totalPayableAmount: Math.round(totalPayableAmount * 100) / 100,
+    totalPaidAmount: Math.round(totalPaidAmount * 100) / 100,
   };
 };
 

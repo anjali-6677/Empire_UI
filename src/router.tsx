@@ -59,9 +59,9 @@ import { CreatePurchaseOrderPage } from './pages/procurement/CreatePurchaseOrder
 import { PurchaseOrderDetailsPage } from './pages/procurement/PurchaseOrderDetailsPage';
 import { SubcontractWorkOrdersPage } from './pages/procurement/SubcontractWorkOrdersPage';
 import { SubcontractWorkOrderFormPage } from './pages/procurement/SubcontractWorkOrderFormPage';
-import { SubcontractorWIPPage } from './pages/execution/SubcontractorWIPPage';
 import { SubcontractorBillsPage } from './pages/procurement/SubcontractorBillsPage';
 import { AccountsPayablePage } from './pages/finance/AccountsPayablePage';
+import { ClientRABillsPage } from './pages/finance/ClientRABillsPage';
 
 import { MaterialEntryTokensPage } from './pages/inventory/MaterialEntryTokensPage';
 import { MaterialReceivingCheckPage } from './pages/inventory/MaterialReceivingCheckPage';
@@ -151,10 +151,19 @@ export const AppRouter: React.FC = () => {
             <Route path="procurement/work-orders" element={<SubcontractWorkOrdersPage />} />
             <Route path="procurement/work-orders/new" element={<SubcontractWorkOrderFormPage />} />
             <Route path="procurement/work-orders/:woId" element={<SubcontractWorkOrdersPage />} />
-            <Route path="execution/subcontractor-wip" element={<SubcontractorWIPPage />} />
-            <Route path="procurement/subcontractor-bills" element={<SubcontractorBillsPage />} />
+            {/* Core 3 Finance Registers & Graceful Fallback Redirects */}
             <Route path="finance/accounts-payable" element={<AccountsPayablePage />} />
             <Route path="accounts-payable" element={<AccountsPayablePage />} />
+            <Route path="finance/vendor-invoices" element={<Navigate to="/finance/accounts-payable" replace />} />
+            <Route path="finance/vendor-payments" element={<Navigate to="/finance/accounts-payable" replace />} />
+
+            <Route path="finance/subcontractor-bills" element={<SubcontractorBillsPage />} />
+            <Route path="procurement/subcontractor-bills" element={<Navigate to="/finance/subcontractor-bills" replace />} />
+            <Route path="finance/subcontractor-payments" element={<Navigate to="/finance/subcontractor-bills" replace />} />
+
+            <Route path="finance/client-ra-bills" element={<ClientRABillsPage />} />
+            <Route path="client-ra-bills" element={<ClientRABillsPage />} />
+            <Route path="finance/client-receipts" element={<Navigate to="/finance/client-ra-bills" replace />} />
 
             {/* Goods Received Notes (GRN) Routes */}
             <Route path="inventory/gate-tokens" element={<MaterialEntryTokensPage />} />

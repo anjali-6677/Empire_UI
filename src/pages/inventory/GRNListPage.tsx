@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
-import { GoodsReceipt, GRNPayment } from '../../domain/types';
+import { GoodsReceipt, GRNPayment, VendorAP } from '../../domain/types';
 import { resolveTokenNumber, resolvePONumber, resolveGRNNumber } from '../../domain/documentNumbers';
 import { getGRNNetPayable, getGRNPaidAmount, getGRNOutstanding, getGRNPaymentStatus } from '../../domain/selectors';
 import { ListPageLayout } from '../../components/common/ListPageLayout';
@@ -20,6 +20,8 @@ import {
   Search,
   RotateCcw,
   CheckCircle2,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
 
 const formatGRNDate = (dateStr?: string): string => {
@@ -51,19 +53,54 @@ const formatIndianCurrency = (amount: number): string => {
   return `${isNegative ? '-' : ''}₹${formattedInt}${formattedDecimal}`;
 };
 
+const getAPStatusBadge = (status?: string) => {
+  switch (status) {
+    case 'Approved':
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+          <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" /> Approved
+        </span>
+      );
+    case 'Pending Approval':
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+          <Clock className="w-3 h-3 mr-1 text-amber-600" /> Pending Approval
+        </span>
+      );
+    case 'Rejected':
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
+          <AlertCircle className="w-3 h-3 mr-1 text-rose-600" /> Rejected
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+          <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" /> Approved
+        </span>
+      );
+  }
+};
+
 interface GRNActionCellProps {
   grn: GoodsReceipt;
+  ap?: VendorAP;
   poId?: string;
   outstanding: number;
-  onOpenRecordPayment: (grn: GoodsReceipt) => void;
-  onOpenPaymentHistory: (grn: GoodsReceipt) => void;
+  onOpenApproveAP?: (ap: VendorAP) => void;
+  onOpenRejectAP?: (ap: VendorAP) => void;
+  onOpenRecordPayment: (apOrGrn: VendorAP | GoodsReceipt) => void;
+  onOpenPaymentHistory: (apOrGrn: VendorAP | GoodsReceipt) => void;
   navigate: (path: string) => void;
 }
 
 const GRNActionCell: React.FC<GRNActionCellProps> = ({
   grn,
+  ap,
   poId,
   outstanding,
+  onOpenApproveAP,
+  onOpenRejectAP,
   onOpenRecordPayment,
   onOpenPaymentHistory,
   navigate,
@@ -71,6 +108,9 @@ const GRNActionCell: React.FC<GRNActionCellProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const grnNumDisplay = grn.grnNumber || `GRN-2026-${grn.id.slice(-3)}`;
+
+  const isPendingAP = ap?.apStatus === 'Pending Approval';
+  const isApprovedAP = !ap || ap.apStatus === 'Approved';
 
   return (
     <>
@@ -116,17 +156,50 @@ const GRNActionCell: React.FC<GRNActionCellProps> = ({
             navigate(`/inventory/qc`);
           }}
         />
+        <RowActionMenuItem
+          icon={<CreditCard className="w-3.5 h-3.5 text-amber-600" />}
+          label="View Vendor AP"
+          onClick={() => {
+            setIsOpen(false);
+            navigate(`/finance/accounts-payable`);
+          }}
+        />
 
         <RowActionMenuDivider />
 
-        {outstanding > 0.01 && (
+        {/* AP Approval Actions */}
+        {isPendingAP && ap && onOpenApproveAP && (
+          <RowActionMenuItem
+            variant="success"
+            icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+            label="Approve AP"
+            onClick={() => {
+              setIsOpen(false);
+              onOpenApproveAP(ap);
+            }}
+          />
+        )}
+        {isPendingAP && ap && onOpenRejectAP && (
+          <RowActionMenuItem
+            variant="danger"
+            icon={<AlertCircle className="w-3.5 h-3.5" />}
+            label="Reject AP"
+            onClick={() => {
+              setIsOpen(false);
+              onOpenRejectAP(ap);
+            }}
+          />
+        )}
+
+        {/* Payment Actions for Approved AP */}
+        {isApprovedAP && outstanding > 0.01 && (
           <RowActionMenuItem
             variant="success"
             icon={<CreditCard className="w-3.5 h-3.5" />}
             label="Record Payment"
             onClick={() => {
               setIsOpen(false);
-              onOpenRecordPayment(grn);
+              onOpenRecordPayment(ap || grn);
             }}
           />
         )}
@@ -136,7 +209,7 @@ const GRNActionCell: React.FC<GRNActionCellProps> = ({
           label="Payment History"
           onClick={() => {
             setIsOpen(false);
-            onOpenPaymentHistory(grn);
+            onOpenPaymentHistory(ap || grn);
           }}
         />
 
@@ -560,16 +633,17 @@ export const GRNListPage: React.FC = () => {
                 <th className="py-3.5 px-4 text-right whitespace-nowrap">Accepted</th>
                 <th className="py-3.5 px-4 text-right whitespace-nowrap">Rate</th>
                 <th className="py-3.5 px-4 text-right whitespace-nowrap">Net Payable</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">AP Status</th>
                 <th className="py-3.5 px-4 text-right whitespace-nowrap">Payment</th>
                 <th className="py-3.5 px-4 whitespace-nowrap">Due Date</th>
-                <th className="py-3.5 px-4 text-center whitespace-nowrap">Status</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">Payment Status</th>
                 <th className="py-3.5 px-4 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
               {filteredGRNs.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-gray-500">
+                  <td colSpan={10} className="py-8 text-center text-gray-500">
                     No Goods Receipt Notes found. Adjust filter criteria or receive items via QC to generate GRNs.
                   </td>
                 </tr>
@@ -668,7 +742,16 @@ export const GRNListPage: React.FC = () => {
                         ₹{netPayable.toLocaleString('en-IN')}
                       </td>
 
-                      {/* 6. PAYMENT */}
+                      {/* 6. AP STATUS */}
+                      <td className="py-3.5 px-4 align-top text-center whitespace-nowrap">
+                        {(() => {
+                          const ap = (state.vendorAPs || []).find((a) => a.grnId === grn.id || a.grnNumber === grn.grnNumber || a.grnNumber === grn.id);
+                          const apStatus = ap?.apStatus || 'Approved';
+                          return getAPStatusBadge(apStatus);
+                        })()}
+                      </td>
+
+                      {/* 7. PAYMENT */}
                       <td className="py-3.5 px-4 align-top text-right whitespace-nowrap">
                         <div className="flex flex-col items-end gap-0.5">
                           <span className={`text-xs ${paid > 0 ? 'text-emerald-700 font-medium' : 'text-gray-500'}`}>
@@ -680,7 +763,7 @@ export const GRNListPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* 7. DUE DATE */}
+                      {/* 8. DUE DATE */}
                       <td className="py-3.5 px-4 align-top whitespace-nowrap">
                         <div className="flex flex-col gap-0.5">
                           <span className="text-xs font-medium text-gray-700">{formatGRNDate(dueDate)}</span>
@@ -692,21 +775,27 @@ export const GRNListPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* 8. STATUS */}
+                      {/* 9. PAYMENT STATUS */}
                       <td className="py-3.5 px-4 align-top text-center whitespace-nowrap">
                         {getStatusBadge(computedStatus)}
                       </td>
 
-                      {/* 9. ACTIONS */}
+                      {/* 10. ACTIONS */}
                       <td className="py-3.5 px-4 align-top text-right whitespace-nowrap">
-                        <GRNActionCell
-                          grn={grn}
-                          poId={po?.id}
-                          outstanding={outstanding}
-                          onOpenRecordPayment={handleOpenRecordPayment}
-                          onOpenPaymentHistory={handleOpenPaymentHistory}
-                          navigate={navigate}
-                        />
+                        {(() => {
+                          const ap = (state.vendorAPs || []).find((a) => a.grnId === grn.id || a.grnNumber === grn.grnNumber || a.grnNumber === grn.id);
+                          return (
+                            <GRNActionCell
+                              grn={grn}
+                              ap={ap}
+                              poId={po?.id}
+                              outstanding={outstanding}
+                              onOpenRecordPayment={() => handleOpenRecordPayment(grn)}
+                              onOpenPaymentHistory={() => handleOpenPaymentHistory(grn)}
+                              navigate={navigate}
+                            />
+                          );
+                        })()}
                       </td>
                     </tr>
                   );

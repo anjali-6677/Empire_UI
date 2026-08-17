@@ -1,4 +1,134 @@
-import { Enquiry, Estimate, Project, ProjectSetupDraft, ProjectBOQLine, ProjectScheduleActivity } from '../domain/types';
+import {
+  Enquiry,
+  Estimate,
+  Project,
+  ProjectSetupDraft,
+  ProjectBOQLine,
+  ProjectScheduleActivity,
+  ProjectBillingMilestone,
+  BillingMilestoneTriggerType,
+} from '../domain/types';
+
+export function mapPaymentTermsToBillingMilestones(
+  paymentTerms: any[] = [],
+  contractValue: number = 0,
+  projectId: string = ''
+): ProjectBillingMilestone[] {
+  if (Array.isArray(paymentTerms) && paymentTerms.length > 0) {
+    return paymentTerms.map((term, idx) => {
+      const stageName = term.stageName || term.name || `Milestone ${idx + 1}`;
+      const dueCond = term.dueCondition || term.description || stageName;
+      const pct = Number(term.percentage || term.billingPercentage || 0);
+      const amt = Number(term.amount || term.billingAmount || Math.round((contractValue * pct) / 100));
+
+      let triggerType: BillingMilestoneTriggerType = 'PROJECT_STAGE_COMPLETED';
+      let progressThreshold: number | undefined;
+      let tradeName: string | undefined;
+
+      const condLower = dueCond.toLowerCase();
+      const nameLower = stageName.toLowerCase();
+      const combinedText = `${nameLower} ${condLower}`;
+
+      if (
+        combinedText.includes('contract') ||
+        combinedText.includes('signing') ||
+        combinedText.includes('booking') ||
+        combinedText.includes('advance') ||
+        combinedText.includes('loi')
+      ) {
+        triggerType = 'CONTRACT_EXECUTED';
+      } else if (
+        combinedText.includes('material delivery') ||
+        combinedText.includes('delivery at site') ||
+        combinedText.includes('material arrival')
+      ) {
+        triggerType = 'MATERIAL_DELIVERY_COMPLETED';
+      } else if (
+        combinedText.includes('handover') ||
+        combinedText.includes('signoff') ||
+        combinedText.includes('final completion') ||
+        combinedText.includes('final handover')
+      ) {
+        triggerType = 'HANDOVER_SIGNED';
+      } else {
+        const pctMatch = combinedText.match(/(\d+)%\s*(.*)/i);
+        if (pctMatch) {
+          progressThreshold = parseInt(pctMatch[1], 10);
+          const rawTrade = pctMatch[2].trim();
+          if (rawTrade && !rawTrade.includes('work') && !rawTrade.includes('completion') && !rawTrade.includes('progress')) {
+            tradeName = rawTrade.charAt(0).toUpperCase() + rawTrade.slice(1);
+            triggerType = 'TRADE_PROGRESS_THRESHOLD';
+          } else {
+            triggerType = 'OVERALL_PROGRESS_THRESHOLD';
+          }
+        }
+      }
+
+      return {
+        id: term.id || `bm-${projectId || 'proj'}-${idx + 1}`,
+        projectId,
+        name: stageName,
+        triggerType,
+        triggerDescription: dueCond,
+        percentage: pct,
+        amount: amt,
+        sequence: idx + 1,
+        billingStatus: 'NOT_TRIGGERED',
+        progressThreshold,
+        tradeName,
+      };
+    });
+  }
+
+  return [
+    {
+      id: `bm-${projectId || 'proj'}-1`,
+      projectId,
+      name: 'Advance Mobilization',
+      triggerType: 'CONTRACT_EXECUTED',
+      triggerDescription: 'Contract Execution',
+      percentage: 10,
+      amount: Math.round(contractValue * 0.1),
+      sequence: 1,
+      billingStatus: 'NOT_TRIGGERED',
+    },
+    {
+      id: `bm-${projectId || 'proj'}-2`,
+      projectId,
+      name: 'Material Delivery',
+      triggerType: 'MATERIAL_DELIVERY_COMPLETED',
+      triggerDescription: 'Material Delivery',
+      percentage: 40,
+      amount: Math.round(contractValue * 0.4),
+      sequence: 2,
+      billingStatus: 'NOT_TRIGGERED',
+    },
+    {
+      id: `bm-${projectId || 'proj'}-3`,
+      projectId,
+      name: 'Mid Progress Fitting',
+      triggerType: 'TRADE_PROGRESS_THRESHOLD',
+      triggerDescription: '70% Carpentry',
+      percentage: 40,
+      amount: Math.round(contractValue * 0.4),
+      sequence: 3,
+      billingStatus: 'NOT_TRIGGERED',
+      progressThreshold: 70,
+      tradeName: 'Carpentry',
+    },
+    {
+      id: `bm-${projectId || 'proj'}-4`,
+      projectId,
+      name: 'Final Handover',
+      triggerType: 'HANDOVER_SIGNED',
+      triggerDescription: 'Handover Signoff',
+      percentage: 10,
+      amount: Math.round(contractValue * 0.1),
+      sequence: 4,
+      billingStatus: 'NOT_TRIGGERED',
+    },
+  ];
+}
 
 export interface CreateProjectResult {
   project: Project;
@@ -551,6 +681,7 @@ export function createActiveProjectFromSetup({
     internalEstimatedCost: importedDetails.acceptedQuotationValue * 0.85,
     acceptedBOQSnapshot: boqLockSetup.lockedProjectBOQ?.sections || [],
     acceptedScheduleSnapshot: scheduleSetup.activities,
+    billingMilestones: (draft as any).billingMilestones || mapPaymentTermsToBillingMilestones((draft as any).paymentTerms, importedDetails.acceptedQuotationValue, projectId),
     clientPODetails: importedDetails.clientPoDetails,
 
     createdAt: timestamp,

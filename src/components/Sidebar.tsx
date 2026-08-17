@@ -52,36 +52,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { pathname } = useLocation();
   
   const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({
-    'group-overview': true,
-    'group-projects': true,
-    'group-procurement': false,
-    'group-finance': false,
-    'group-masters': false,
-    'group-reports': false,
-    'group-admin': false
+    'overview-group': true,
+    'crm-group': false,
+    'projects-group': true,
+    'procurement-group': false,
+    'inventory-execution-group': false,
+    'finance-group': false,
+    'masters-group': false,
+    'reports-group': false,
+    'admin-group': false,
   });
 
   const toggleGroup = (groupId: string) => {
     if (isCollapsed) return;
     setExpandedGroups((prev) => ({
       ...prev,
-      [groupId]: !prev[groupId]
+      [groupId]: !prev[groupId],
     }));
   };
 
+  // Auto-expand group containing active pathname
   React.useEffect(() => {
-    if (isCollapsed) {
-      setExpandedGroups({
-        'group-overview': true,
-        'group-projects': false,
-        'group-procurement': false,
-        'group-finance': false,
-        'group-masters': false,
-        'group-reports': false,
-        'group-admin': false
-      });
-    }
-  }, [isCollapsed]);
+    if (isCollapsed) return;
+
+    NAVIGATION_CONFIG.forEach((group) => {
+      const hasActiveChild = group.items.some(
+        (item) => item.path && (pathname === item.path || pathname.startsWith(item.path + '/'))
+      );
+      if (hasActiveChild) {
+        setExpandedGroups((prev) => ({ ...prev, [group.id]: true }));
+      }
+    });
+  }, [pathname, isCollapsed]);
 
   const renderNavItems = (items: typeof NAVIGATION_CONFIG[0]['items'], groupId: string) => {
     const isGroupExpanded = expandedGroups[groupId] || isCollapsed;

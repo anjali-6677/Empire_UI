@@ -541,6 +541,48 @@ export interface ProjectMilestone {
   reachedDate?: string;
 }
 
+export type BillingMilestoneTriggerType =
+  | 'CONTRACT_EXECUTED'
+  | 'MATERIAL_DELIVERY_COMPLETED'
+  | 'TRADE_PROGRESS_THRESHOLD'
+  | 'OVERALL_PROGRESS_THRESHOLD'
+  | 'PROJECT_STAGE_COMPLETED'
+  | 'PROJECT_MILESTONE_COMPLETED'
+  | 'HANDOVER_SIGNED'
+  | 'MANUAL_AUTHORIZED';
+
+export type BillingMilestoneStatus =
+  | 'NOT_TRIGGERED'
+  | 'TRIGGER_REACHED'
+  | 'RA_PENDING_APPROVAL'
+  | 'RA_APPROVED'
+  | 'SENT_TO_CLIENT'
+  | 'PARTIALLY_PAID'
+  | 'PAID'
+  | 'CANCELLED'
+  | 'RA_REJECTED';
+
+export interface ProjectBillingMilestone {
+  id: string;
+  projectId: string;
+  name: string;
+  triggerType: BillingMilestoneTriggerType;
+  triggerDescription: string;
+  percentage: number;
+  amount: number;
+  sequence: number;
+  triggeredAt?: string;
+  triggeredByEvent?: string;
+  billingStatus: BillingMilestoneStatus;
+  raBillId?: string;
+  raBillNumber?: string;
+  tradeName?: string;
+  progressThreshold?: number;
+  manualOverrideBy?: string;
+  manualOverrideReason?: string;
+  manualOverrideAt?: string;
+}
+
 export type ProjectExecutionStatus = 'draft' | 'draft_setup' | 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled' | 'closed';
 export type BOQStatus = 'not_uploaded' | 'draft' | 'pending_approval' | 'approved' | 'rejected' | 'revision_requested';
 
@@ -789,6 +831,7 @@ export interface Project {
   acceptedBOQSnapshot?: any[];
   acceptedScheduleSnapshot?: any[];
   paymentTermsSnapshot?: string;
+  billingMilestones?: ProjectBillingMilestone[];
   clientPODetails?: {
     poNumber?: string;
     poDate?: string;
@@ -1479,6 +1522,7 @@ export interface SubcontractorWIPLine {
 
 export interface SubcontractorWIP {
   id: string;
+  wipNumber?: string; // e.g. WIP-2026-001
   documentNumber: string;
   workOrderId: string;
   woNumber: string;
@@ -1486,17 +1530,29 @@ export interface SubcontractorWIP {
   subcontractorName: string;
   projectId: string;
   projectName: string;
+  wipDate?: string;
   measurementPeriodStart?: string;
   measurementPeriodEnd?: string;
   measurementDate?: string;
-  measuredBy: string;
-  lines: SubcontractorWIPLine[];
-  totalMeasuredAmount?: number;
+  measuredBy?: string;
+  siteEngineerName?: string;
+  supervisorName?: string;
+  measurementReference?: string;
+  remarks?: string;
   measurementNotes?: string;
+  items?: SubcontractWIPItem[];
+  lines?: SubcontractorWIPLine[];
+  totalClaimedValue?: number;
+  totalApprovedValue?: number;
+  totalMeasuredAmount?: number;
   siteEvidenceAttachmentId?: string;
-  status: WIPEntryStatus | DocumentStatus;
+  status: 'draft' | 'submitted' | 'site_verification' | 'pending_approval' | 'approved' | 'rejected' | WIPEntryStatus | DocumentStatus;
   createdAt: string;
   createdBy: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
 }
 
 export interface WIPCertificationLine {
@@ -1699,31 +1755,7 @@ export interface SubcontractWIPItem {
   variationReason?: string;
 }
 
-export interface SubcontractWIP {
-  id: string;
-  wipNumber: string; // WIP-2026-001
-  projectId: string;
-  projectName: string;
-  workOrderId: string;
-  woNumber: string;
-  subcontractorId: string;
-  subcontractorName: string;
-  wipDate: string;
-  siteEngineerName?: string;
-  supervisorName?: string;
-  measurementReference?: string;
-  remarks?: string;
-  items: SubcontractWIPItem[];
-  totalClaimedValue: number;
-  totalApprovedValue: number;
-  status: 'draft' | 'submitted' | 'site_verification' | 'approved' | 'rejected';
-  createdBy: string;
-  createdAt: string;
-  verifiedBy?: string;
-  verifiedAt?: string;
-  approvedBy?: string;
-  approvedAt?: string;
-}
+export type SubcontractWIP = SubcontractorWIP;
 
 export interface SubcontractorBillItem {
   id: string;
@@ -1737,14 +1769,54 @@ export interface SubcontractorBillItem {
   grossAmount: number;
 }
 
+export type SubcontractorBillStatus =
+  | 'Pending Approval'
+  | 'Approved'
+  | 'Rejected'
+  | 'Cancelled'
+  | 'draft'
+  | 'submitted'
+  | 'verification_pending'
+  | 'posted_to_ap'
+  | string;
+
+export type SubcontractorBillPaymentStatus =
+  | 'Not Started'
+  | 'Payment Pending'
+  | 'Partially Paid'
+  | 'Paid'
+  | 'Overdue'
+  | 'Not Applicable'
+  | string;
+
+export interface SubcontractorBillPayment {
+  id: string;
+  paymentNumber: string; // e.g. PAY/SC/2026/001
+  billId: string;
+  billNumber?: string;
+  wipId?: string;
+  workOrderId?: string;
+  subcontractorId?: string;
+  paymentDate: string;
+  amountPaid: number;
+  paymentMethod: string;
+  referenceNumber: string;
+  payingBankAccount?: string;
+  remarks?: string;
+  recordedBy: string;
+  createdAt: string;
+}
+
 export interface SubcontractorBill {
   id: string;
-  billNumber: string; // SBILL-2026-001
+  billNumber: string; // SCB/2026/001
   invoiceNumber: string; // Subcontractor's invoice/challan no.
   invoiceDate: string;
   dueDate: string;
   workOrderId: string;
   woNumber: string;
+  wipId?: string;
+  wipNumber?: string;
   subcontractorWIPId?: string;
   wipIds?: string[];
   subcontractorId: string;
@@ -1754,28 +1826,92 @@ export interface SubcontractorBill {
   billDate: string;
   items?: SubcontractorBillItem[];
   grossAmount: number;
+  grossCertifiedValue?: number;
   retentionDeducted: number;
   advanceRecoveryDeducted?: number;
   otherDeductions?: number;
+  totalDeductions?: number;
   taxAmount: number;
   netBillAmount: number;
   netPayable?: number;
   paidAmount?: number;
   outstandingAmount: number;
-  status:
-    | 'draft'
-    | 'submitted'
-    | 'verification_pending'
-    | 'approved'
-    | 'posted_to_ap'
-    | 'partially_paid'
-    | 'paid'
-    | 'rejected'
-    | 'cancelled';
+  billStatus: SubcontractorBillStatus;
+  paymentStatus: SubcontractorBillPaymentStatus;
+  status: SubcontractorBillStatus;
+  remarks?: string;
   createdAt: string;
   createdBy: string;
   approvedBy?: string;
   approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+  reopenedBy?: string;
+  reopenedAt?: string;
+  reopenReason?: string;
+}
+
+export type APStatus = 'Pending Approval' | 'Approved' | 'Rejected';
+export type APPaymentStatus = 'Not Started' | 'Payment Pending' | 'Partially Paid' | 'Paid' | 'Overdue';
+
+export interface APPaymentRecord {
+  id: string;
+  paymentNumber: string; // e.g. PAY/2026/001
+  apId: string;
+  grnId?: string;
+  paymentDate: string;
+  amountPaid: number;
+  paymentMethod: string;
+  paymentReference: string;
+  payingBankAccount?: string;
+  remarks?: string;
+  recordedBy: string;
+  createdAt: string;
+}
+
+export interface VendorAP {
+  id: string;
+  apNumber: string; // e.g. AP/2026/001
+  grnId: string;
+  grnNumber: string;
+  poId?: string;
+  poNumber?: string;
+  vendorId: string;
+  vendorName: string;
+  projectId: string;
+  projectName: string;
+  qcId?: string;
+  qcNumber?: string;
+  invoiceNumber?: string;
+  invoiceDate?: string;
+  grnDate: string;
+  apDate: string;
+  dueDate: string;
+  
+  // Financial metrics
+  acceptedQty?: number;
+  netPayable: number;
+  paidAmount: number;
+  outstandingAmount: number;
+
+  // Dual Statuses
+  apStatus: APStatus;
+  paymentStatus: APPaymentStatus;
+
+  // Audit / Approval Details
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+
+  // Sub-records
+  paymentHistory?: APPaymentRecord[];
+
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
 }
 
 export interface AccountsPayable {
@@ -1832,7 +1968,7 @@ export interface ClientRABillLine {
   lineTotal: number;
 }
 
-export interface ClientRABill {
+export interface LegacyClientRABill {
   id: string;
   documentNumber: string;
   projectId: string;
@@ -2333,6 +2469,110 @@ export interface MaterialIssueActivity {
   description: string;
   reference?: string;
 }
+
+// ==========================================
+// Client RA Bills & Receivables Workflow Types
+// ==========================================
+
+export type ClientRABillStatus =
+  | 'Draft'
+  | 'Pending Approval'
+  | 'Approved'
+  | 'Sent to Client'
+  | 'Awaiting Certification'
+  | 'Certified'
+  | 'Rejected'
+  | 'Cancelled';
+
+export type ClientRABillPaymentStatus =
+  | 'Not Applicable'
+  | 'Not Started'
+  | 'Payment Pending'
+  | 'Partially Paid'
+  | 'Paid'
+  | 'Overdue';
+
+export interface ClientPaymentReceipt {
+  id: string;
+  receiptNumber: string;
+  raBillId: string;
+  raBillNumber: string;
+  projectId: string;
+  projectName: string;
+  clientId: string;
+  clientName: string;
+  receiptDate: string;
+  amountReceived: number;
+  paymentMode: string;
+  referenceNumber?: string;
+  receivingBankAccount: string;
+  remarks?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface ClientRABillAuditLog {
+  id: string;
+  timestamp: string;
+  user: string;
+  action: string;
+  details?: string;
+}
+
+export interface ClientRABill {
+  id: string;
+  billNumber: string;
+  projectId: string;
+  projectName: string;
+  clientId: string;
+  clientName: string;
+  milestoneId: string;
+  milestoneName: string;
+  billingMilestoneId?: string;
+  contractBaselineId?: string;
+  sourceEstimateId?: string;
+  sourceQuotationNumber?: string;
+  triggerEventId?: string;
+  triggeredAt?: string;
+  triggerDescription?: string;
+  billDate: string;
+  dueDate: string;
+  claimedAmount: number;
+  certifiedAmount?: number;
+  grossWorkValue: number;
+  approvedVariations: number;
+  retentionAmount: number;
+  advanceRecoveryAmount: number;
+  otherDeductions: number;
+  totalDeductions: number;
+  taxAmount: number;
+  netReceivable: number;
+  paidAmount: number;
+  outstandingAmount: number;
+  billStatus: ClientRABillStatus;
+  paymentStatus: ClientRABillPaymentStatus;
+  approvedBy?: string;
+  approvedAt?: string;
+  sentBy?: string;
+  sentAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+  reopenedBy?: string;
+  reopenedAt?: string;
+  reopenReason?: string;
+  certificationDetails?: {
+    certifiedBy?: string;
+    certifiedAt?: string;
+    certificationRef?: string;
+    remarks?: string;
+  };
+  paymentHistory: ClientPaymentReceipt[];
+  auditLog: ClientRABillAuditLog[];
+  createdAt: string;
+  createdBy: string;
+}
+
 
 
 

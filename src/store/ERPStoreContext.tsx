@@ -41,7 +41,18 @@ import {
   RFQStatus,
   POStatus,
   GRNPayment,
+  VendorAP,
+  APPaymentStatus,
+  APPaymentRecord,
+  SubcontractorBill,
+  SubcontractorBillPaymentStatus,
+  SubcontractorBillPayment,
+  ClientRABill,
+  ClientPaymentReceipt,
+  ClientRABillPaymentStatus,
+  ProjectBillingMilestone,
 } from '../domain/types';
+import { evaluateBillingMilestones, BillingEvaluationTriggerEvent } from '../utils/milestoneBillingEngine';
 import { generateGateTokenNumber, generatePONumber, generateGRNNumber } from '../domain/documentNumbers';
 import { normalizeEstimate } from '../utils/normalizeEstimate';
 import { normalizeMaterialIssue } from '../utils/materialIssueHelpers';
@@ -135,13 +146,81 @@ export interface ERPStoreContextType {
   createSubcontractorWorkOrder: (wo: SubcontractWorkOrder | WorkOrder | any, performedBy?: string) => { success: boolean; workOrder?: any; error?: string };
   updateSubcontractWorkOrder: (id: string, patch: Partial<SubcontractWorkOrder>, performedBy?: string) => void;
   createWIPEntry: (wip: SubcontractorWIP, performedBy?: string) => { success: boolean; wip?: SubcontractorWIP; error?: string };
+  approveSubcontractorWIP: (wipId: string, approvedLines: Array<{ itemId: string; approvedQty: number; approvedValue?: number }>, performedBy?: string) => { success: boolean; wip?: SubcontractorWIP; error?: string };
+  rejectSubcontractorWIP: (wipId: string, reason?: string, performedBy?: string) => { success: boolean; error?: string };
   createSubcontractWIP: (wip: any, _performedBy?: string) => { success: boolean; wip?: any; error?: string };
   updateSubcontractWIPStatus: (wipId: string, status: string, performedBy?: string) => void;
   certifyWIP: (cert: WIPCertification, performedBy?: string) => { success: boolean; certification?: WIPCertification; error?: string };
-  recordSubcontractorPayment: (payment: any, performedBy?: string) => { success: boolean; error?: string };
   recordGRNPayment: (paymentInput: any, performedBy?: string) => { success: boolean; payment?: any; error?: string };
   createSubcontractorBill: (bill: any, performedBy?: string) => { success: boolean; error?: string };
   updateSubcontractorBillStatus: (billId: string, status: string, performedBy?: string) => void;
+
+  // Vendor AP Store Actions
+  ensureAPForGRN: (grn: GoodsReceipt | GoodsReceivedNote, performedBy?: string) => VendorAP;
+  approveVendorAP: (apId: string, performedBy?: string) => { success: boolean; error?: string };
+  rejectVendorAP: (apId: string, reason: string, performedBy?: string) => { success: boolean; error?: string };
+  recordVendorAPPayment: (
+    apId: string,
+    payment: {
+      paymentDate: string;
+      amountPaid: number;
+      paymentMethod: string;
+      paymentReference: string;
+      payingBankAccount?: string;
+      remarks?: string;
+    },
+    performedBy?: string
+  ) => { success: boolean; error?: string };
+
+  // Subcontractor Bill Store Actions
+  ensureSubcontractorBillForWIP: (wipId: string, performedBy?: string) => SubcontractorBill | null;
+  approveSubcontractorBill: (billId: string, performedBy?: string) => { success: boolean; error?: string };
+  rejectSubcontractorBill: (billId: string, reason: string, performedBy?: string) => { success: boolean; error?: string };
+  reopenSubcontractorBill: (billId: string, reason: string, performedBy?: string) => { success: boolean; error?: string };
+  editSubcontractorBill: (billId: string, updates: Partial<SubcontractorBill>, performedBy?: string) => { success: boolean; error?: string };
+  recordSubcontractorPayment: (
+    billId: string,
+    payment: {
+      paymentDate: string;
+      amountPaid: number;
+      paymentMethod: string;
+      referenceNumber: string;
+      payingBankAccount?: string;
+      remarks?: string;
+    },
+    performedBy?: string
+  ) => { success: boolean; error?: string };
+
+  // Client RA Bills Store Actions
+  createClientRABill: (bill: Partial<ClientRABill>, performedBy?: string) => { success: boolean; bill?: ClientRABill; error?: string };
+  editClientRABill: (billId: string, updates: Partial<ClientRABill>, performedBy?: string) => { success: boolean; error?: string };
+  submitClientRABillForApproval: (billId: string, performedBy?: string) => { success: boolean; error?: string };
+  approveClientRABill: (billId: string, performedBy?: string) => { success: boolean; error?: string };
+  rejectClientRABill: (billId: string, reason: string, performedBy?: string) => { success: boolean; error?: string };
+  markClientRABillSent: (billId: string, performedBy?: string) => { success: boolean; error?: string };
+  recordClientPayment: (
+    billId: string,
+    receipt: {
+      receiptDate: string;
+      amountReceived: number;
+      paymentMode: string;
+      referenceNumber?: string;
+      receivingBankAccount: string;
+      remarks?: string;
+    },
+    performedBy?: string
+  ) => { success: boolean; error?: string };
+  reopenClientRABill: (billId: string, reason: string, performedBy?: string) => { success: boolean; error?: string };
+  triggerProjectBillingEvaluation: (
+    projectId: string,
+    event: BillingEvaluationTriggerEvent
+  ) => { triggeredMilestones: ProjectBillingMilestone[]; createdRABills: ClientRABill[] };
+  manuallyTriggerBillingMilestone: (
+    projectId: string,
+    milestoneId: string,
+    notes?: string,
+    performedBy?: string
+  ) => { success: boolean; error?: string };
 
   createCategory: (category: Category, performedBy?: string) => { success: boolean; category?: Category; error?: string };
   updateCategory: (categoryId: string, input: Partial<Category>, performedBy?: string) => { success: boolean; error?: string };
@@ -2017,6 +2096,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
 
     addItem('grns', grn);
+    ensureAPForGRN(grn, performedBy);
     logAudit({
       documentType: 'grn',
       documentId: grn.id,
@@ -2156,6 +2236,8 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
       updatedAt: now,
       updatedBy: postedBy,
     });
+
+    ensureAPForGRN(grn, postedBy);
 
     logAudit({
       documentType: 'goods_receipt',
@@ -2902,13 +2984,15 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Stage 4 Store Action: Create Subcontractor WIP Entry
   const createWIPEntry = (wip: SubcontractorWIP, performedBy: string = 'QS Engineer') => {
-    // Domain Guard: Work Order must be issued or in_progress
-    const wo = state.workOrders.find((w) => w.id === wip.workOrderId || w.documentNumber === wip.woNumber);
-    if (!wo || (wo.status !== 'issued' && wo.status !== 'in_progress' && wo.status !== 'approved')) {
+    // Domain Guard: Work Order must exist and be active
+    const wo = (state.workOrders || []).find((w) => w.id === wip.workOrderId || w.documentNumber === wip.woNumber || (w as any).woNumber === wip.woNumber) ||
+               (state.subcontractWorkOrders || []).find((w) => w.id === wip.workOrderId || w.documentNumber === wip.woNumber);
+    if (!wo || wo.status === 'draft' || wo.status === 'cancelled' || wo.status === 'rejected') {
       return { success: false, error: 'Domain Guard Rejected: WIP measurement can only reference an issued or active Work Order.' };
     }
 
     addItem('wips', wip);
+    addItem('subcontractorWIPs', wip);
     logAudit({
       documentType: 'wip',
       documentId: wip.id,
@@ -2920,6 +3004,904 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
 
     return { success: true, wip };
+  };
+
+  // Subcontractor Bill Store Action: Auto-generate Bill from Certified WIP
+  const ensureSubcontractorBillForWIP = (wipId: string, _performedBy: string = 'System'): SubcontractorBill | null => {
+    const allWips = (state.subcontractorWIPs || []).concat(state.wips || []);
+    const wip = allWips.find((w) => w.id === wipId || w.wipNumber === wipId || w.documentNumber === wipId);
+    if (!wip) return null;
+
+    const isCertified = wip.status === 'approved' || wip.status === 'certified';
+    if (!isCertified) return null;
+
+    const existingBills: SubcontractorBill[] = state.subcontractorBills || [];
+    const existingBill = existingBills.find(
+      (b) => b.subcontractorWIPId === wip.id || b.wipId === wip.id || b.wipNumber === (wip.wipNumber || wip.documentNumber)
+    );
+    if (existingBill) {
+      return existingBill;
+    }
+
+    const wo = (state.subcontractWorkOrders || []).find((w) => w.id === wip.workOrderId || w.documentNumber === wip.woNumber);
+    const grossCertifiedValue = Number(wip.totalApprovedValue ?? wip.totalClaimedValue ?? wip.totalMeasuredAmount ?? 0);
+
+    const retentionPct = wo?.retentionPercentage ?? 5;
+    const retentionDeducted = (grossCertifiedValue * retentionPct) / 100;
+
+    let advanceRecoveryDeducted = 0;
+    if (wo && wo.advanceAmount && wo.advanceAmount > 0) {
+      const prevBills = existingBills.filter((b) => b.workOrderId === wo.id);
+      const prevRecovered = prevBills.reduce((sum, b) => sum + (b.advanceRecoveryDeducted || 0), 0);
+      const remainingAdv = Math.max(0, wo.advanceAmount - prevRecovered);
+      if (remainingAdv > 0) {
+        const advPct = wo.advancePercentage ?? 10;
+        advanceRecoveryDeducted = Math.min(remainingAdv, (grossCertifiedValue * advPct) / 100);
+      }
+    }
+
+    const otherDeductions = 0;
+    const totalDeductions = retentionDeducted + advanceRecoveryDeducted + otherDeductions;
+    const taxPct = wo?.taxPercentage ?? 18;
+    const taxAmount = ((grossCertifiedValue - totalDeductions) * taxPct) / 100;
+    const netPayable = grossCertifiedValue - totalDeductions + taxAmount;
+
+    const existingBillNums = existingBills.map((b) => b.billNumber);
+    let seq = existingBills.length + 1;
+    let billNumber = `SCB/2026/${String(seq).padStart(3, '0')}`;
+    while (existingBillNums.includes(billNumber)) {
+      seq++;
+      billNumber = `SCB/2026/${String(seq).padStart(3, '0')}`;
+    }
+
+    const subName = wip.subcontractorName || 'Subcontractor';
+    const invoiceNumber = `INV-${subName.split(' ')[0].toUpperCase()}-${Date.now().toString().slice(-4)}`;
+
+    const newBill: SubcontractorBill = {
+      id: `scb-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      billNumber,
+      invoiceNumber,
+      invoiceDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      workOrderId: wip.workOrderId,
+      woNumber: wip.woNumber,
+      wipId: wip.id,
+      wipNumber: wip.wipNumber || wip.documentNumber,
+      subcontractorWIPId: wip.id,
+      subcontractorId: wip.subcontractorId,
+      subcontractorName: subName,
+      projectId: wip.projectId,
+      projectName: wip.projectName,
+      billDate: new Date().toISOString().split('T')[0],
+      grossAmount: grossCertifiedValue,
+      grossCertifiedValue,
+      retentionDeducted,
+      advanceRecoveryDeducted,
+      otherDeductions,
+      totalDeductions,
+      taxAmount,
+      netBillAmount: netPayable,
+      netPayable,
+      paidAmount: 0,
+      outstandingAmount: netPayable,
+      billStatus: 'Pending Approval',
+      paymentStatus: 'Not Started',
+      status: 'Pending Approval',
+      createdAt: new Date().toISOString(),
+      createdBy: 'System (WIP Certified)',
+    };
+
+    addItem('subcontractorBills', newBill);
+    logAudit({
+      documentType: 'subcontractor_bill',
+      documentId: newBill.id,
+      documentNumber: newBill.billNumber,
+      action: 'AUTO_GENERATED',
+      performedBy: 'System',
+      newStatus: 'Pending Approval',
+      details: `Automatically generated Subcontractor Bill ${newBill.billNumber} from Certified WIP ${newBill.wipNumber}`,
+    });
+
+    return newBill;
+  };
+
+  const approveSubcontractorBill = (billId: string, performedBy: string = 'Finance Manager') => {
+    const bill = (state.subcontractorBills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Subcontractor Bill not found' };
+
+    const updates: Partial<SubcontractorBill> = {
+      billStatus: 'Approved',
+      status: 'Approved',
+      paymentStatus: 'Payment Pending',
+      approvedBy: performedBy,
+      approvedAt: new Date().toISOString(),
+    };
+
+    updateItem('subcontractorBills', bill.id, updates);
+    logAudit({
+      documentType: 'subcontractor_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'APPROVED',
+      performedBy,
+      newStatus: 'Approved',
+      details: `Approved Subcontractor Bill ${bill.billNumber} for Net Payable ₹${(bill.netPayable || bill.netBillAmount).toLocaleString('en-IN')}`,
+    });
+
+    return { success: true };
+  };
+
+  const rejectSubcontractorBill = (billId: string, reason: string, performedBy: string = 'Finance Manager') => {
+    const bill = (state.subcontractorBills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Subcontractor Bill not found' };
+    if (!reason || !reason.trim()) return { success: false, error: 'Rejection reason is mandatory' };
+
+    const updates: Partial<SubcontractorBill> = {
+      billStatus: 'Rejected',
+      status: 'Rejected',
+      paymentStatus: 'Not Applicable',
+      rejectedBy: performedBy,
+      rejectedAt: new Date().toISOString(),
+      rejectionReason: reason,
+    };
+
+    updateItem('subcontractorBills', bill.id, updates);
+    logAudit({
+      documentType: 'subcontractor_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'REJECTED',
+      performedBy,
+      newStatus: 'Rejected',
+      details: `Rejected Subcontractor Bill ${bill.billNumber}. Reason: ${reason}`,
+    });
+
+    return { success: true };
+  };
+
+  const reopenSubcontractorBill = (billId: string, reason: string, performedBy: string = 'Finance Manager') => {
+    const bill = (state.subcontractorBills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Subcontractor Bill not found' };
+    if (!reason || !reason.trim()) return { success: false, error: 'Reopen reason is mandatory' };
+
+    const payments = (state.subcontractorPayments || []).filter((p: any) => p.billId === bill.id || p.subcontractorBillId === bill.id);
+    if ((bill.paidAmount || 0) > 0 || payments.length > 0) {
+      return { success: false, error: 'Payment already exists against this bill. Controlled payment reversal required before reopening.' };
+    }
+
+    const updates: Partial<SubcontractorBill> = {
+      billStatus: 'Pending Approval',
+      status: 'Pending Approval',
+      paymentStatus: 'Not Started',
+      reopenedBy: performedBy,
+      reopenedAt: new Date().toISOString(),
+      reopenReason: reason,
+    };
+
+    updateItem('subcontractorBills', bill.id, updates);
+    logAudit({
+      documentType: 'subcontractor_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'REOPENED',
+      performedBy,
+      newStatus: 'Pending Approval',
+      details: `Reopened Subcontractor Bill ${bill.billNumber} back to Pending Approval. Reason: ${reason}`,
+    });
+
+    return { success: true };
+  };
+
+  const editSubcontractorBill = (billId: string, updates: Partial<SubcontractorBill>, performedBy: string = 'Finance Officer') => {
+    const bill = (state.subcontractorBills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Subcontractor Bill not found' };
+    if (bill.billStatus !== 'Pending Approval' && bill.status !== 'Pending Approval') {
+      return { success: false, error: 'Editing is locked once a Subcontractor Bill is Approved or Rejected' };
+    }
+
+    const gross = updates.grossCertifiedValue ?? bill.grossCertifiedValue ?? bill.grossAmount;
+    const retention = updates.retentionDeducted ?? bill.retentionDeducted;
+    const advanceRec = updates.advanceRecoveryDeducted ?? bill.advanceRecoveryDeducted ?? 0;
+    const otherDed = updates.otherDeductions ?? bill.otherDeductions ?? 0;
+    const totalDed = retention + advanceRec + otherDed;
+    const tax = updates.taxAmount ?? bill.taxAmount;
+    const net = gross - totalDed + tax;
+
+    const patch: Partial<SubcontractorBill> = {
+      ...updates,
+      grossAmount: gross,
+      grossCertifiedValue: gross,
+      retentionDeducted: retention,
+      advanceRecoveryDeducted: advanceRec,
+      otherDeductions: otherDed,
+      totalDeductions: totalDed,
+      taxAmount: tax,
+      netBillAmount: net,
+      netPayable: net,
+      outstandingAmount: net - (bill.paidAmount || 0),
+    };
+
+    updateItem('subcontractorBills', bill.id, patch);
+    logAudit({
+      documentType: 'subcontractor_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'EDITED',
+      performedBy,
+      newStatus: bill.billStatus,
+      details: `Updated finance details for Subcontractor Bill ${bill.billNumber}`,
+    });
+
+    return { success: true };
+  };
+
+  const recordSubcontractorPayment = (
+    billId: string,
+    payment: {
+      paymentDate: string;
+      amountPaid: number;
+      paymentMethod: string;
+      referenceNumber: string;
+      payingBankAccount?: string;
+      remarks?: string;
+    },
+    performedBy: string = 'Finance Officer'
+  ) => {
+    const bill = (state.subcontractorBills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Subcontractor Bill not found' };
+    if (bill.billStatus !== 'Approved' && bill.status !== 'Approved') {
+      return { success: false, error: 'Payment can only be recorded for Approved Subcontractor Bills' };
+    }
+
+    const amountPaid = Number(payment.amountPaid);
+    if (isNaN(amountPaid) || amountPaid <= 0) {
+      return { success: false, error: 'Payment amount must be greater than zero' };
+    }
+
+    const currentPaid = bill.paidAmount || 0;
+    const netPayable = bill.netPayable || bill.netBillAmount;
+    const outstanding = bill.outstandingAmount ?? (netPayable - currentPaid);
+
+    if (amountPaid > outstanding + 0.01) {
+      return { success: false, error: `Payment amount ₹${amountPaid.toLocaleString('en-IN')} exceeds outstanding balance of ₹${outstanding.toLocaleString('en-IN')}` };
+    }
+
+    const newPaidTotal = currentPaid + amountPaid;
+    const newOutstanding = Math.max(0, netPayable - newPaidTotal);
+    const newPaymentStatus: SubcontractorBillPaymentStatus = newOutstanding === 0 ? 'Paid' : 'Partially Paid';
+
+    const payments = state.subcontractorPayments || [];
+    const paymentSeq = payments.length + 1;
+    const paymentRecord: SubcontractorBillPayment = {
+      id: `sc-pay-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      paymentNumber: `PAY/SC/2026/${String(paymentSeq).padStart(3, '0')}`,
+      billId: bill.id,
+      billNumber: bill.billNumber,
+      wipId: bill.wipId || bill.subcontractorWIPId,
+      workOrderId: bill.workOrderId,
+      subcontractorId: bill.subcontractorId,
+      paymentDate: payment.paymentDate,
+      amountPaid,
+      paymentMethod: payment.paymentMethod,
+      referenceNumber: payment.referenceNumber,
+      payingBankAccount: payment.payingBankAccount,
+      remarks: payment.remarks,
+      recordedBy: performedBy,
+      createdAt: new Date().toISOString(),
+    };
+
+    addItem('subcontractorPayments', paymentRecord);
+
+    const billPatch: Partial<SubcontractorBill> = {
+      paidAmount: newPaidTotal,
+      outstandingAmount: newOutstanding,
+      paymentStatus: newPaymentStatus,
+    };
+
+    updateItem('subcontractorBills', bill.id, billPatch);
+    logAudit({
+      documentType: 'subcontractor_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'PAYMENT_RECORDED',
+      performedBy,
+      newStatus: newPaymentStatus,
+      details: `Recorded payment of ₹${amountPaid.toLocaleString('en-IN')} for Subcontractor Bill ${bill.billNumber} (${paymentRecord.paymentNumber})`,
+    });
+
+    return { success: true };
+  };
+
+  // Client RA Bills Store Functions
+  const createClientRABill = (billInput: Partial<ClientRABill>, performedBy: string = 'Billing Specialist') => {
+    const bills = state.clientRABills || [];
+    const seq = bills.length + 1;
+    const billNumber = billInput.billNumber || `RA/2026/${String(seq).padStart(3, '0')}`;
+
+    const gross = Number(billInput.grossWorkValue || billInput.claimedAmount || 0);
+    const variations = Number(billInput.approvedVariations || 0);
+    const retention = Number(billInput.retentionAmount || 0);
+    const advanceRec = Number(billInput.advanceRecoveryAmount || 0);
+    const otherDed = Number(billInput.otherDeductions || 0);
+    const totalDed = retention + advanceRec + otherDed;
+    const tax = Number(billInput.taxAmount || 0);
+    const net = (gross + variations) - totalDed + tax;
+
+    const newBill: ClientRABill = {
+      id: `ra-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      billNumber,
+      projectId: billInput.projectId || '',
+      projectName: billInput.projectName || '',
+      clientId: billInput.clientId || '',
+      clientName: billInput.clientName || '',
+      milestoneId: billInput.milestoneId || '',
+      milestoneName: billInput.milestoneName || '',
+      billDate: billInput.billDate || new Date().toISOString().split('T')[0],
+      dueDate: billInput.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+      claimedAmount: Number(billInput.claimedAmount || gross),
+      grossWorkValue: gross,
+      approvedVariations: variations,
+      retentionAmount: retention,
+      advanceRecoveryAmount: advanceRec,
+      otherDeductions: otherDed,
+      totalDeductions: totalDed,
+      taxAmount: tax,
+      netReceivable: net,
+      paidAmount: 0,
+      outstandingAmount: net,
+      billStatus: 'Draft',
+      paymentStatus: 'Not Applicable',
+      paymentHistory: [],
+      auditLog: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          user: performedBy,
+          action: 'Draft Created',
+          details: `Generated RA Bill ${billNumber} for ${billInput.projectName}`,
+        },
+      ],
+      createdAt: new Date().toISOString(),
+      createdBy: performedBy,
+    };
+
+    addItem('clientRABills', newBill);
+    logAudit({
+      documentType: 'client_ra_bill',
+      documentId: newBill.id,
+      documentNumber: newBill.billNumber,
+      action: 'CREATED',
+      performedBy,
+      newStatus: 'Draft',
+      details: `Created draft Client RA Bill ${newBill.billNumber} (Net ₹${net.toLocaleString('en-IN')})`,
+    });
+
+    return { success: true, bill: newBill };
+  };
+
+  const editClientRABill = (billId: string, updates: Partial<ClientRABill>, performedBy: string = 'Billing Specialist') => {
+    const bill = (state.clientRABills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Client RA Bill not found' };
+    if (bill.billStatus !== 'Draft' && bill.billStatus !== 'Pending Approval') {
+      return { success: false, error: 'Editing is locked once an RA Bill is Approved, Sent, or Paid.' };
+    }
+
+    const gross = updates.grossWorkValue ?? bill.grossWorkValue;
+    const variations = updates.approvedVariations ?? bill.approvedVariations;
+    const retention = updates.retentionAmount ?? bill.retentionAmount;
+    const advanceRec = updates.advanceRecoveryAmount ?? bill.advanceRecoveryAmount;
+    const otherDed = updates.otherDeductions ?? bill.otherDeductions;
+    const totalDed = retention + advanceRec + otherDed;
+    const tax = updates.taxAmount ?? bill.taxAmount;
+    const net = (gross + variations) - totalDed + tax;
+
+    const patch: Partial<ClientRABill> = {
+      ...updates,
+      grossWorkValue: gross,
+      approvedVariations: variations,
+      retentionAmount: retention,
+      advanceRecoveryAmount: advanceRec,
+      otherDeductions: otherDed,
+      totalDeductions: totalDed,
+      taxAmount: tax,
+      netReceivable: net,
+      outstandingAmount: net - (bill.paidAmount || 0),
+    };
+
+    updateItem('clientRABills', bill.id, patch);
+    logAudit({
+      documentType: 'client_ra_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'EDITED',
+      performedBy,
+      newStatus: bill.billStatus,
+      details: `Updated details for Client RA Bill ${bill.billNumber}`,
+    });
+
+    return { success: true };
+  };
+
+  const submitClientRABillForApproval = (billId: string, performedBy: string = 'Billing Officer') => {
+    const bill = (state.clientRABills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Client RA Bill not found' };
+    if (bill.billStatus !== 'Draft' && bill.billStatus !== 'Rejected') {
+      return { success: false, error: 'Only Draft or Rejected RA Bills can be submitted for approval' };
+    }
+
+    const newLogs = [
+      ...(bill.auditLog || []),
+      {
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        user: performedBy,
+        action: 'Submitted for Approval',
+        details: `Submitted to Finance for approval`,
+      },
+    ];
+
+    updateItem('clientRABills', bill.id, {
+      billStatus: 'Pending Approval',
+      auditLog: newLogs,
+    });
+
+    logAudit({
+      documentType: 'client_ra_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'SUBMITTED',
+      performedBy,
+      newStatus: 'Pending Approval',
+      details: `Submitted Client RA Bill ${bill.billNumber} for internal approval`,
+    });
+
+    return { success: true };
+  };
+
+  const approveClientRABill = (billId: string, performedBy: string = 'Finance Manager') => {
+    const bill = (state.clientRABills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Client RA Bill not found' };
+    if (bill.billStatus !== 'Pending Approval') {
+      return { success: false, error: 'Only Pending Approval RA Bills can be approved' };
+    }
+
+    const newLogs = [
+      ...(bill.auditLog || []),
+      {
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        user: performedBy,
+        action: 'Approved Bill',
+        details: `Approved net receivable ₹${bill.netReceivable.toLocaleString('en-IN')}`,
+      },
+    ];
+
+    updateItem('clientRABills', bill.id, {
+      billStatus: 'Approved',
+      paymentStatus: 'Not Started',
+      approvedBy: performedBy,
+      approvedAt: new Date().toISOString(),
+      auditLog: newLogs,
+    });
+
+    if (bill.projectId) {
+      const proj = (state.projects || []).find((p) => p.id === bill.projectId);
+      if (proj && proj.billingMilestones) {
+        const updatedMs = proj.billingMilestones.map((m) => {
+          if (m.id === bill.milestoneId || m.id === bill.billingMilestoneId || m.raBillId === bill.id) {
+            return { ...m, billingStatus: 'RA_APPROVED' as const };
+          }
+          return m;
+        });
+        updateItem('projects', proj.id, { billingMilestones: updatedMs });
+      }
+    }
+
+    logAudit({
+      documentType: 'client_ra_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'APPROVED',
+      performedBy,
+      newStatus: 'Approved',
+      details: `Approved Client RA Bill ${bill.billNumber}`,
+    });
+
+    return { success: true };
+  };
+
+  const rejectClientRABill = (billId: string, reason: string, performedBy: string = 'Finance Manager') => {
+    const bill = (state.clientRABills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Client RA Bill not found' };
+    if (!reason || !reason.trim()) return { success: false, error: 'Rejection reason is mandatory' };
+
+    const newLogs = [
+      ...(bill.auditLog || []),
+      {
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        user: performedBy,
+        action: 'Rejected Bill',
+        details: `Reason: ${reason}`,
+      },
+    ];
+
+    updateItem('clientRABills', bill.id, {
+      billStatus: 'Rejected',
+      paymentStatus: 'Not Applicable',
+      rejectedBy: performedBy,
+      rejectedAt: new Date().toISOString(),
+      rejectionReason: reason,
+      auditLog: newLogs,
+    });
+
+    if (bill.projectId) {
+      const proj = (state.projects || []).find((p) => p.id === bill.projectId);
+      if (proj && proj.billingMilestones) {
+        const updatedMs = proj.billingMilestones.map((m) => {
+          if (m.id === bill.milestoneId || m.id === bill.billingMilestoneId || m.raBillId === bill.id) {
+            return { ...m, billingStatus: 'RA_REJECTED' as const };
+          }
+          return m;
+        });
+        updateItem('projects', proj.id, { billingMilestones: updatedMs });
+      }
+    }
+
+    logAudit({
+      documentType: 'client_ra_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'REJECTED',
+      performedBy,
+      newStatus: 'Rejected',
+      details: `Rejected Client RA Bill ${bill.billNumber}. Reason: ${reason}`,
+    });
+
+    return { success: true };
+  };
+
+  const markClientRABillSent = (billId: string, performedBy: string = 'Billing Officer') => {
+    const bill = (state.clientRABills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Client RA Bill not found' };
+    if (bill.billStatus !== 'Approved') {
+      return { success: false, error: 'Only Approved RA Bills can be marked as sent to client' };
+    }
+
+    const newLogs = [
+      ...(bill.auditLog || []),
+      {
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        user: performedBy,
+        action: 'Sent to Client',
+        details: `Issued to Client`,
+      },
+    ];
+
+    updateItem('clientRABills', bill.id, {
+      billStatus: 'Sent to Client',
+      paymentStatus: 'Payment Pending',
+      sentBy: performedBy,
+      sentAt: new Date().toISOString(),
+      auditLog: newLogs,
+    });
+
+    if (bill.projectId) {
+      const proj = (state.projects || []).find((p) => p.id === bill.projectId);
+      if (proj && proj.billingMilestones) {
+        const updatedMs = proj.billingMilestones.map((m) => {
+          if (m.id === bill.milestoneId || m.id === bill.billingMilestoneId || m.raBillId === bill.id) {
+            return { ...m, billingStatus: 'SENT_TO_CLIENT' as const };
+          }
+          return m;
+        });
+        updateItem('projects', proj.id, { billingMilestones: updatedMs });
+      }
+    }
+
+    logAudit({
+      documentType: 'client_ra_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'SENT_TO_CLIENT',
+      performedBy,
+      newStatus: 'Sent to Client',
+      details: `Marked Client RA Bill ${bill.billNumber} as Sent to Client`,
+    });
+
+    return { success: true };
+  };
+
+  const recordClientPayment = (
+    billId: string,
+    receiptInput: {
+      receiptDate: string;
+      amountReceived: number;
+      paymentMode: string;
+      referenceNumber?: string;
+      receivingBankAccount: string;
+      remarks?: string;
+    },
+    performedBy: string = 'Accounts Receiver'
+  ) => {
+    const bill = (state.clientRABills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Client RA Bill not found' };
+    if (bill.billStatus !== 'Sent to Client' && bill.billStatus !== 'Approved') {
+      return { success: false, error: 'Client payments can only be recorded for Sent or Approved RA Bills' };
+    }
+
+    const amountReceived = Number(receiptInput.amountReceived);
+    if (isNaN(amountReceived) || amountReceived <= 0) {
+      return { success: false, error: 'Payment receipt amount must be greater than zero' };
+    }
+
+    const currentPaid = bill.paidAmount || 0;
+    const netReceivable = bill.netReceivable;
+    const outstanding = bill.outstandingAmount ?? (netReceivable - currentPaid);
+
+    if (amountReceived > outstanding + 0.01) {
+      return { success: false, error: `Receipt amount ₹${amountReceived.toLocaleString('en-IN')} exceeds outstanding balance of ₹${outstanding.toLocaleString('en-IN')}` };
+    }
+
+    const receipts = state.clientReceipts || [];
+    const seq = receipts.length + 1;
+    const receiptRecord: ClientPaymentReceipt = {
+      id: `rcpt-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      receiptNumber: `RCPT/2026/${String(seq).padStart(3, '0')}`,
+      raBillId: bill.id,
+      raBillNumber: bill.billNumber,
+      projectId: bill.projectId,
+      projectName: bill.projectName,
+      clientId: bill.clientId,
+      clientName: bill.clientName,
+      receiptDate: receiptInput.receiptDate,
+      amountReceived,
+      paymentMode: receiptInput.paymentMode,
+      referenceNumber: receiptInput.referenceNumber,
+      receivingBankAccount: receiptInput.receivingBankAccount,
+      remarks: receiptInput.remarks,
+      createdAt: new Date().toISOString(),
+      createdBy: performedBy,
+    };
+
+    addItem('clientReceipts', receiptRecord);
+
+    const newPaidTotal = currentPaid + amountReceived;
+    const newOutstanding = Math.max(0, netReceivable - newPaidTotal);
+    const newPaymentStatus: ClientRABillPaymentStatus = newOutstanding === 0 ? 'Paid' : 'Partially Paid';
+
+    const newLogs = [
+      ...(bill.auditLog || []),
+      {
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        user: performedBy,
+        action: 'Client Payment Recorded',
+        details: `Receipt ${receiptRecord.receiptNumber} recorded ₹${amountReceived.toLocaleString('en-IN')}`,
+      },
+    ];
+
+    const updatedHistory = [...(bill.paymentHistory || []), receiptRecord];
+
+    updateItem('clientRABills', bill.id, {
+      paidAmount: newPaidTotal,
+      outstandingAmount: newOutstanding,
+      paymentStatus: newPaymentStatus,
+      paymentHistory: updatedHistory,
+      auditLog: newLogs,
+    });
+
+    if (bill.projectId) {
+      const proj = (state.projects || []).find((p) => p.id === bill.projectId);
+      if (proj && proj.billingMilestones) {
+        const isFullyPaid = newOutstanding <= 0.01;
+        const updatedMs = proj.billingMilestones.map((m) => {
+          if (m.id === bill.milestoneId || m.id === bill.billingMilestoneId || m.raBillId === bill.id) {
+            return { ...m, billingStatus: isFullyPaid ? ('PAID' as const) : ('PARTIALLY_PAID' as const) };
+          }
+          return m;
+        });
+        updateItem('projects', proj.id, { billingMilestones: updatedMs });
+      }
+    }
+
+    logAudit({
+      documentType: 'client_ra_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'PAYMENT_RECORDED',
+      performedBy,
+      newStatus: newPaymentStatus,
+      details: `Recorded client payment receipt of ₹${amountReceived.toLocaleString('en-IN')} (${receiptRecord.receiptNumber}) for RA Bill ${bill.billNumber}`,
+    });
+
+    return { success: true };
+  };
+
+  const triggerProjectBillingEvaluation = (
+    projectId: string,
+    event: BillingEvaluationTriggerEvent
+  ) => {
+    const project = (state.projects || []).find((p) => p.id === projectId);
+    if (!project) return { triggeredMilestones: [], createdRABills: [] };
+
+    const res = evaluateBillingMilestones({
+      project,
+      event,
+      existingRABills: state.clientRABills || [],
+    });
+
+    if (res.triggeredMilestones.length > 0) {
+      updateItem('projects', project.id, {
+        billingMilestones: res.updatedProject.billingMilestones,
+      });
+
+      res.createdRABills.forEach((bill) => {
+        addItem('clientRABills', bill);
+      });
+    }
+
+    return {
+      triggeredMilestones: res.triggeredMilestones,
+      createdRABills: res.createdRABills,
+    };
+  };
+
+  const manuallyTriggerBillingMilestone = (
+    projectId: string,
+    milestoneId: string,
+    notes: string = 'Manual trigger',
+    performedBy: string = 'Project Director'
+  ) => {
+    const project = (state.projects || []).find((p) => p.id === projectId);
+    if (!project) return { success: false, error: 'Project not found' };
+
+    const res = triggerProjectBillingEvaluation(projectId, {
+      eventType: 'MANUAL_TRIGGER',
+      milestoneId,
+      notes,
+      performedBy,
+    });
+
+    if (res.createdRABills.length > 0) {
+      return { success: true };
+    }
+    return { success: false, error: 'Milestone could not be triggered or RA Bill already exists' };
+  };
+
+  const reopenClientRABill = (billId: string, reason: string, performedBy: string = 'Finance Manager') => {
+    const bill = (state.clientRABills || []).find((b) => b.id === billId || b.billNumber === billId);
+    if (!bill) return { success: false, error: 'Client RA Bill not found' };
+    if (!reason || !reason.trim()) return { success: false, error: 'Reopen reason is mandatory' };
+
+    if ((bill.paidAmount || 0) > 0 || (bill.paymentHistory && bill.paymentHistory.length > 0)) {
+      return { success: false, error: 'Payments have already been received against this bill. Reverse receipts before reopening.' };
+    }
+
+    const newLogs = [
+      ...(bill.auditLog || []),
+      {
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        user: performedBy,
+        action: 'Reopened Bill',
+        details: `Reopened to Pending Approval. Reason: ${reason}`,
+      },
+    ];
+
+    updateItem('clientRABills', bill.id, {
+      billStatus: 'Pending Approval',
+      paymentStatus: 'Not Started',
+      reopenedBy: performedBy,
+      reopenedAt: new Date().toISOString(),
+      reopenReason: reason,
+      auditLog: newLogs,
+    });
+
+    logAudit({
+      documentType: 'client_ra_bill',
+      documentId: bill.id,
+      documentNumber: bill.billNumber,
+      action: 'REOPENED',
+      performedBy,
+      newStatus: 'Pending Approval',
+      details: `Reopened Client RA Bill ${bill.billNumber} back to Pending Approval. Reason: ${reason}`,
+    });
+
+    return { success: true };
+  };
+
+  // Stage 4 Store Action: Approve Subcontractor WIP & Update WO Progress
+  const approveSubcontractorWIP = (
+    wipId: string,
+    approvedLines: Array<{ itemId: string; approvedQty: number; approvedValue?: number }>,
+    performedBy: string = 'Project Director'
+  ) => {
+    const allWips = state.subcontractorWIPs || state.wips || [];
+    const wip = allWips.find((w) => w.id === wipId || w.wipNumber === wipId);
+    if (!wip) {
+      return { success: false, error: 'WIP record not found.' };
+    }
+
+    // Update WIP items with approved quantities
+    const updatedItems = (wip.items || []).map((item: any) => {
+      const match = approvedLines.find((al) => al.itemId === item.id || al.itemId === item.woItemId || al.itemId === item.boqLineId);
+      const appQty = match ? match.approvedQty : Number(item.approvedQty ?? item.measuredQty ?? item.claimedQty ?? 0);
+      const rate = Number(item.rate || 0);
+      const appVal = match?.approvedValue ?? appQty * rate;
+      return {
+        ...item,
+        approvedQty: appQty,
+        approvedValue: appVal,
+      };
+    });
+
+    const totalApprovedVal = updatedItems.reduce((sum: number, i: any) => sum + (Number(i.approvedValue) || 0), 0);
+
+    const patch: Partial<SubcontractorWIP> = {
+      status: 'approved',
+      items: updatedItems,
+      totalApprovedValue: totalApprovedVal,
+    };
+
+    updateItem('wips', wip.id, patch);
+    updateItem('subcontractorWIPs', wip.id, patch);
+
+    // Update parent Work Order status to in_progress or completed
+    const wo = (state.subcontractWorkOrders || []).find((w) => w.id === wip.workOrderId || w.documentNumber === wip.woNumber);
+    if (wo && (wo.status === 'approved' || wo.status === 'issued' || wo.status === 'work_started')) {
+      updateItem('subcontractWorkOrders', wo.id, { status: 'in_progress' });
+      updateItem('workOrders', wo.id, { status: 'in_progress' });
+    }
+
+    // Auto-generate Subcontractor Bill for certified WIP
+    try {
+      ensureSubcontractorBillForWIP(wip.id, performedBy);
+    } catch (e) {
+      console.error('Auto bill creation error:', e);
+    }
+
+    logAudit({
+      documentType: 'wip',
+      documentId: wip.id,
+      documentNumber: wip.wipNumber || wip.documentNumber,
+      action: 'APPROVED',
+      performedBy,
+      newStatus: 'approved',
+      details: `Approved Subcontractor WIP ${wip.wipNumber || wip.documentNumber} for Work Order ${wip.woNumber}. Approved Value: ₹${totalApprovedVal.toLocaleString('en-IN')}`,
+    });
+
+    return { success: true, wip: { ...wip, ...patch } };
+  };
+
+  // Stage 4 Store Action: Reject Subcontractor WIP
+  const rejectSubcontractorWIP = (wipId: string, reason: string = '', performedBy: string = 'Approver') => {
+    const allWips = state.subcontractorWIPs || state.wips || [];
+    const wip = allWips.find((w) => w.id === wipId || w.wipNumber === wipId);
+    if (!wip) {
+      return { success: false, error: 'WIP record not found.' };
+    }
+
+    const patch: Partial<SubcontractorWIP> = {
+      status: 'rejected',
+      remarks: reason ? `Rejected: ${reason}` : wip.remarks,
+    };
+
+    updateItem('wips', wip.id, patch);
+    updateItem('subcontractorWIPs', wip.id, patch);
+
+    logAudit({
+      documentType: 'wip',
+      documentId: wip.id,
+      documentNumber: wip.wipNumber || wip.documentNumber,
+      action: 'REJECTED',
+      performedBy,
+      newStatus: 'rejected',
+      details: `Rejected Subcontractor WIP ${wip.wipNumber || wip.documentNumber}. Reason: ${reason || 'None provided'}`,
+    });
+
+    return { success: true };
   };
 
   // Stage 4 Store Action: Certify Subcontractor WIP (Cumulative certification limits enforced)
@@ -3050,6 +4032,242 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
 
     return { success: true, payment: newPayment };
+  };
+
+  // Vendor AP Store Action: Generate Next AP Number
+  const generateNextAPNumber = (aps: VendorAP[] = []): string => {
+    const currentYear = new Date().getFullYear();
+    let maxSeq = 0;
+    aps.forEach((ap) => {
+      const apNum = ap.apNumber || '';
+      const match = apNum.match(/AP[/-](\d{4})[/-](\d+)/i) || apNum.match(/AP[/-](\d+)/i);
+      if (match) {
+        const seqStr = match[2] || match[1];
+        const seq = parseInt(seqStr, 10);
+        if (!isNaN(seq) && seq > maxSeq) {
+          maxSeq = seq;
+        }
+      }
+    });
+    const nextSeq = String(maxSeq + 1).padStart(3, '0');
+    return `AP/${currentYear}/${nextSeq}`;
+  };
+
+  // Vendor AP Store Action: Idempotent AP Auto-Creation from GRN
+  const ensureAPForGRN = (grn: GoodsReceipt | GoodsReceivedNote | any, performedBy: string = 'System Engine'): VendorAP => {
+    const existingAPs = state.vendorAPs || [];
+    const existing = existingAPs.find((a) => a.grnId === grn.id || a.grnNumber === grn.grnNumber);
+    if (existing) {
+      return existing;
+    }
+
+    const po = (state.purchaseOrders || []).find((p) => p.id === grn.poId || p.poNumber === grn.poNumber || p.documentNumber === grn.poNumber);
+    const firstItem = (grn.items && grn.items.length > 0) ? grn.items[0] : null;
+    const poLine = po && (po as any).lines && (po as any).lines.length > 0 ? (po as any).lines[0] : null;
+    const rate = grn.poUnitRate ?? firstItem?.poUnitRate ?? firstItem?.unitRate ?? (poLine ? Number(poLine.unitRate ?? poLine.finalRate ?? poLine.basicRate ?? 0) : 0);
+    const acceptedQty = grn.acceptedQty ?? firstItem?.qcApprovedQty ?? 0;
+    const baseVal = grn.baseAcceptedValue ?? (acceptedQty * rate);
+    const taxVal = grn.taxAmount ?? (baseVal * 0.18);
+    const netPayable = grn.netPayable ?? (baseVal + taxVal);
+
+    let dueDate = grn.dueDate || 'Not Set';
+    if (!dueDate || dueDate === 'Not Set') {
+      const grnDateStr = grn.grnDate || grn.receivedDate || new Date().toISOString().split('T')[0];
+      const pTerms = (po as any)?.paymentTerms || (po as any)?.paymentTermsDays;
+      const termDays = pTerms ? parseInt(String(pTerms), 10) : 30;
+      const d = new Date(grnDateStr);
+      d.setDate(d.getDate() + (isNaN(termDays) ? 30 : termDays));
+      dueDate = d.toISOString().split('T')[0];
+    }
+
+    const newAPNumber = generateNextAPNumber(existingAPs);
+    const now = new Date().toISOString();
+    const apDate = grn.grnDate || now.split('T')[0];
+
+    const newAP: VendorAP = {
+      id: `ap-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      apNumber: newAPNumber,
+      grnId: grn.id,
+      grnNumber: grn.grnNumber || grn.documentNumber || `REC/${grn.id}`,
+      poId: grn.poId || po?.id,
+      poNumber: grn.poNumber || po?.documentNumber || po?.poNumber,
+      vendorId: grn.vendorId || po?.vendorId || 'v-001',
+      vendorName: grn.vendorName || po?.vendorName || 'Vendor',
+      projectId: grn.projectId || po?.projectId || 'PRJ-2026-001',
+      projectName: grn.projectName || po?.projectName || 'Project',
+      qcId: grn.qcId,
+      qcNumber: grn.qcNumber || grn.tokenNumber,
+      invoiceNumber: grn.supplierChallanNumber || grn.invoiceNumber || 'INV-001',
+      invoiceDate: apDate,
+      grnDate: apDate,
+      apDate: apDate,
+      dueDate,
+      acceptedQty,
+      netPayable: Math.round(netPayable * 100) / 100,
+      paidAmount: 0,
+      outstandingAmount: Math.round(netPayable * 100) / 100,
+      apStatus: 'Pending Approval',
+      paymentStatus: 'Not Started',
+      paymentHistory: [],
+      createdAt: now,
+      createdBy: performedBy,
+    };
+
+    addItem('vendorAPs', newAP);
+
+    logAudit({
+      documentType: 'vendor_ap' as any,
+      documentId: newAP.id,
+      documentNumber: newAP.apNumber,
+      action: 'CREATED',
+      performedBy,
+      newStatus: 'Pending Approval',
+      details: `Vendor AP ${newAP.apNumber} created automatically from GRN ${newAP.grnNumber} for ₹${netPayable.toLocaleString('en-IN')}`,
+    });
+
+    return newAP;
+  };
+
+  // Vendor AP Store Action: Approve AP
+  const approveVendorAP = (apId: string, performedBy: string = 'Finance Manager') => {
+    const ap = (state.vendorAPs || []).find((a) => a.id === apId || a.apNumber === apId);
+    if (!ap) return { success: false, error: 'Vendor AP record not found.' };
+
+    const now = new Date().toISOString();
+    const patch: Partial<VendorAP> = {
+      apStatus: 'Approved',
+      paymentStatus: ap.paidAmount > 0 ? (ap.outstandingAmount <= 0 ? 'Paid' : 'Partially Paid') : 'Payment Pending',
+      approvedBy: performedBy,
+      approvedAt: now,
+      updatedAt: now,
+    };
+
+    updateItem('vendorAPs', ap.id, patch);
+
+    logAudit({
+      documentType: 'vendor_ap' as any,
+      documentId: ap.id,
+      documentNumber: ap.apNumber,
+      action: 'APPROVED',
+      performedBy,
+      newStatus: 'Approved',
+      details: `Vendor AP ${ap.apNumber} approved by ${performedBy}`,
+    });
+
+    return { success: true };
+  };
+
+  // Vendor AP Store Action: Reject AP (Mandatory Rejection Reason)
+  const rejectVendorAP = (apId: string, reason: string, performedBy: string = 'Finance Manager') => {
+    if (!reason || !reason.trim()) {
+      return { success: false, error: 'Rejection reason is mandatory.' };
+    }
+
+    const ap = (state.vendorAPs || []).find((a) => a.id === apId || a.apNumber === apId);
+    if (!ap) return { success: false, error: 'Vendor AP record not found.' };
+
+    const now = new Date().toISOString();
+    const patch: Partial<VendorAP> = {
+      apStatus: 'Rejected',
+      paymentStatus: 'Not Started',
+      rejectedBy: performedBy,
+      rejectedAt: now,
+      rejectionReason: reason,
+      updatedAt: now,
+    };
+
+    updateItem('vendorAPs', ap.id, patch);
+
+    logAudit({
+      documentType: 'vendor_ap' as any,
+      documentId: ap.id,
+      documentNumber: ap.apNumber,
+      action: 'REJECTED',
+      performedBy,
+      newStatus: 'Rejected',
+      details: `Vendor AP ${ap.apNumber} rejected by ${performedBy}. Reason: ${reason}`,
+    });
+
+    return { success: true };
+  };
+
+  // Vendor AP Store Action: Record AP Payment (Locked until Approved)
+  const recordVendorAPPayment = (
+    apId: string,
+    paymentInput: {
+      paymentDate: string;
+      amountPaid: number;
+      paymentMethod: string;
+      paymentReference: string;
+      payingBankAccount?: string;
+      remarks?: string;
+    },
+    performedBy: string = 'Finance Manager'
+  ) => {
+    const ap = (state.vendorAPs || []).find((a) => a.id === apId || a.apNumber === apId);
+    if (!ap) return { success: false, error: 'Vendor AP record not found.' };
+
+    if (ap.apStatus !== 'Approved') {
+      return { success: false, error: 'Payment is locked until Accounts Payable (AP) status is Approved.' };
+    }
+
+    const amountPaid = Number(paymentInput.amountPaid);
+    if (isNaN(amountPaid) || amountPaid <= 0) {
+      return { success: false, error: 'Payment amount must be greater than 0.' };
+    }
+
+    if (amountPaid > (ap.outstandingAmount || 0) + 0.01) {
+      return {
+        success: false,
+        error: `Payment amount (₹${amountPaid}) cannot exceed current outstanding balance (₹${ap.outstandingAmount}).`,
+      };
+    }
+
+    const now = new Date().toISOString();
+    const paymentNum = `PAY/${new Date().getFullYear()}/${String(((ap.paymentHistory || []).length || 0) + 1).padStart(3, '0')}`;
+
+    const paymentRecord: APPaymentRecord = {
+      id: `pay-ap-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+      paymentNumber: paymentNum,
+      apId: ap.id,
+      grnId: ap.grnId,
+      paymentDate: paymentInput.paymentDate || now.split('T')[0],
+      amountPaid,
+      paymentMethod: paymentInput.paymentMethod,
+      paymentReference: paymentInput.paymentReference,
+      payingBankAccount: paymentInput.payingBankAccount,
+      remarks: paymentInput.remarks,
+      recordedBy: performedBy,
+      createdAt: now,
+    };
+
+    const newPaidAmount = Math.round(((ap.paidAmount || 0) + amountPaid) * 100) / 100;
+    const newOutstandingAmount = Math.max(0, Math.round(((ap.netPayable || 0) - newPaidAmount) * 100) / 100);
+    const newPaymentStatus: APPaymentStatus = newOutstandingAmount <= 0.01 ? 'Paid' : 'Partially Paid';
+
+    const updatedHistory = [...(ap.paymentHistory || []), paymentRecord];
+
+    const patch: Partial<VendorAP> = {
+      paidAmount: newPaidAmount,
+      outstandingAmount: newOutstandingAmount,
+      paymentStatus: newPaymentStatus,
+      paymentHistory: updatedHistory,
+      updatedAt: now,
+    };
+
+    updateItem('vendorAPs', ap.id, patch);
+
+    logAudit({
+      documentType: 'vendor_ap' as any,
+      documentId: ap.id,
+      documentNumber: ap.apNumber,
+      action: 'PAYMENT_RECORDED',
+      performedBy,
+      newStatus: newPaymentStatus,
+      details: `Recorded vendor payment of ₹${amountPaid.toLocaleString('en-IN')} for AP ${ap.apNumber} (${paymentRecord.paymentNumber}). Outstanding: ₹${newOutstandingAmount.toLocaleString('en-IN')}`,
+    });
+
+    return { success: true };
   };
 
   // Master Data Action: Create Category
@@ -3263,6 +4481,8 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         createSubcontractorWorkOrder,
         updateSubcontractWorkOrder,
         createWIPEntry,
+        approveSubcontractorWIP,
+        rejectSubcontractorWIP,
         createSubcontractWIP: (wip: SubcontractorWIP, _performedBy?: string) => {
           updateItem('subcontractorWIPs', wip.id, wip);
           addItem('subcontractorWIPs', wip);
@@ -3272,10 +4492,12 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
           updateItem('subcontractorWIPs', wipId, { status } as any);
         },
         certifyWIP,
-        recordSubcontractorPayment: (payment: any, _performedBy?: string) => {
-          addItem('subcontractorPayments', payment);
-          return { success: true };
-        },
+        ensureSubcontractorBillForWIP,
+        approveSubcontractorBill,
+        rejectSubcontractorBill,
+        reopenSubcontractorBill,
+        editSubcontractorBill,
+        recordSubcontractorPayment,
         recordGRNPayment,
         createSubcontractorBill: (bill: any, _performedBy?: string) => {
           addItem('subcontractorBills', bill);
@@ -3284,6 +4506,20 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         updateSubcontractorBillStatus: (billId: string, status: string, _performedBy?: string) => {
           updateItem('subcontractorBills', billId, { status } as any);
         },
+        ensureAPForGRN,
+        approveVendorAP,
+        rejectVendorAP,
+        recordVendorAPPayment,
+        createClientRABill,
+        editClientRABill,
+        submitClientRABillForApproval,
+        approveClientRABill,
+        rejectClientRABill,
+        markClientRABillSent,
+        recordClientPayment,
+        reopenClientRABill,
+        triggerProjectBillingEvaluation,
+        manuallyTriggerBillingMilestone,
         createCategory,
         updateCategory,
         deactivateCategory,

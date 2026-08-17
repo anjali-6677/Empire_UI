@@ -1,5 +1,5 @@
 import React from 'react';
-import { Briefcase, Clock, PlayCircle, PauseCircle, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Briefcase, PlayCircle, PauseCircle, CheckCircle2, TrendingUp, Receipt } from 'lucide-react';
 import { Project } from '../../../domain/types';
 import { formatIndianCurrency } from '../../../utils/format';
 import { useERPStore } from '../../../store/ERPStoreContext';
@@ -10,7 +10,7 @@ interface ProjectSummaryCardsProps {
 
 export const ProjectSummaryCards: React.FC<ProjectSummaryCardsProps> = ({ projects }) => {
   const { state } = useERPStore();
-  const setupDrafts = state.projectSetupDrafts || [];
+  const raBills = state.clientRABills || [];
 
   // Filter actual finalized projects
   const finalizedProjects = projects.filter((p) => {
@@ -22,9 +22,15 @@ export const ProjectSummaryCards: React.FC<ProjectSummaryCardsProps> = ({ projec
   const activeCount = finalizedProjects.filter((p) => (p.projectStatus || p.status) === 'active').length;
   const onHoldCount = finalizedProjects.filter((p) => (p.projectStatus || p.status) === 'on_hold').length;
   const completedCount = finalizedProjects.filter((p) => (p.projectStatus || p.status) === 'completed').length;
-  const setupInProgressCount = setupDrafts.length;
 
   const totalValue = finalizedProjects.reduce((sum, p) => sum + (p.acceptedQuotationValue || p.currentBOQValue || p.budgetBaseline || 0), 0);
+
+  // Billing Due KPI calculation
+  const pendingRABills = raBills.filter(
+    (b) => b.billStatus === 'Pending Approval' || b.billStatus === 'Approved' || b.billStatus === 'Sent to Client'
+  );
+  const pendingBillingAmount = pendingRABills.reduce((sum, b) => sum + (b.outstandingAmount || b.netReceivable || 0), 0);
+  const pendingBillsCount = pendingRABills.length;
 
   const cards = [
     {
@@ -36,12 +42,12 @@ export const ProjectSummaryCards: React.FC<ProjectSummaryCardsProps> = ({ projec
       iconColor: 'text-[#AB9570] bg-[#AB9570]/10',
     },
     {
-      title: 'Setups In Progress',
-      value: setupInProgressCount,
-      subtitle: 'Wizard Setup Drafts',
-      icon: Clock,
-      color: 'border-l-4 border-l-indigo-500 bg-white',
-      iconColor: 'text-indigo-600 bg-indigo-50',
+      title: 'Billing Due',
+      value: pendingBillsCount,
+      subtitle: `${formatIndianCurrency(pendingBillingAmount)} RA action`,
+      icon: Receipt,
+      color: 'border-l-4 border-l-amber-500 bg-white',
+      iconColor: 'text-amber-600 bg-amber-50',
     },
     {
       title: 'Active Execution',
