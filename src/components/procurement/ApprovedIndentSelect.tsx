@@ -24,22 +24,24 @@ export const ApprovedIndentSelect: React.FC<ApprovedIndentSelectProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 300 });
 
-  // Filter eligible indents: status === 'approved', not cancelled, remaining quantities > 0, valid project
+  // Filter eligible indents: status === 'approved', not cancelled, remaining quantities > 0, items.length > 0, valid project
   const eligibleIndents = indents.filter((ind) => {
     const isApproved = ind.status === 'approved' || ind.status === 'Approved';
     const isNotCancelled = ind.status !== 'cancelled' && ind.status !== 'Cancelled';
+    const hasItems = Array.isArray(ind.items || ind.lines) && (ind.items || ind.lines).length > 0;
 
     // Calculate remaining quantity sum across items
-    const remainingQtySum = (ind.items || []).reduce((sum: number, item: any) => {
-      const approvedQty = item.approvedQty || item.quantity || 0;
+    const itemsList = ind.items || ind.lines || [];
+    const remainingQtySum = itemsList.reduce((sum: number, item: any) => {
+      const approvedQty = item.approvedQty || item.quantity || item.requestedQty || 0;
       const convertedQty = item.convertedQty || item.orderedQty || 0;
       return sum + Math.max(0, approvedQty - convertedQty);
     }, 0);
 
-    const isNotFullyConverted = ind.status !== 'converted_to_po' && ind.status !== 'Converted to PO' && (remainingQtySum > 0 || (ind.items || []).length === 0);
+    const isNotFullyConverted = ind.status !== 'converted_to_po' && ind.status !== 'Converted to PO' && remainingQtySum > 0;
     const hasProject = projects.some((p) => p.id === ind.projectId);
 
-    return isApproved && isNotCancelled && isNotFullyConverted && hasProject;
+    return isApproved && isNotCancelled && hasItems && isNotFullyConverted && hasProject;
   });
 
   const selectedIndent = indents.find((i) => i.id === selectedIndentId);

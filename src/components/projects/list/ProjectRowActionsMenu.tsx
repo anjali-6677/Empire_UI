@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Eye, Edit3, Users, Calendar, PlayCircle, PauseCircle, CheckCircle2, MapPin, Trash2, Copy, AlertTriangle } from 'lucide-react';
+import { MoreVertical, Eye, Edit3, Users, Calendar, PlayCircle, PauseCircle, CheckCircle2, MapPin, Trash2, Copy, AlertTriangle, FileSpreadsheet, ShoppingBag, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Project } from '../../../domain/types';
 
@@ -40,25 +40,72 @@ export const ProjectRowActionsMenu: React.FC<ProjectRowActionsMenuProps> = ({
     <div className="relative inline-block text-left" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+        className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
         title="Project Actions"
       >
         <MoreVertical className="h-4 w-4" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1.5 text-xs font-sans">
-          {/* Main Primary Action based on Status */}
+        <div className="absolute right-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1.5 text-xs font-sans">
+          {/* Main Primary Navigation Actions */}
           <Link
             to={`/projects/${project.id}`}
             onClick={() => setIsOpen(false)}
             className="flex items-center gap-2 px-3 py-2 text-slate-900 hover:bg-slate-50 font-bold border-b border-slate-100"
           >
             <Eye className="h-3.5 w-3.5 text-[#AB9570]" />
-            <span>{project.status === 'draft' ? 'Continue Setup' : 'Open Workspace'}</span>
+            <span>Open Project</span>
           </Link>
 
-          {/* Draft Status Actions */}
+          <Link
+            to={`/projects/${project.id}?tab=details`}
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+          >
+            <Edit3 className="h-3.5 w-3.5 text-slate-500" />
+            <span>View Project Details</span>
+          </Link>
+
+          <Link
+            to={`/projects/${project.id}?tab=boq`}
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 text-slate-500" />
+            <span>View Project BOQ</span>
+          </Link>
+
+          <Link
+            to={`/projects/${project.id}?tab=schedule`}
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+          >
+            <Calendar className="h-3.5 w-3.5 text-slate-500" />
+            <span>View Schedule</span>
+          </Link>
+
+          <Link
+            to={`/projects/${project.id}?tab=procurement`}
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+          >
+            <ShoppingBag className="h-3.5 w-3.5 text-slate-500" />
+            <span>View Procurement / Indents</span>
+          </Link>
+
+          <Link
+            to={`/projects/${project.id}?tab=activity`}
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+          >
+            <Activity className="h-3.5 w-3.5 text-slate-500" />
+            <span>View Activity Log</span>
+          </Link>
+
+          {/* Workflow Status Controls */}
+          <div className="my-1 border-t border-slate-100" />
+
           {project.status === 'draft' && (
             <>
               <Link
@@ -71,7 +118,7 @@ export const ProjectRowActionsMenu: React.FC<ProjectRowActionsMenuProps> = ({
               </Link>
               <button
                 onClick={() => handleStatusChange('planning')}
-                className="w-full flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 font-semibold"
+                className="w-full flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 font-semibold cursor-pointer"
               >
                 <Calendar className="h-3.5 w-3.5 text-blue-500" />
                 <span>Move to Planning</span>
@@ -79,7 +126,6 @@ export const ProjectRowActionsMenu: React.FC<ProjectRowActionsMenuProps> = ({
             </>
           )}
 
-          {/* Planning Status Actions */}
           {project.status === 'planning' && (
             <>
               <Link
@@ -90,17 +136,9 @@ export const ProjectRowActionsMenu: React.FC<ProjectRowActionsMenuProps> = ({
                 <Users className="h-3.5 w-3.5 text-slate-500" />
                 <span>Assign Team</span>
               </Link>
-              <Link
-                to={`/projects/${project.id}?tab=schedule`}
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
-              >
-                <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                <span>Open Schedule</span>
-              </Link>
               <button
                 onClick={() => handleStatusChange('active')}
-                className="w-full flex items-center gap-2 px-3 py-2 text-emerald-600 hover:bg-emerald-50 font-bold"
+                className="w-full flex items-center gap-2 px-3 py-2 text-emerald-600 hover:bg-emerald-50 font-bold cursor-pointer"
               >
                 <PlayCircle className="h-3.5 w-3.5 text-emerald-500" />
                 <span>Activate Project</span>
@@ -108,7 +146,6 @@ export const ProjectRowActionsMenu: React.FC<ProjectRowActionsMenuProps> = ({
             </>
           )}
 
-          {/* Active Status Actions */}
           {project.status === 'active' && (
             <>
               <Link
@@ -121,14 +158,14 @@ export const ProjectRowActionsMenu: React.FC<ProjectRowActionsMenuProps> = ({
               </Link>
               <button
                 onClick={() => handleStatusChange('on_hold')}
-                className="w-full flex items-center gap-2 px-3 py-2 text-amber-600 hover:bg-amber-50 font-medium"
+                className="w-full flex items-center gap-2 px-3 py-2 text-amber-600 hover:bg-amber-50 font-medium cursor-pointer"
               >
                 <PauseCircle className="h-3.5 w-3.5 text-amber-500" />
                 <span>Put On Hold</span>
               </button>
               <button
                 onClick={() => handleStatusChange('completed')}
-                className="w-full flex items-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 font-bold"
+                className="w-full flex items-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 font-bold cursor-pointer"
               >
                 <CheckCircle2 className="h-3.5 w-3.5 text-purple-500" />
                 <span>Mark Completed</span>
@@ -136,34 +173,25 @@ export const ProjectRowActionsMenu: React.FC<ProjectRowActionsMenuProps> = ({
             </>
           )}
 
-          {/* On Hold Actions */}
           {project.status === 'on_hold' && (
             <button
               onClick={() => handleStatusChange('active')}
-              className="w-full flex items-center gap-2 px-3 py-2 text-emerald-600 hover:bg-emerald-50 font-bold"
+              className="w-full flex items-center gap-2 px-3 py-2 text-emerald-600 hover:bg-emerald-50 font-bold cursor-pointer"
             >
               <PlayCircle className="h-3.5 w-3.5 text-emerald-500" />
               <span>Resume Project</span>
             </button>
           )}
 
-          {/* Shared Secondary Actions */}
+          {/* Shared Management Actions */}
           <div className="my-1 border-t border-slate-100" />
-          <Link
-            to={`/projects/${project.id}?tab=details`}
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
-          >
-            <Edit3 className="h-3.5 w-3.5 text-slate-500" />
-            <span>Project Details</span>
-          </Link>
 
           <button
             onClick={() => {
               setIsOpen(false);
               onDuplicate(project.id);
             }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+            className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
           >
             <Copy className="h-3.5 w-3.5 text-slate-500" />
             <span>Duplicate Project</span>
@@ -172,7 +200,7 @@ export const ProjectRowActionsMenu: React.FC<ProjectRowActionsMenuProps> = ({
           {project.status !== 'completed' && (
             <button
               onClick={() => handleStatusChange('cancelled')}
-              className="w-full flex items-center gap-2 px-3 py-2 text-rose-600 hover:bg-rose-50 font-medium"
+              className="w-full flex items-center gap-2 px-3 py-2 text-rose-600 hover:bg-rose-50 font-medium cursor-pointer"
             >
               <AlertTriangle className="h-3.5 w-3.5 text-rose-500" />
               <span>Cancel Project</span>
@@ -184,7 +212,7 @@ export const ProjectRowActionsMenu: React.FC<ProjectRowActionsMenuProps> = ({
               setIsOpen(false);
               onDelete(project.id);
             }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-rose-700 hover:bg-rose-50 font-semibold"
+            className="w-full flex items-center gap-2 px-3 py-2 text-rose-700 hover:bg-rose-50 font-semibold cursor-pointer"
           >
             <Trash2 className="h-3.5 w-3.5 text-rose-500" />
             <span>Delete Record</span>
@@ -194,3 +222,4 @@ export const ProjectRowActionsMenu: React.FC<ProjectRowActionsMenuProps> = ({
     </div>
   );
 };
+

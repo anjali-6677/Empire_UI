@@ -24,7 +24,6 @@ import {
   Boxes,
   Truck,
   HardHat,
-  BadgeCheck,
   Receipt,
   CreditCard,
   FileCheck2,
@@ -288,7 +287,6 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
       { id: 'inv-stk', label: 'Stock Ledger', path: ROUTES.INVENTORY_STOCK_LEDGER, icon: Boxes, projectContext: 'required' },
       { id: 'inv-isu', label: 'Material Issues to Site', path: ROUTES.INVENTORY_MATERIAL_ISSUES, icon: Truck, projectContext: 'required' },
       { id: 'exe-wip', label: 'Subcontractor WIP', path: ROUTES.EXECUTION_SUBCONTRACTOR_WIP, icon: HardHat, projectContext: 'required' },
-      { id: 'exe-crt', label: 'WIP Certification', path: ROUTES.EXECUTION_WIP_CERTIFICATION, icon: BadgeCheck, projectContext: 'required' },
     ],
   },
   {

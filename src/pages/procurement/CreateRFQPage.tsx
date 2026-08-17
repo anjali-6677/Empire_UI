@@ -4,44 +4,62 @@
  */
 
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
 import { Button } from '../../components/ui/Button';
 import { RFQ } from '../../domain/types';
 import { ArrowLeft, Send, AlertTriangle, Layers, Building2, CheckSquare, Square } from 'lucide-react';
+import { RFQIssuedSuccessModal } from '../../components/procurement/RFQIssuedSuccessModal';
 
 export const CreateRFQPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const { state, createRFQ } = useERPStore();
 
   const preselectedIndentId = searchParams.get('indentId') || '';
 
   // Get approved indents eligible for RFQ
   const approvedIndents = state.materialIndents.filter((i) => i.status === 'approved' || i.id === preselectedIndentId);
-  const initialIndentId = preselectedIndentId || approvedIndents[0]?.id || state.materialIndents[0]?.id || 'ind-001';
+  const initialIndent = approvedIndents.find((i) => i.id === preselectedIndentId) || approvedIndents[0] || state.materialIndents[0];
+  const initialIndentId = initialIndent?.id || 'ind-001';
 
   const [selectedIndentId, setSelectedIndentId] = useState<string>(initialIndentId);
-  const currentIndent = state.materialIndents.find((i) => i.id === selectedIndentId) || state.materialIndents[0];
+  const currentIndent = state.materialIndents.find((i) => i.id === selectedIndentId) || initialIndent;
 
   const [invitedVendorIds, setInvitedVendorIds] = useState<string[]>(
     state.vendors.slice(0, 3).map((v) => v.id)
   );
 
-  const [quoteDueDate, setQuoteDueDate] = useState<string>('2026-08-05');
+  // Auto-fill lines from currentIndent (supporting both .items and .lines)
+  const currentIndentLines = currentIndent?.items || currentIndent?.lines || [];
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const nextWeekStr = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  const deliveryStr = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
+
+  const [quoteDueDate, setQuoteDueDate] = useState<string>(nextWeekStr);
   const [deliveryLocation, setDeliveryLocation] = useState<string>(
-    currentIndent ? `${currentIndent.projectName} Site Office, Worli, Mumbai` : 'Central Site Office'
+    currentIndent ? `${currentIndent.projectName || 'Project'} Site Office` : 'Central Site Office'
   );
-  const [requiredDate, setRequiredDate] = useState<string>('2026-08-15');
+  const [requiredDate, setRequiredDate] = useState<string>(deliveryStr);
   const [commercialTerms, setCommercialTerms] = useState<string>(
     '1. 100% Payment within 30 days of GRN acceptance.\n2. Delivery at site included in quoted rates.\n3. Test certificates required with delivery.'
   );
 
   const [selectedLineIds, setSelectedLineIds] = useState<string[]>(
-    (currentIndent?.lines || []).map((l: any) => l.id) || []
+    currentIndentLines.map((l: any, idx: number) => l.id || l.boqLineId || `line-${idx}`)
   );
 
+  // Sync selected line items when selectedIndentId changes
+  React.useEffect(() => {
+    if (currentIndent) {
+      const lines = currentIndent.items || currentIndent.lines || [];
+      setSelectedLineIds(lines.map((l: any, idx: number) => l.id || l.boqLineId || `line-${idx}`));
+      setDeliveryLocation(`${currentIndent.projectName || 'Project'} Site Office`);
+    }
+  }, [selectedIndentId]);
+
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [issuedRfqResult, setIssuedRfqResult] = useState<RFQ | null>(null);
 
   const toggleVendor = (vendorId: string) => {
     if (invitedVendorIds.includes(vendorId)) {
@@ -73,16 +91,31 @@ export const CreateRFQPage: React.FC = () => {
       return;
     }
 
-    const targetLines = (currentIndent?.lines || [])
-      .filter((l) => selectedLineIds.includes(l.id))
-      .map((l, idx) => ({
+    if (!quoteDueDate || quoteDueDate < todayStr) {
+      setErrorMsg('Quote Submission Due Date cannot be in the past.');
+      return;
+    }
+
+    if (!requiredDate || requiredDate < quoteDueDate) {
+      setErrorMsg('Required Delivery Date must not be before Quote Submission Due Date.');
+      return;
+    }
+
+    if (!deliveryLocation.trim()) {
+      setErrorMsg('Delivery Location is mandatory.');
+      return;
+    }
+
+    const targetLines = currentIndentLines
+      .filter((l: any, idx: number) => selectedLineIds.includes(l.id || l.boqLineId || `line-${idx}`))
+      .map((l: any, idx: number) => ({
         id: `rfq-line-${idx + 1}`,
-        indentLineId: l.id,
-        productId: l.productId,
-        productCode: l.productCode,
-        productName: l.productName,
-        unitSymbol: l.unitSymbol,
-        quantity: l.requestedQty,
+        indentLineId: l.id || l.boqLineId || `line-${idx}`,
+        productId: l.productId || l.boqLineId || `prod-${idx + 1}`,
+        productCode: l.productCode || `MAT-${idx + 1}`,
+        productName: l.productName || l.item || l.itemDescription || `Material #${idx + 1}`,
+        unitSymbol: l.unitSymbol || l.unit || 'Pcs',
+        quantity: l.requestedQty || l.quantity || l.approvedQty || 1,
       }));
 
     const documentNumber = `RFQ-2026-${String(state.rfqs.length + 1).padStart(3, '0')}`;
@@ -94,7 +127,7 @@ export const CreateRFQPage: React.FC = () => {
       projectId: currentIndent?.projectId || 'PRJ-2026-001',
       projectName: currentIndent?.projectName || 'Worli Luxury Residence',
       invitedVendorIds,
-      issueDate: new Date().toISOString().split('T')[0],
+      issueDate: todayStr,
       quoteDueDate,
       deliveryLocation,
       requiredDate,
@@ -102,12 +135,12 @@ export const CreateRFQPage: React.FC = () => {
       lines: targetLines,
       status: 'issued',
       createdAt: new Date().toISOString(),
-      createdBy: 'Rajesh Sharma (Procurement Lead)',
+      createdBy: 'Current User (Procurement)',
     };
 
-    const res = createRFQ(newRFQ, 'Rajesh Sharma (Procurement Lead)');
+    const res = createRFQ(newRFQ, 'Current User (Procurement)');
     if (res.success && res.rfq) {
-      navigate(`/procurement/rfqs/${res.rfq.id}`);
+      setIssuedRfqResult(res.rfq);
     } else {
       setErrorMsg(res.error || 'Failed to create RFQ.');
     }
@@ -275,48 +308,84 @@ export const CreateRFQPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Lines Selection */}
+        {/* 3. Select Indented Line Items for Bidding */}
         <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3 shadow-sm">
-          <div className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-2">
-            3. Select Indented Line Items for Bidding
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <Layers className="h-4 w-4 text-slate-700" /> 3. Select Indented Line Items for Bidding ({selectedLineIds.length} / {currentIndentLines.length} Selected)
+            </div>
+            <div className="flex gap-3 text-xs">
+              <button
+                type="button"
+                onClick={() => setSelectedLineIds(currentIndentLines.map((l: any, idx: number) => l.id || l.boqLineId || `line-${idx}`))}
+                className="font-bold text-amber-700 hover:underline cursor-pointer"
+              >
+                Select All
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedLineIds([])}
+                className="font-semibold text-slate-500 hover:underline cursor-pointer"
+              >
+                Deselect All
+              </button>
+            </div>
           </div>
 
-          <table className="w-full text-left border-collapse border border-slate-200 rounded">
-            <thead className="bg-slate-100 font-bold text-slate-700">
-              <tr>
-                <th className="p-2.5 w-10 text-center">Select</th>
-                <th className="p-2.5">Product Code & Description</th>
-                <th className="p-2.5 text-right">Requested Qty</th>
-                <th className="p-2.5 text-right">Est. Unit Rate</th>
-                <th className="p-2.5 text-right">Est. Total Cost</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800">
-              {(currentIndent?.lines || []).map((l: any) => {
-                const isSelected = selectedLineIds.includes(l.id);
-                return (
-                  <tr key={l.id} className={isSelected ? 'bg-amber-50/40' : ''}>
-                    <td className="p-2.5 text-center cursor-pointer" onClick={() => toggleLine(l.id)}>
-                      {isSelected ? <CheckSquare className="h-4 w-4 text-amber-800" /> : <Square className="h-4 w-4 text-slate-300" />}
-                    </td>
-                    <td className="p-2.5">
-                      <div className="font-bold text-slate-900">{l.productName}</div>
-                      <div className="text-[10px] font-mono text-slate-500">{l.productCode}</div>
-                    </td>
-                    <td className="p-2.5 text-right font-mono font-bold">
-                      {l.requestedQty} {l.unitSymbol}
-                    </td>
-                    <td className="p-2.5 text-right font-mono text-slate-600">
-                      ₹{l.estimatedRate.toLocaleString('en-IN')}
-                    </td>
-                    <td className="p-2.5 text-right font-mono font-bold text-slate-900">
-                      ₹{l.estimatedTotal.toLocaleString('en-IN')}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                  <th className="p-2.5 w-10 text-center">Select</th>
+                  <th className="p-2.5">Product Code & Description</th>
+                  <th className="p-2.5 text-right">Requested Qty</th>
+                  <th className="p-2.5 text-right">Est. Unit Rate</th>
+                  <th className="p-2.5 text-right">Est. Total Cost</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-800 font-medium">
+                {currentIndentLines.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-6 text-center text-slate-400 italic">
+                      No material line items available in selected indent.
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ) : (
+                  currentIndentLines.map((l: any, idx: number) => {
+                    const lineId = l.id || l.boqLineId || `line-${idx}`;
+                    const isSelected = selectedLineIds.includes(lineId);
+                    const matName = l.productName || l.item || l.itemDescription || `Material #${idx + 1}`;
+                    const matCode = l.productCode || `MAT-${idx + 1}`;
+                    const qty = l.requestedQty || l.quantity || l.approvedQty || 0;
+                    const unit = l.unitSymbol || l.unit || 'Pcs';
+                    const rate = l.estimatedRate || l.rate || 0;
+                    const total = l.estimatedTotal || l.amount || (qty * rate);
+
+                    return (
+                      <tr key={lineId} className={isSelected ? 'bg-amber-50/40' : 'hover:bg-slate-50'}>
+                        <td className="p-2.5 text-center cursor-pointer" onClick={() => toggleLine(lineId)}>
+                          {isSelected ? <CheckSquare className="h-4 w-4 text-amber-800" /> : <Square className="h-4 w-4 text-slate-300" />}
+                        </td>
+                        <td className="p-2.5">
+                          <div className="font-bold text-slate-900">{matName}</div>
+                          <div className="text-[10px] font-mono text-slate-500">{matCode}</div>
+                        </td>
+                        <td className="p-2.5 text-right font-mono font-bold">
+                          {qty} {unit}
+                        </td>
+                        <td className="p-2.5 text-right font-mono text-slate-600">
+                          ₹{rate.toLocaleString('en-IN')}
+                        </td>
+                        <td className="p-2.5 text-right font-mono font-bold text-slate-900">
+                          ₹{total.toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Commercial & Delivery Details */}
@@ -372,7 +441,7 @@ export const CreateRFQPage: React.FC = () => {
         <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
           <Link
             to="/procurement/rfqs"
-            className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-50 transition"
+            className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-50 transition cursor-pointer"
           >
             Cancel
           </Link>
@@ -381,6 +450,16 @@ export const CreateRFQPage: React.FC = () => {
           </Button>
         </div>
       </form>
+
+      {/* RFQ Issued Success Modal */}
+      {issuedRfqResult && (
+        <RFQIssuedSuccessModal
+          isOpen={Boolean(issuedRfqResult)}
+          onClose={() => setIssuedRfqResult(null)}
+          rfq={issuedRfqResult}
+          vendors={state.vendors}
+        />
+      )}
     </div>
   );
 };

@@ -409,15 +409,34 @@ export const calculateStockLedgerRunningBalances = (
   });
 };
 
+export const isLocationMatch = (entryLocationId?: string, targetLocationId?: string): boolean => {
+  if (!targetLocationId || targetLocationId === 'all') return true;
+  if (!entryLocationId) return false;
+  if (entryLocationId === targetLocationId) return true;
+
+  const mainAlias = ['loc-001', 'wh-main', 'loc-1', 'wh-main-01', 'loc-main'];
+  const secondaryAlias = ['loc-002', 'wh-secondary', 'loc-2', 'yard-pune-01'];
+  const siteAlias = ['loc-dest-001', 'wh-site-p1', 'wh-site-p2', 'loc-3', 'store-site-101'];
+
+  if (mainAlias.includes(targetLocationId) && mainAlias.includes(entryLocationId)) return true;
+  if (secondaryAlias.includes(targetLocationId) && secondaryAlias.includes(entryLocationId)) return true;
+  if (siteAlias.includes(targetLocationId) && siteAlias.includes(entryLocationId)) return true;
+
+  return false;
+};
+
 export const getAvailableStockForLocationAndProduct = (
   entries: StockLedgerEntry[] = [],
   locationId: string,
   productId: string
 ): number => {
   let balance = 0;
-  entries.forEach((e) => {
-    if (e.locationId === locationId && e.productId === productId) {
-      balance += (e.inQuantity || 0) - (e.outQuantity || 0);
+  entries.forEach((e: any) => {
+    const locId = e.locationId || e.warehouseId;
+    if (isLocationMatch(locId, locationId) && e.productId === productId) {
+      const qtyIn = Number(e.inQuantity ?? e.quantityIn ?? (e.quantity && e.quantity > 0 ? e.quantity : 0));
+      const qtyOut = Number(e.outQuantity ?? e.quantityOut ?? (e.quantity && e.quantity < 0 ? Math.abs(e.quantity) : 0));
+      balance += qtyIn - qtyOut;
     }
   });
   return Math.max(0, balance);
@@ -904,6 +923,107 @@ export const getProjectCategoryBudgetSummary = (
     isExceeded,
   };
 };
+
+// ==========================================
+// CANONICAL GRN FINANCIAL & KPI SELECTORS
+// ==========================================
+
+export const getGRNNetPayable = (grn: any, po?: any): number => {
+  if (!grn) return 0;
+
+  const firstItem = grn.items && grn.items.length > 0 ? grn.items[0] : null;
+  const poLine = po && (po as any).lines && (po as any).lines.length > 0 ? (po as any).lines[0] : null;
+  const rate = grn.poUnitRate ?? firstItem?.poUnitRate ?? firstItem?.unitRate ?? (poLine ? Number(poLine.unitRate ?? poLine.finalRate ?? poLine.basicRate ?? 0) : 0);
+  const acceptedQty = grn.acceptedQty ?? firstItem?.qcApprovedQty ?? 0;
+  const baseVal = grn.baseAcceptedValue ?? (acceptedQty * rate);
+  const taxVal = grn.taxAmount ?? (baseVal * 0.18);
+  const netPayable = grn.netPayable ?? (baseVal + taxVal);
+
+  return Math.round(netPayable * 100) / 100;
+};
+
+export const getGRNPaidAmount = (grn: any, payments: any[] = []): number => {
+  if (!grn) return 0;
+  const grnPayments = payments.filter((p) => p.grnId === grn.id || p.grnId === grn.grnNumber);
+  const paid = grn.paidAmount ?? grnPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  return Math.round(paid * 100) / 100;
+};
+
+export const getGRNOutstanding = (grn: any, payments: any[] = [], po?: any): number => {
+  if (!grn) return 0;
+  const netPayable = getGRNNetPayable(grn, po);
+  const paid = getGRNPaidAmount(grn, payments);
+  const outstanding = grn.outstandingAmount ?? Math.max(0, netPayable - paid);
+  return Math.round(outstanding * 100) / 100;
+};
+
+export const getGRNPaymentStatus = (grn: any, payments: any[] = [], po?: any, todayISO?: string): string => {
+  if (!grn) return 'Payment Pending';
+  if (grn.status === 'Cancelled' || grn.status === 'cancelled') return 'Cancelled';
+
+  const today = todayISO || new Date().toISOString().split('T')[0];
+  const netPayable = getGRNNetPayable(grn, po);
+  const paid = getGRNPaidAmount(grn, payments);
+  const outstanding = getGRNOutstanding(grn, payments, po);
+
+  let dueDate = grn.dueDate || 'Not Set';
+  if (!grn.dueDate && grn.grnDate) {
+    const pTerms = (po as any)?.paymentTerms || (po as any)?.paymentTermsDays;
+    const termDays = pTerms ? parseInt(String(pTerms), 10) : 30;
+    const d = new Date(grn.grnDate);
+    d.setDate(d.getDate() + (isNaN(termDays) ? 30 : termDays));
+    dueDate = d.toISOString().split('T')[0];
+  }
+
+  const isOverdue = outstanding > 0.01 && dueDate !== 'Not Set' && dueDate < today;
+
+  if (netPayable > 0 && outstanding <= 0.01) return 'Paid';
+  if (isOverdue) return 'Overdue';
+  if (paid > 0) return 'Partially Paid';
+  return 'Payment Pending';
+};
+
+export interface GRNKPISummary {
+  totalGRNs: number;
+  openGRNs: number;
+  totalNetPayable: number;
+  totalOutstanding: number;
+}
+
+export const getGRNKPISummary = (
+  grns: any[] = [],
+  payments: any[] = [],
+  pos: any[] = []
+): GRNKPISummary => {
+  let totalGRNs = 0;
+  let openGRNs = 0;
+  let totalNetPayable = 0;
+  let totalOutstanding = 0;
+
+  grns.forEach((grn) => {
+    if (grn.status === 'Cancelled' || grn.status === 'cancelled') return;
+
+    totalGRNs += 1;
+    const po = pos.find((p) => p.id === grn.poId || p.poNumber === grn.poNumber || p.documentNumber === grn.poNumber);
+    const netPayable = getGRNNetPayable(grn, po);
+    const outstanding = getGRNOutstanding(grn, payments, po);
+
+    totalNetPayable += netPayable;
+    totalOutstanding += outstanding;
+
+    if (outstanding > 0.01) {
+      openGRNs += 1;
+    }
+  });
+
+  return {
+    totalGRNs,
+    openGRNs,
+    totalNetPayable: Math.round(totalNetPayable * 100) / 100,
+    totalOutstanding: Math.round(totalOutstanding * 100) / 100,
+  };
+};
+
 
 
 

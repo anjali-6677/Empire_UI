@@ -1,6 +1,7 @@
 import React from 'react';
 import { Building2, MapPin, AlertTriangle } from 'lucide-react';
 import { formatIndianCurrency } from '../../utils/format';
+import { getIndentCommercialBaseline } from '../../utils/procurementSelectors';
 
 interface PurchaseOrderSourceSummaryProps {
   indent: any;
@@ -13,7 +14,7 @@ export const PurchaseOrderSourceSummary: React.FC<PurchaseOrderSourceSummaryProp
 }) => {
   if (!indent) return null;
 
-  const totalValue = indent.estimatedTotalValue || indent.approvedValue || 0;
+  const totalValue = getIndentCommercialBaseline(indent);
   const itemsCount = (indent.items || []).length;
   const hasBOQException = Boolean(indent.boqException || indent.hasBoqException);
   const hasBudgetException = Boolean(indent.budgetException || indent.hasBudgetException);

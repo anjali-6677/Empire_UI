@@ -598,7 +598,7 @@ export interface RFQRecord {
 }
 
 export const RFQS: RFQRecord[] = [
-  { id: 'rfq-1', rfqNo: 'RFQ-2026-001', indentId: 'ind-1', indentNumber: 'IND-2026-001', type: 'Material', siteId: 'site-1', site: 'Nexus Tech Park', vendor: 'Century Plyboards India Ltd', requestDate: '2026-07-12', dueDate: '2026-07-22', itemCount: 5, totalValue: 450000, bidsOut: 3, bidsRecd: 3, status: 'quotations_received' },
+  { id: 'rfq-1', rfqNo: 'RFQ-2026-007', indentId: 'ind-1', indentNumber: 'IND-2026-001', type: 'Material', siteId: 'site-1', site: 'Nexus Tech Park', vendor: 'Century Plyboards India Ltd', requestDate: '2026-07-12', dueDate: '2026-07-22', itemCount: 5, totalValue: 450000, bidsOut: 3, bidsRecd: 3, status: 'quotations_received' },
   { id: 'rfq-2', rfqNo: 'RFQ-2026-002', indentId: 'ind-3', indentNumber: 'IND-2026-003', type: 'Material', siteId: 'site-2', site: 'Grand Hyatt Goa', vendor: 'Asian Paints Ltd', requestDate: '2026-07-14', dueDate: '2026-07-24', itemCount: 3, totalValue: 520000, bidsOut: 2, bidsRecd: 2, status: 'po_issued' },
   { id: 'rfq-3', rfqNo: 'RFQ-2026-003', indentId: 'ind-2', indentNumber: 'IND-2026-002', type: 'Material', siteId: 'site-3', site: 'Imperial Heights', vendor: 'Saint-Gobain India Pvt Ltd', requestDate: '2026-07-16', dueDate: '2026-07-26', itemCount: 4, totalValue: 680000, bidsOut: 3, bidsRecd: 2, status: 'quotations_received' },
   { id: 'rfq-4', rfqNo: 'RFQ-2026-004', indentId: 'ind-6', indentNumber: 'IND-2026-006', type: 'Material', siteId: 'site-3', site: 'Imperial Heights', vendor: 'Asian Paints Ltd', requestDate: '2026-07-21', dueDate: '2026-07-31', itemCount: 3, totalValue: 420000, bidsOut: 3, bidsRecd: 1, status: 'po_issued' },

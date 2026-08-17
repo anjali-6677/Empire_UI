@@ -9,6 +9,12 @@ import { VendorComparisonPanel } from '../../components/procurement/VendorCompar
 import { VendorSelectionJustification } from '../../components/procurement/VendorSelectionJustification';
 import { PurchaseOrderItemsTable, POItemRow } from '../../components/procurement/PurchaseOrderItemsTable';
 import { PurchaseOrderCommercialSummary } from '../../components/procurement/PurchaseOrderCommercialSummary';
+import {
+  getCanonicalRFQIds,
+  getQuotationRFQIds,
+  getQuotationLandedAmount,
+  isValidReceivedQuotation,
+} from '../../utils/procurementSelectors';
 
 
 export const CreatePurchaseOrderPage: React.FC = () => {
@@ -25,32 +31,69 @@ export const CreatePurchaseOrderPage: React.FC = () => {
   const vendorQuotations = state.vendorQuotations || [];
   const vendors = state.vendors || [];
 
-  // Determine initial selected indent
+  // Determine RFQ source context if provided using canonical ID matching
+  const targetRFQ = rfqParamId
+    ? rfqs.find((r) => {
+        const ids = getCanonicalRFQIds(r);
+        return ids.includes(rfqParamId.trim().toLowerCase());
+      })
+    : null;
+
+  // Determine initial selected indent explicitly from RFQ sourceIndentId / indentId first
   const initialIndentId =
+    targetRFQ?.indentId ||
+    (targetRFQ as any)?.sourceIndentId ||
     indentParamId ||
-    (rfqParamId ? rfqs.find((r) => r.id === rfqParamId)?.indentId : '') ||
-    indents.find((i) => i.status === 'approved' || i.status === 'Approved')?.id ||
     '';
 
   const [selectedIndentId, setSelectedIndentId] = useState<string>(initialIndentId);
-  const selectedIndent = indents.find((i) => i.id === selectedIndentId);
-  const selectedProject = selectedIndent ? projects.find((p) => p.id === selectedIndent.projectId) : null;
+  const [lockedFromRFQ, setLockedFromRFQ] = useState<boolean>(Boolean(targetRFQ));
+
+  // Sync initial indent if targetRFQ resolves asynchronously or after load
+  useEffect(() => {
+    if (targetRFQ) {
+      const resolvedIndentId = targetRFQ.indentId || (targetRFQ as any).sourceIndentId;
+      if (resolvedIndentId && resolvedIndentId !== selectedIndentId) {
+        setSelectedIndentId(resolvedIndentId);
+      }
+      setLockedFromRFQ(true);
+    }
+  }, [rfqParamId, targetRFQ]);
+
+  const selectedIndent = indents.find((i) => i.id === selectedIndentId) || (targetRFQ ? indents.find((i) => i.indentNumber === targetRFQ.sourceIndentNumber) : null);
+  const selectedProject = selectedIndent
+    ? projects.find((p) => p.id === selectedIndent.projectId)
+    : targetRFQ
+    ? projects.find((p) => p.id === targetRFQ.projectId)
+    : null;
 
   // Determine mode (RFQ route vs Direct PO route)
-  const isIndentDirectPO = Boolean((selectedIndent as any)?.purchaseType === 'direct_po' || (selectedIndent as any)?.isDirectPO || indentParamId);
+  const isIndentDirectPO = Boolean((selectedIndent as any)?.purchaseType === 'direct_po' || (selectedIndent as any)?.isDirectPO || (indentParamId && !rfqParamId));
   const [mode, setMode] = useState<'rfq' | 'direct'>(isIndentDirectPO ? 'direct' : 'rfq');
 
   useEffect(() => {
-    if (selectedIndent) {
+    if (selectedIndent && !targetRFQ) {
       if ((selectedIndent as any)?.purchaseType === 'direct_po' || (selectedIndent as any)?.isDirectPO) {
         setMode('direct');
       }
     }
-  }, [selectedIndent]);
+  }, [selectedIndent, targetRFQ]);
 
-  // RFQ selection logic
-  const linkedRFQs = selectedIndent ? rfqs.filter((r) => r.indentId === selectedIndent.id) : [];
-  const linkedQuotes = vendorQuotations.filter((q) => linkedRFQs.some((r) => r.id === q.rfqId));
+  // RFQ selection logic: fetch quotes for targetRFQ or for any linked RFQs of the selected indent
+  const linkedRFQs = targetRFQ
+    ? [targetRFQ]
+    : selectedIndent
+    ? rfqs.filter((r) => r.indentId === selectedIndent.id || (r as any).sourceIndentId === selectedIndent.id || r.sourceIndentNumber === selectedIndent.indentNumber)
+    : [];
+
+  const linkedQuotes = vendorQuotations.filter((q) => {
+    const isLinked = linkedRFQs.some((r) => {
+      const canonicalIds = getCanonicalRFQIds(r);
+      const qRfqIds = getQuotationRFQIds(q);
+      return qRfqIds.some((qId) => canonicalIds.includes(qId));
+    });
+    return isLinked && isValidReceivedQuotation(q);
+  });
 
   const [selectedQuotationId, setSelectedQuotationId] = useState<string>('');
   const [isComparisonOpen, setIsComparisonOpen] = useState<boolean>(false);
@@ -81,10 +124,12 @@ export const CreatePurchaseOrderPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string>('');
 
-  // Auto-select lowest vendor quote when linked quotes load
+  // Auto-select lowest vendor quote (L1) when linked quotes load
   useEffect(() => {
     if (linkedQuotes.length > 0 && !selectedQuotationId) {
-      const sorted = [...linkedQuotes].sort((a, b) => ((a as any).landedAmount || (a as any).totalAmount || 0) - ((b as any).landedAmount || (b as any).totalAmount || 0));
+      const sorted = [...linkedQuotes].sort(
+        (a, b) => getQuotationLandedAmount(a) - getQuotationLandedAmount(b)
+      );
       setSelectedQuotationId(sorted[0].id);
     }
   }, [linkedQuotes, selectedQuotationId]);
@@ -174,7 +219,9 @@ export const CreatePurchaseOrderPage: React.FC = () => {
   // Check if non-L1 selected
   let isNonL1Selected = false;
   if (mode === 'rfq' && linkedQuotes.length > 1 && selectedQuotationId) {
-    const sorted = [...linkedQuotes].sort((a, b) => ((a as any).landedAmount || 0) - ((b as any).landedAmount || 0));
+    const sorted = [...linkedQuotes].sort(
+      (a, b) => getQuotationLandedAmount(a) - getQuotationLandedAmount(b)
+    );
     if (sorted[0]?.id !== selectedQuotationId) {
       isNonL1Selected = true;
     }
@@ -403,14 +450,54 @@ export const CreatePurchaseOrderPage: React.FC = () => {
         </div>
       )}
 
-      {/* SECTION 1: Select Approved Material Indent (Primary First Field) */}
+      {/* SECTION 1: Select Approved Material Indent or Display Locked Source RFQ Banner */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-        <ApprovedIndentSelect
-          indents={indents}
-          projects={projects}
-          selectedIndentId={selectedIndentId}
-          onSelectIndent={(ind) => setSelectedIndentId(ind.id)}
-        />
+        {lockedFromRFQ && targetRFQ ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-1 bg-[#AB9570]/20 text-[#AB9570] rounded-md font-mono font-black text-xs">
+                  RFQ SOURCE LOCKED
+                </span>
+                <span className="font-mono font-black text-slate-900 text-sm">
+                  {targetRFQ.documentNumber || (targetRFQ as any).rfqNo}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLockedFromRFQ(false)}
+                className="text-xs font-bold text-amber-700 hover:text-amber-900 underline"
+              >
+                Change Source
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <span className="text-slate-400 font-medium block">Source Indent</span>
+                <span className="font-mono font-bold text-slate-900">{selectedIndent?.indentNumber || targetRFQ.sourceIndentNumber || 'IND-2026-001'}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 font-medium block">Project</span>
+                <span className="font-bold text-slate-900">{selectedProject?.projectName || targetRFQ.projectName}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 font-medium block">Received Quotations</span>
+                <span className="font-mono font-bold text-emerald-700">{linkedQuotes.length} Quotes Available</span>
+              </div>
+              <div>
+                <span className="text-slate-400 font-medium block">Status</span>
+                <span className="font-bold text-slate-800 uppercase">{targetRFQ.status.replace(/_/g, ' ')}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <ApprovedIndentSelect
+            indents={indents}
+            projects={projects}
+            selectedIndentId={selectedIndentId}
+            onSelectIndent={(ind) => setSelectedIndentId(ind.id)}
+          />
+        )}
       </div>
 
       {/* SECTION 2: Auto-Filled Read-Only Project & Indent Details */}

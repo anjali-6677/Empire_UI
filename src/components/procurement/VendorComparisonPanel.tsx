@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, ArrowDownUp } from 'lucide-react';
 import { formatIndianCurrency } from '../../utils/format';
+import { getQuotationLandedAmount } from '../../utils/procurementSelectors';
 
 interface VendorComparisonPanelProps {
   quotations: any[];
@@ -17,10 +18,10 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
 
   // Sort by Landed Amount ascending to calculate ranking and variance
   const sorted = [...quotations].sort(
-    (a, b) => (a.landedAmount || a.totalAmount || 0) - (b.landedAmount || b.totalAmount || 0)
+    (a, b) => getQuotationLandedAmount(a) - getQuotationLandedAmount(b)
   );
 
-  const l1Cost = sorted[0]?.landedAmount || sorted[0]?.totalAmount || 1;
+  const l1Cost = getQuotationLandedAmount(sorted[0]);
 
   return (
     <div className="bg-slate-900 text-white rounded-2xl p-5 space-y-4 text-xs animate-in fade-in duration-150">
@@ -75,11 +76,15 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
             {/* Basic Amount */}
             <tr>
               <td className="py-2.5 px-4 font-bold text-slate-400">Basic Ex-Factory Cost</td>
-              {quotations.map((q) => (
-                <td key={q.id} className="py-2.5 px-4 font-mono">
-                  ₹{formatIndianCurrency(q.basicAmount || (q.landedAmount || 0) * 0.82)}
-                </td>
-              ))}
+              {quotations.map((q) => {
+                const landed = getQuotationLandedAmount(q);
+                const basic = q.basicTotal ?? q.basicAmount ?? (landed > 0 ? landed - ((q.freightAmount || 0) + (q.taxAmount || 0)) : 0);
+                return (
+                  <td key={q.id} className="py-2.5 px-4 font-mono">
+                    ₹{formatIndianCurrency(basic)}
+                  </td>
+                );
+              })}
             </tr>
 
             {/* Discount */}
@@ -107,7 +112,7 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
               <td className="py-2.5 px-4 font-bold text-slate-400">GST / Tax Amount</td>
               {quotations.map((q) => (
                 <td key={q.id} className="py-2.5 px-4 font-mono">
-                  ₹{formatIndianCurrency(q.taxAmount || (q.landedAmount || 0) * 0.18)}
+                  ₹{formatIndianCurrency(q.taxAmount || (getQuotationLandedAmount(q) * 0.18))}
                 </td>
               ))}
             </tr>
@@ -116,7 +121,7 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
             <tr className="bg-white border-b border-slate-200 text-slate-500 font-semibold text-[11px]">
               <td className="py-3 px-4 text-white uppercase text-[11px] tracking-wider">Total Landed Amount</td>
               {quotations.map((q) => {
-                const cost = q.landedAmount || q.totalAmount || 0;
+                const cost = getQuotationLandedAmount(q);
                 const isSelected = q.id === selectedQuotationId;
 
                 return (
@@ -131,7 +136,7 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
             <tr>
               <td className="py-2.5 px-4 font-bold text-slate-400">Variance vs L1 Landed Cost</td>
               {quotations.map((q) => {
-                const cost = q.landedAmount || q.totalAmount || 0;
+                const cost = getQuotationLandedAmount(q);
                 const diff = cost - l1Cost;
                 const pct = l1Cost > 0 ? ((diff / l1Cost) * 100).toFixed(1) : '0';
 

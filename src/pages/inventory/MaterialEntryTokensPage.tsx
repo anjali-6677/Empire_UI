@@ -24,6 +24,7 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { RowActionMenu, RowActionMenuItem, RowActionMenuDivider } from '../../components/common/RowActionMenu';
+import { GateTokenQRCode } from '../../components/common/GateTokenQRCode';
 
 interface TokenActionCellProps {
   t: MaterialEntryToken;
@@ -990,59 +991,90 @@ export const MaterialEntryTokensPage: React.FC = () => {
 
       {/* Printable Token Slip Modal */}
       {showPrintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200">
-            <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-6 text-center relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 print:p-0 print:bg-white print:static print:inset-auto">
+          <style>{`
+            @media print {
+              body * {
+                visibility: hidden !important;
+              }
+              #printable-gate-slip, #printable-gate-slip * {
+                visibility: visible !important;
+              }
+              #printable-gate-slip {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 16px !important;
+                box-shadow: none !important;
+                border: 1px solid #000 !important;
+              }
+              .no-print {
+                display: none !important;
+              }
+            }
+          `}</style>
+          <div id="printable-gate-slip" className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-6 text-center relative print:bg-black print:text-black">
               <button
                 onClick={() => setShowPrintModal(null)}
-                className="absolute right-4 top-4 text-gray-400 hover:text-white"
+                className="absolute right-4 top-4 text-gray-400 hover:text-white no-print"
               >
                 <X className="w-5 h-5" />
               </button>
-              <div className="w-12 h-12 mx-auto bg-[#C5A059] text-white rounded-full flex items-center justify-center font-bold text-xl mb-2 shadow-lg">
+              <div className="w-12 h-12 mx-auto bg-[#C5A059] text-white rounded-full flex items-center justify-center font-bold text-xl mb-2 shadow-lg print:border print:border-black">
                 FB
               </div>
-              <h2 className="text-lg font-bold uppercase tracking-wider text-gray-100">Flutebyte Technologies ERP</h2>
-              <p className="text-xs text-[#C5A059] font-medium mt-0.5">GATE MATERIAL ENTRY SLIP</p>
+              <h2 className="text-lg font-bold uppercase tracking-wider text-gray-100 print:text-black">FLUTEBYTE TECHNOLOGIES ERP</h2>
+              <p className="text-xs text-[#C5A059] font-semibold mt-0.5 tracking-wider print:text-black">GATE MATERIAL ENTRY SLIP</p>
             </div>
 
             <div className="p-6 space-y-4">
-              <div className="bg-amber-50/80 border border-amber-200 p-4 rounded-xl text-center">
-                <p className="text-xs text-amber-800 font-semibold uppercase tracking-wider">Material Token Sequence #</p>
-                <p className="text-2xl font-black font-mono text-gray-900 mt-1 tracking-widest">
-                  {showPrintModal.tokenNumber}
-                </p>
+              {/* Token Sequence + QR Code Layout */}
+              <div className="bg-amber-50/90 border border-amber-200 p-4 rounded-xl flex items-center justify-between gap-3 print:bg-white print:border-black">
+                <div className="text-left">
+                  <p className="text-xs text-amber-900 font-bold uppercase tracking-wider print:text-black">Material Token Sequence #</p>
+                  <p className="text-xl sm:text-2xl font-black font-mono text-gray-900 mt-1 tracking-wider print:text-black">
+                    {showPrintModal.tokenNumber}
+                  </p>
+                </div>
+                <div className="shrink-0">
+                  <GateTokenQRCode tokenNumber={showPrintModal.tokenNumber} size={110} />
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs border-t border-b border-gray-100 py-3">
+              <div className="grid grid-cols-2 gap-3 text-xs border-t border-b border-gray-100 py-3 print:border-black">
                 <div>
-                  <span className="text-gray-500 block">Vehicle Number:</span>
-                  <span className="font-bold text-gray-900 font-mono text-sm">{showPrintModal.vehicleNumber}</span>
+                  <span className="text-gray-500 block print:text-black">Vehicle Number:</span>
+                  <span className="font-bold text-gray-900 font-mono text-sm print:text-black">{showPrintModal.vehicleNumber}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Driver Name:</span>
-                  <span className="font-bold text-gray-900">{showPrintModal.driverName || 'N/A'}</span>
+                  <span className="text-gray-500 block print:text-black">Driver Name:</span>
+                  <span className="font-bold text-gray-900 print:text-black">{showPrintModal.driverName || 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Entry Date & Time:</span>
-                  <span className="font-medium text-gray-900">{showPrintModal.entryDate} {showPrintModal.entryTime}</span>
+                  <span className="text-gray-500 block print:text-black">Entry Date & Time:</span>
+                  <span className="font-medium text-gray-900 print:text-black">{showPrintModal.entryDate} {showPrintModal.entryTime}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Status:</span>
-                  <span className="font-semibold text-purple-700">{showPrintModal.status}</span>
+                  <span className="text-gray-500 block print:text-black">Current Stage:</span>
+                  <span className="font-semibold text-purple-700 print:text-black">
+                    {showPrintModal.status === 'TOKEN_GENERATED' ? 'Gate Entry Created' : showPrintModal.status}
+                  </span>
                 </div>
               </div>
 
               <div>
-                <span className="text-xs text-gray-500 block">Material Description:</span>
-                <p className="font-semibold text-gray-900 text-sm mt-0.5">{showPrintModal.materialName}</p>
+                <span className="text-xs text-gray-500 block print:text-black">Material Description:</span>
+                <p className="font-semibold text-gray-900 text-sm mt-0.5 print:text-black">{showPrintModal.materialName}</p>
               </div>
 
-              <div className="pt-2 text-center text-xs text-gray-400 italic">
-                Present this Token Number to Store Officer for Initial Receiving & Quality Control Inspection.
+              <div className="pt-2 text-center text-xs text-gray-500 italic print:text-black print:not-italic font-medium">
+                Present this Token Number / QR Code for Initial Receiving and Quality Control Inspection.
               </div>
 
-              <div className="flex gap-2 pt-3">
+              <div className="flex gap-2 pt-3 no-print">
                 <button
                   onClick={() => window.print()}
                   className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 bg-gray-900 text-white font-medium rounded-lg text-sm hover:bg-gray-800"

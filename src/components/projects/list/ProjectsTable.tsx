@@ -157,24 +157,8 @@ export const ProjectsTable: React.FC<ProjectsTableProps> = ({
                   </td>
 
                   {/* Actions */}
-                  <td className="py-3 px-4 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Link
-                        to={`/projects/${project.id}`}
-                        className={
-                          project.status === 'draft'
-                            ? "px-3 py-1.5 bg-[#AB9570] hover:bg-[#927D5E] text-[#121214] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                            : "px-3 py-1.5 bg-white hover:bg-[#F8F9FB] border border-[#D8DEE8] hover:border-[#AB9570] text-[#1F2937] font-semibold text-xs rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shadow-2xs"
-                        }
-                      >
-                        {project.status === 'draft' ? (
-                          'Continue Setup'
-                        ) : (
-                          <>
-                            <ArrowUpRight className="h-3.5 w-3.5 text-[#AB9570]" /> Open Project
-                          </>
-                        )}
-                      </Link>
+                  <td className="py-3 px-4 text-right whitespace-nowrap w-12">
+                    <div className="flex items-center justify-end">
                       <ProjectRowActionsMenu
                         project={project}
                         onUpdateStatus={onUpdateStatus}

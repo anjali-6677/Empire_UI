@@ -5,68 +5,71 @@ import { MaterialEntryToken, MaterialReceivingCheck, QCParameterResult } from '.
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
 import { DEFAULT_QC_TEMPLATES } from '../../data/defaultQCTemplates';
+import { resolveGateTokenForWorkflow, TokenWorkflowResolution } from '../../utils/tokenWorkflowResolver';
+import { TokenQRScanner } from '../../components/common/TokenQRScanner';
 import {
   AlertTriangle,
   ArrowLeft,
   ShieldCheck,
   Search,
   Truck,
+  Camera,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const QCInspectionFormPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { state, completeQCInspection, isAwaitingQC } = useERPStore();
+  const { state, completeQCInspection } = useERPStore();
 
   const tokenIdParam = searchParams.get('tokenId') || searchParams.get('tokenNumber');
   const [tokenInput, setTokenInput] = useState<string>(tokenIdParam || '');
+  const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
 
-  const tokens = state.materialEntryTokens || [];
-  const checks = state.materialReceivingChecks || [];
   const templates = state.qcChecklistTemplates?.length ? state.qcChecklistTemplates : DEFAULT_QC_TEMPLATES;
 
   // Selected state
   const [matchedToken, setMatchedToken] = useState<MaterialEntryToken | null>(null);
   const [matchedCheck, setMatchedCheck] = useState<MaterialReceivingCheck | null>(null);
-  const [gatingBlockedToken, setGatingBlockedToken] = useState<MaterialEntryToken | null>(null);
+  const [resolution, setResolution] = useState<TokenWorkflowResolution | null>(null);
 
   const [inspectorName, setInspectorName] = useState<string>('Rajesh Sharma (QC Engineer)');
   const [inspectionDate, setInspectionDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [overallRemarks] = useState<string>('');
   const [itemsState, setItemsState] = useState<any[]>([]);
 
-  const handleSearchToken = (e?: React.FormEvent) => {
+  const handleResolveToken = (tokenToResolve: string) => {
+    const cleanStr = tokenToResolve.trim();
+    if (!cleanStr) return;
+
+    setTokenInput(cleanStr);
+    const res = resolveGateTokenForWorkflow(cleanStr, 'QUALITY_CONTROL', state);
+    setResolution(res);
+
+    if (res.status === 'ELIGIBLE' && res.token && res.receivingCheck) {
+      setMatchedToken(res.token);
+      setMatchedCheck(res.receivingCheck);
+    } else {
+      setMatchedToken(null);
+      setMatchedCheck(null);
+    }
+  };
+
+  const handleFormSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!tokenInput.trim()) return;
+    handleResolveToken(tokenInput);
+  };
 
-    setGatingBlockedToken(null);
-    setMatchedToken(null);
-    setMatchedCheck(null);
-
-    const tok = tokens.find(
-      (t) =>
-        t.tokenNumber.toLowerCase() === tokenInput.trim().toLowerCase() ||
-        t.id === tokenInput.trim()
-    );
-
-    if (tok) {
-      // Check strict gating rule: Initial Receiving Check must be completed!
-      const rcvCheck = checks.find((c) => c.tokenId === tok.id || c.tokenNumber === tok.tokenNumber);
-      if (!rcvCheck || !isAwaitingQC(tok)) {
-        setGatingBlockedToken(tok);
-        return;
-      }
-
-      setMatchedToken(tok);
-      setMatchedCheck(rcvCheck);
-    } else {
-      alert(`Token "${tokenInput}" not found in system. Please verify Token Number.`);
+  const handleScannerResult = (scannedToken: string) => {
+    if (scannedToken) {
+      handleResolveToken(scannedToken);
     }
   };
 
   useEffect(() => {
     if (tokenIdParam) {
-      handleSearchToken();
+      handleResolveToken(tokenIdParam);
     }
   }, [tokenIdParam]);
 
@@ -138,7 +141,7 @@ export const QCInspectionFormPage: React.FC = () => {
     e.preventDefault();
 
     if (!matchedToken) {
-      alert('Please scan/enter a valid Material Entry Token Number.');
+      alert('Please scan or enter a valid Material Entry Token Number.');
       return;
     }
 
@@ -202,18 +205,27 @@ export const QCInspectionFormPage: React.FC = () => {
         subtitle="Stage 2 Verification: Scan or enter Gate Token Number to load incoming material parameters and auto-generate GRN upon pass."
       />
 
-      {/* Token Search Bar */}
+      {/* Token Search & QR Scanner Bar */}
       <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm my-4">
-        <form onSubmit={handleSearchToken} className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Truck className="w-5 h-5 absolute left-3 top-3 text-[#C5A059]" />
+        <form onSubmit={handleFormSubmit} className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full flex items-center">
+            <Truck className="w-5 h-5 absolute left-3 text-[#C5A059] pointer-events-none" />
             <input
               type="text"
-              placeholder="Enter or Scan Gate Token Number (e.g. PLY-20260810-001)"
+              placeholder="Enter Gate Token Number or scan QR..."
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm font-mono font-bold text-gray-900 focus:ring-2 focus:ring-[#C5A059] focus:outline-none"
+              className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg text-sm font-mono font-bold text-gray-900 focus:ring-2 focus:ring-[#C5A059] focus:outline-none"
             />
+            {/* Embedded Camera Scanner Icon Button */}
+            <button
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
+              title="Scan Token QR Code with Camera"
+              className="absolute right-2 p-1.5 text-gray-500 hover:text-[#C5A059] hover:bg-amber-50 rounded-lg transition-colors"
+            >
+              <Camera className="w-5 h-5" />
+            </button>
           </div>
           <button
             type="submit"
@@ -225,9 +237,39 @@ export const QCInspectionFormPage: React.FC = () => {
         </form>
       </div>
 
-      {/* Gating Blocked Warning Banner */}
-      {gatingBlockedToken && (
-        <div className="bg-amber-50 border border-amber-300 rounded-xl p-5 my-4 space-y-3 animate-in fade-in zoom-in duration-200">
+      {/* Workflow Gating Resolution Banners */}
+      {resolution && resolution.status === 'NOT_FOUND' && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-5 my-4 flex items-start gap-3 text-red-900 text-sm animate-in fade-in duration-150">
+          <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-bold text-base">Token Not Found</h4>
+            <p className="mt-1 text-red-800">{resolution.error}</p>
+          </div>
+        </div>
+      )}
+
+      {resolution && resolution.status === 'ON_HOLD' && (
+        <div className="bg-red-50 border border-red-300 rounded-xl p-5 my-4 flex items-start gap-3 text-red-900 text-sm animate-in fade-in duration-150">
+          <AlertTriangle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-bold text-base">Gate Token On Hold</h4>
+            <p className="mt-1 text-red-800">{resolution.error}</p>
+          </div>
+        </div>
+      )}
+
+      {resolution && resolution.status === 'CANCELLED' && (
+        <div className="bg-red-50 border border-red-300 rounded-xl p-5 my-4 flex items-start gap-3 text-red-900 text-sm animate-in fade-in duration-150">
+          <AlertTriangle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-bold text-base">Gate Token Cancelled</h4>
+            <p className="mt-1 text-red-800">{resolution.error}</p>
+          </div>
+        </div>
+      )}
+
+      {resolution && resolution.status === 'RECEIVING_REQUIRED' && resolution.token && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-5 my-4 space-y-3 animate-in fade-in duration-200">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
             <div>
@@ -235,9 +277,9 @@ export const QCInspectionFormPage: React.FC = () => {
                 Initial Receiving Check Required Before Quality Control
               </h3>
               <p className="text-sm text-amber-800 mt-1">
-                Token <span className="font-mono font-bold">{gatingBlockedToken.tokenNumber}</span> ({gatingBlockedToken.materialName}) is currently at stage{' '}
-                <span className="font-semibold text-amber-950">{gatingBlockedToken.currentStage || 'Gate Entry'}</span> with status{' '}
-                <span className="font-semibold text-amber-950">{gatingBlockedToken.status}</span>.
+                Token <span className="font-mono font-bold">{resolution.token.tokenNumber}</span> ({resolution.token.materialName}) is currently at stage{' '}
+                <span className="font-semibold text-amber-950">{resolution.token.currentStage || 'Gate Entry'}</span> with status{' '}
+                <span className="font-semibold text-amber-950">{resolution.token.status}</span>.
               </p>
               <p className="text-xs text-amber-700 mt-1">
                 Initial Receiving Check must be completed before Quality Control inspection can begin.
@@ -246,7 +288,7 @@ export const QCInspectionFormPage: React.FC = () => {
           </div>
           <div className="pt-2 flex justify-end">
             <button
-              onClick={() => navigate(`/inventory/receiving-check?token=${gatingBlockedToken.tokenNumber}`)}
+              onClick={() => navigate(`/inventory/receiving-check?token=${resolution.token!.tokenNumber}`)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs rounded-lg shadow-sm"
             >
               Go to Initial Receiving Check <ArrowLeft className="w-4 h-4 rotate-180" />
@@ -255,6 +297,38 @@ export const QCInspectionFormPage: React.FC = () => {
         </div>
       )}
 
+      {resolution && resolution.status === 'ALREADY_COMPLETED' && resolution.token && (
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-5 my-4 space-y-3 animate-in fade-in duration-200">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="w-6 h-6 text-purple-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-purple-950 text-base">
+                Quality Control Inspection Already Completed
+              </h3>
+              <p className="text-sm text-purple-800 mt-1">
+                Token <span className="font-mono font-bold">{resolution.token.tokenNumber}</span> has already passed QC inspection.
+              </p>
+              {resolution.qcInspection && (
+                <div className="mt-2 text-xs text-purple-900 space-y-0.5 bg-white p-3 rounded-lg border border-purple-200 font-mono">
+                  <div>QC Reference Number: <strong>{resolution.qcInspection.qcNumber || resolution.qcInspection.id}</strong></div>
+                  <div>Inspection Date: <strong>{resolution.qcInspection.inspectionDate}</strong></div>
+                  <div>Status: <strong className="text-emerald-700">{resolution.qcInspection.status}</strong></div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="pt-2 flex justify-end">
+            <button
+              onClick={() => navigate('/inventory/qc')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-800 hover:bg-purple-900 text-white font-bold text-xs rounded-lg shadow-sm"
+            >
+              View QC Inspections Register <ArrowLeft className="w-4 h-4 rotate-180" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Eligible Form Section */}
       {matchedToken && (
         <form onSubmit={handleSubmitQC} className="space-y-6 my-4">
           {/* Header Context Card */}
@@ -433,6 +507,13 @@ export const QCInspectionFormPage: React.FC = () => {
           </div>
         </form>
       )}
+
+      {/* Reusable Camera QR Scanner Modal */}
+      <TokenQRScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleScannerResult}
+      />
     </ListPageLayout>
   );
 };

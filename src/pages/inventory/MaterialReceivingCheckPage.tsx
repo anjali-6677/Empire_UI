@@ -2,12 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
 import { MaterialEntryToken } from '../../domain/types';
+import { resolveGateTokenForWorkflow } from '../../utils/tokenWorkflowResolver';
+import { TokenQRScanner } from '../../components/common/TokenQRScanner';
 import {
   ClipboardCheck,
   PackageCheck,
   X,
   Clock,
   Truck,
+  Camera,
+  Search,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const MaterialReceivingCheckPage: React.FC = () => {
@@ -17,6 +22,10 @@ export const MaterialReceivingCheckPage: React.FC = () => {
   const tokens = state.materialEntryTokens || [];
   const checks = state.materialReceivingChecks || [];
   const purchaseOrders = state.purchaseOrders || [];
+
+  const [searchInput, setSearchInput] = useState<string>(tokenParam || '');
+  const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
+  const [searchFeedback, setSearchFeedback] = useState<{ type: 'error' | 'info'; message: string } | null>(null);
 
   const [showCheckModal, setShowCheckModal] = useState(false);
   const [selectedToken, setSelectedToken] = useState<MaterialEntryToken | null>(null);
@@ -61,6 +70,32 @@ export const MaterialReceivingCheckPage: React.FC = () => {
     setShowCheckModal(true);
   };
 
+  const handleResolveToken = (tokenToResolve: string) => {
+    setSearchFeedback(null);
+    const cleanStr = tokenToResolve.trim();
+    if (!cleanStr) return;
+
+    const res = resolveGateTokenForWorkflow(cleanStr, 'INITIAL_RECEIVING', state);
+    if (res.status === 'ELIGIBLE' && res.token) {
+      openCheckForm(res.token);
+    } else if (res.status === 'ALREADY_COMPLETED' && res.token) {
+      setSearchFeedback({
+        type: 'info',
+        message: `Initial Receiving Check already completed for Token ${res.token.tokenNumber}.`,
+      });
+    } else {
+      setSearchFeedback({
+        type: 'error',
+        message: res.error || `Gate Token ${cleanStr} is not eligible for Initial Receiving.`,
+      });
+    }
+  };
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    handleResolveToken(searchInput);
+  };
+
   const handleSaveReceivingCheck = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedToken || !selectedPoId) {
@@ -100,12 +135,9 @@ export const MaterialReceivingCheckPage: React.FC = () => {
 
   useEffect(() => {
     if (tokenParam) {
-      const match = tokens.find((t) => t.tokenNumber === tokenParam || t.id === tokenParam);
-      if (match && isAwaitingReceiving(match)) {
-        openCheckForm(match);
-      }
+      handleResolveToken(tokenParam);
     }
-  }, [tokenParam, tokens]);
+  }, [tokenParam]);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -130,6 +162,50 @@ export const MaterialReceivingCheckPage: React.FC = () => {
           Completing this Initial Receiving Check will mark the material as <span className="font-semibold text-purple-700">QC_PENDING</span>.
           No Goods Receipt Note (GRN) or usable stock will be generated at this stage until Quality Control inspection is completed.
         </div>
+      </div>
+
+      {/* Token Search Bar with Inline Camera QR Scanner */}
+      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-3">
+        <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full flex items-center">
+            <Truck className="w-5 h-5 absolute left-3 text-[#C5A059] pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Enter Gate Token Number or scan QR..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg text-sm font-mono font-bold text-gray-900 focus:ring-2 focus:ring-[#C5A059] focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
+              title="Scan Gate Token QR Code with Camera"
+              className="absolute right-2 p-1.5 text-gray-500 hover:text-[#C5A059] hover:bg-amber-50 rounded-lg transition-colors"
+            >
+              <Camera className="w-5 h-5" />
+            </button>
+          </div>
+          <button
+            type="submit"
+            className="w-full sm:w-auto px-6 py-2.5 bg-[#C5A059] hover:bg-[#b08d48] text-white font-bold text-sm rounded-lg shadow-sm transition-colors inline-flex items-center justify-center gap-2"
+          >
+            <Search className="w-4 h-4" />
+            Resolve Token & Open Check Form
+          </button>
+        </form>
+
+        {searchFeedback && (
+          <div
+            className={`p-3 rounded-lg text-xs font-medium flex items-center gap-2 ${
+              searchFeedback.type === 'error'
+                ? 'bg-red-50 text-red-800 border border-red-200'
+                : 'bg-purple-50 text-purple-800 border border-purple-200'
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            {searchFeedback.message}
+          </div>
+        )}
       </div>
 
       {/* Section 1: Gate Tokens Awaiting Receiving Check */}
@@ -365,7 +441,7 @@ export const MaterialReceivingCheckPage: React.FC = () => {
                     placeholder="Vendor sent extra buffer sheets..."
                     value={excessReason}
                     onChange={(e) => setExcessReason(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#C5A059] focus:outline-none"
+                    className="w-full border border-[#C5A059] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#C5A059] focus:outline-none"
                   />
                 </div>
               )}
@@ -399,7 +475,18 @@ export const MaterialReceivingCheckPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Reusable Camera Scanner Modal */}
+      <TokenQRScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={(scannedToken) => {
+          setSearchInput(scannedToken);
+          handleResolveToken(scannedToken);
+        }}
+      />
     </div>
   );
 };
+
 export default MaterialReceivingCheckPage;

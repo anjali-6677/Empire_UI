@@ -7,12 +7,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
 import { RFQ, RFQStatus, Vendor } from '../../domain/types';
-import { buildRFQDocumentHtml, downloadDocumentHtml } from '../../utils/documentGenerator';
 import { getRFQStatusBadge } from '../../utils/statusStyles';
 import { MarkRFQSentModal } from '../../components/procurement/MarkRFQSentModal';
 import { RecordVendorQuoteModal } from '../../components/procurement/RecordVendorQuoteModal';
 import { CancelRFQModal } from '../../components/procurement/CancelRFQModal';
 import { SelectVendorForQuoteModal } from '../../components/procurement/SelectVendorForQuoteModal';
+import { downloadRFQPdf, printRFQPdf } from '../../utils/rfqPdfGenerator';
 import { RFQRowActionsMenu } from '../../components/procurement/RFQRowActionsMenu';
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -39,7 +39,7 @@ export const MaterialRFQsPage: React.FC = () => {
   const [recordQuoteRfq, setRecordQuoteRfq] = useState<RFQ | null>(null);
   const [selectedVendorForQuote, setSelectedVendorForQuote] = useState<Vendor | null>(null);
 
-  // New Modals: Vendor picker for multi-vendor quote recording & Cancel RFQ confirmation
+  // New Modals: Vendor picker for multi-vendor quote recording & Cancel RFQ
   const [selectVendorRfq, setSelectVendorRfq] = useState<RFQ | null>(null);
   const [cancelRfqTarget, setCancelRfqTarget] = useState<RFQ | null>(null);
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
@@ -84,12 +84,6 @@ export const MaterialRFQsPage: React.FC = () => {
       updateRFQStatus(cancelRfqTarget.id, 'cancelled', 'Rajesh Sharma (Procurement Lead)', `Cancelled: ${reason}`);
       setCancelRfqTarget(null);
     }
-  };
-
-  const handleDownloadRFQ = (rfq: RFQ) => {
-    const documentNumber = rfq.documentNumber || (rfq as any).rfqNumber || rfq.id;
-    const htmlContent = buildRFQDocumentHtml(rfq);
-    downloadDocumentHtml(`${documentNumber}.pdf`, `RFQ ${documentNumber}`, htmlContent);
   };
 
   return (
@@ -319,7 +313,14 @@ export const MaterialRFQsPage: React.FC = () => {
                             onCompareQuotes={(id) => navigate(`/procurement/rfqs/${id}?tab=vendors`)}
                             onCreatePO={(id) => navigate(`/procurement/purchase-orders/new?rfqId=${id}`)}
                             onViewActivity={(id) => navigate(`/procurement/rfqs/${id}?tab=activity`)}
-                            onDownload={(targetRfq) => handleDownloadRFQ(targetRfq)}
+                            onDownload={(targetRfq) => {
+                              const vendor = state.vendors.find((v) => targetRfq.invitedVendorIds?.includes(v.id)) || state.vendors[0];
+                              downloadRFQPdf(targetRfq, vendor);
+                            }}
+                            onPrint={(targetRfq) => {
+                              const vendor = state.vendors.find((v) => targetRfq.invitedVendorIds?.includes(v.id)) || state.vendors[0];
+                              printRFQPdf(targetRfq, vendor);
+                            }}
                             onCancel={(targetRfq) => setCancelRfqTarget(targetRfq)}
                           />
                         </div>

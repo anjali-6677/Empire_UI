@@ -42,8 +42,10 @@ import {
   POStatus,
   GRNPayment,
 } from '../domain/types';
+import { generateGateTokenNumber, generatePONumber, generateGRNNumber } from '../domain/documentNumbers';
 import { normalizeEstimate } from '../utils/normalizeEstimate';
 import { normalizeMaterialIssue } from '../utils/materialIssueHelpers';
+import { getAvailableStockForLocationAndProduct } from '../domain/selectors';
 import {
   migrateIncompleteProjectsToDrafts,
   reconcileCRMProjectLinks,
@@ -127,6 +129,7 @@ export interface ERPStoreContextType {
   createMaterialIssue: (issue: Partial<MaterialIssue>, performedBy?: string) => { success: boolean; materialIssue?: MaterialIssue; error?: string };
   dispatchMaterialIssue: (issueId: string, dispatchedBy?: string) => { success: boolean; error?: string };
   recordSiteReceipt: (issueId: string, receipts: { productId: string; receiveNowQty: number }[], receivedBy?: string, remarks?: string) => { success: boolean; error?: string };
+  cancelMaterialIssue: (issueId: string, cancelledBy?: string, reason?: string) => { success: boolean; error?: string };
   createMaterialReturn: (ret: MaterialReturn, performedBy?: string) => { success: boolean; materialReturn?: MaterialReturn; error?: string };
   createMaterialConsumption: (consumption: MaterialConsumption, performedBy?: string) => { success: boolean; consumption?: MaterialConsumption; error?: string };
   createSubcontractorWorkOrder: (wo: SubcontractWorkOrder | WorkOrder | any, performedBy?: string) => { success: boolean; workOrder?: any; error?: string };
@@ -172,7 +175,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         const stored = await repository.loadAll();
 
         // Check demo seed version
-        const DEMO_SEED_VERSION = 'v4';
+        const DEMO_SEED_VERSION = 'v8_canonical_grn_tokens';
         const storedSeedVersion = localStorage.getItem('flutebyte_demo_seed_version');
 
         if (storedSeedVersion !== DEMO_SEED_VERSION) {
@@ -405,8 +408,10 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
           const currentLedger = merged.stockLedger || [];
           const newLedgerEntries: any[] = [];
 
-          merged.goodsReceipts.forEach((grn: any) => {
+          merged.goodsReceipts = merged.goodsReceipts.map((grn: any) => {
             const grnItems = grn.items || [];
+            let grnPostedAny = false;
+
             grnItems.forEach((item: any) => {
               const acceptedQty = Number(item.qcApprovedQty ?? item.acceptedQty ?? item.receivedQty ?? 0);
               if (acceptedQty <= 0) return;
@@ -421,6 +426,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
               );
 
               if (!exists) {
+                grnPostedAny = true;
                 const unitRate = Number(item.poUnitRate ?? item.unitRate ?? grn.poUnitRate ?? 0);
                 const entryId = `stk-grn-${grn.id}-${item.productId}`;
                 const nowStr = new Date().toISOString();
@@ -461,6 +467,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
                   sourceNumber: grn.grnNumber || grn.documentNumber || grn.id,
                   sourceDocumentId: grn.id,
                   sourceDocumentNumber: grn.grnNumber || grn.documentNumber || grn.id,
+                  isImmutable: true,
                   remarks: `Auto GRN stock receipt from ${grn.grnNumber}`,
                   createdBy: grn.createdBy || 'System Auto-GRN',
                   recordedBy: grn.createdBy || 'System Auto-GRN',
@@ -468,11 +475,27 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
                 });
               }
             });
+
+            if (grnPostedAny || grn.isPostedToStock) {
+              return {
+                ...grn,
+                isPostedToStock: true,
+                postedAt: grn.postedAt || new Date().toISOString(),
+                postedBy: grn.postedBy || grn.createdBy || 'System Auto-GRN',
+                inventoryPosted: true,
+                inventoryPostedAt: grn.inventoryPostedAt || grn.postedAt || new Date().toISOString(),
+                inventoryPostedBy: grn.inventoryPostedBy || grn.postedBy || grn.createdBy || 'System Auto-GRN',
+                status: grn.status === 'qc_completed' ? 'posted' : grn.status,
+              };
+            }
+
+            return grn;
           });
 
           if (newLedgerEntries.length > 0) {
             merged.stockLedger = [...currentLedger, ...newLedgerEntries];
             repository.saveCollection('stockLedger', merged.stockLedger);
+            repository.saveCollection('goodsReceipts', merged.goodsReceipts);
           }
         }
 
@@ -1186,18 +1209,31 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
     }
 
-    addItem('purchaseOrders', po);
+    const firstLine = po.lines && po.lines[0];
+    const categoryInput = (po as any).categoryId || (po as any).categoryName || (firstLine as any)?.categoryId;
+    const productInput = (po as any).productId || (firstLine as any)?.productId || (firstLine as any)?.materialName;
+    const canonicalPONumber = po.poNumber && po.poNumber.startsWith('FBT/')
+      ? po.poNumber
+      : generatePONumber(state.purchaseOrders || [], categoryInput, productInput, (po as any).poDate || po.createdAt);
+
+    const newPO: PurchaseOrder = {
+      ...po,
+      poNumber: canonicalPONumber,
+      documentNumber: canonicalPONumber,
+    };
+
+    addItem('purchaseOrders', newPO);
     logAudit({
       documentType: 'purchase_order',
-      documentId: po.id,
-      documentNumber: po.documentNumber,
+      documentId: newPO.id,
+      documentNumber: newPO.documentNumber,
       action: 'CREATED',
       performedBy: performedBy || 'Procurement User',
-      newStatus: po.status,
-      details: `Issued Purchase Order ${po.documentNumber} to ${po.vendorName} for ₹${(po.totalAmount || po.grandTotal || 0).toLocaleString('en-IN')}`,
+      newStatus: newPO.status,
+      details: `Issued Purchase Order ${newPO.documentNumber} to ${newPO.vendorName} for ₹${(newPO.totalAmount || newPO.grandTotal || 0).toLocaleString('en-IN')}`,
     });
 
-    return { success: true, purchaseOrder: po };
+    return { success: true, purchaseOrder: newPO };
   };
 
   const updatePOStatus = (poId: string, status: POStatus, performedBy: string, comments?: string) => {
@@ -1397,26 +1433,12 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Helper action: Generate Unique Material Entry Token
   const createMaterialEntryToken = (tokenData: Partial<MaterialEntryToken>, createdBy: string = 'Gate Officer') => {
     const tokens = state.materialEntryTokens || [];
-    const dateStr = tokenData.entryDate
-      ? tokenData.entryDate.replace(/-/g, '')
-      : new Date().toISOString().slice(0, 10).replace(/-/g, '');
-
-    // Get prefix shortcode from materialName or category
-    const materialNameUpper = (tokenData.materialName || 'MAT').toUpperCase();
-    let prefix = 'MAT';
-    if (materialNameUpper.includes('PLYWOOD') || materialNameUpper.includes('PLY')) prefix = 'PLY';
-    else if (materialNameUpper.includes('LAMINATE') || materialNameUpper.includes('LAM')) prefix = 'LAM';
-    else if (materialNameUpper.includes('HARDWARE') || materialNameUpper.includes('HDW')) prefix = 'HDW';
-    else if (materialNameUpper.includes('GLASS')) prefix = 'GLS';
-    else if (materialNameUpper.includes('TILE') || materialNameUpper.includes('CERAMIC')) prefix = 'TLE';
-    else if (materialNameUpper.includes('PAINT')) prefix = 'PNT';
-    else prefix = materialNameUpper.slice(0, 3).replace(/[^A-Z]/g, 'MAT');
-
-    // Count existing tokens for same prefix & date to format sequence
-    const pattern = `${prefix}-${dateStr}-`;
-    const countOnDate = tokens.filter((t) => t.tokenNumber.startsWith(pattern)).length;
-    const seqStr = String(countOnDate + 1).padStart(3, '0');
-    const tokenNumber = `${prefix}-${dateStr}-${seqStr}`;
+    const productObj = (state.products || []).find((p) => p.id === tokenData.productId || p.code === tokenData.productId);
+    const tokenNumber = generateGateTokenNumber(
+      tokens,
+      productObj || tokenData.productId || tokenData.materialName,
+      tokenData.entryDate || tokenData.createdAt
+    );
 
     const newToken: MaterialEntryToken = {
       id: `tok-${Date.now()}`,
@@ -1674,7 +1696,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
       (p) => p.id === qc.poId || p.poNumber === qc.poNumber || p.documentNumber === qc.poNumber
     );
 
-    const grnNumber = `GRN-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
+    const grnNumber = generateGRNNumber(grns);
     const acceptedQty = qc.items.reduce((sum, item) => sum + (item.approvedQty || 0), 0);
     const rejectedQty = qc.items.reduce((sum, item) => sum + (item.rejectedQty || 0), 0);
     const holdQty = qc.items.reduce((sum, item) => sum + (item.holdQty || 0), 0);
@@ -1774,6 +1796,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     const newGRN: GoodsReceipt = {
       id: `grn-${Date.now()}`,
       grnNumber,
+      documentNumber: grnNumber,
       tokenId: qc.tokenId,
       receivingCheckId: qc.receivingCheckId,
       qcInspectionId: qc.id,
@@ -1810,6 +1833,9 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
 
     addItem('goodsReceipts', newGRN);
+
+    // Automatically post accepted quantity into Stock Ledger upon GRN generation
+    postGRNToStock(newGRN.id, createdBy);
 
     // Update Token Status to GRN_GENERATED
     if (qc.tokenId) {
@@ -2192,45 +2218,54 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Create Material Issue (Draft status)
   const createMaterialIssue = (issueData: Partial<MaterialIssue>, createdBy: string = 'Stores Officer') => {
     const issueCount = (state.materialIssues || []).length + 1;
-    const issueNumber = `MI-${new Date().getFullYear()}-${issueCount.toString().padStart(3, '0')}`;
+    const issueNumber = issueData.issueNumber || issueData.documentNumber || `MI-${new Date().getFullYear()}-${issueCount.toString().padStart(3, '0')}`;
     const now = new Date().toISOString();
+    const sourceLocId = issueData.sourceLocationId || issueData.sourceWarehouseId || 'loc-001';
+    const sourceLocName = issueData.sourceLocationName || issueData.sourceWarehouseName || 'Central Site Store - Basement 1';
 
-    const items: MaterialIssueItem[] = (issueData.items || []).map((it: any, idx: number) => {
-      const avail = getStockBalance({ productId: it.productId, warehouseId: issueData.sourceWarehouseId || 'wh-main' });
-      const issueQty = Number(it.issueQty || 0);
+    const inputItems = (issueData as any).lines || issueData.items || [];
+    const items: MaterialIssueItem[] = inputItems.map((it: any, idx: number) => {
+      const pId = it.productId || `prod-${idx + 1}`;
+      const avail = getAvailableStockForLocationAndProduct(state.stockLedger || [], sourceLocId, pId);
+      const issueQty = Number(it.issuedQty ?? it.issueQty ?? 0);
       const unitRate = Number(it.unitRate || 0);
       return {
         id: `mii-${Date.now()}-${idx}`,
-        productId: it.productId,
-        productDescription: it.productDescription || 'Material Item',
+        productId: pId,
+        productDescription: it.productName || it.productDescription || 'Material Item',
         categoryName: it.categoryName || 'General Material',
-        unit: it.unit || 'sqft',
+        unit: it.unitSymbol || it.unit || 'sqft',
         availableStock: avail,
         issueQty,
         receivedQty: 0,
         unitRate,
         issueValue: issueQty * unitRate,
-        remarks: it.remarks || '',
+        remarks: it.notes || it.remarks || '',
       };
     });
 
     const totalValue = items.reduce((sum, item) => sum + item.issueValue, 0);
 
     const newIssue: MaterialIssue = {
-      id: `mi-${Date.now()}`,
+      id: issueData.id || `mi-${Date.now()}`,
       issueNumber,
+      documentNumber: issueNumber,
       projectId: issueData.projectId || '',
-      projectName: issueData.projectName || '',
-      sourceWarehouseId: issueData.sourceWarehouseId || 'wh-main',
-      sourceWarehouseName: issueData.sourceWarehouseName || 'Main Warehouse',
-      destinationStoreId: issueData.destinationStoreId || `wh-site-${issueData.projectId || 'p-1'}`,
-      destinationStoreName: issueData.destinationStoreName || `${issueData.projectName || 'Project'} Site Store`,
-      requiredByDate: issueData.requiredByDate || new Date().toISOString().split('T')[0],
+      projectName: issueData.projectName || 'Project Site',
+      sourceLocationId: sourceLocId,
+      sourceLocationName: sourceLocName,
+      sourceWarehouseId: sourceLocId,
+      sourceWarehouseName: sourceLocName,
+      destinationStoreId: issueData.destinationLocationId || issueData.destinationStoreId || `wh-site-${issueData.projectId || 'p-1'}`,
+      destinationStoreName: issueData.destinationAreaName || issueData.destinationStoreName || `${issueData.projectName || 'Project'} Site Store`,
+      requiredByDate: issueData.issueDate || issueData.requiredByDate || new Date().toISOString().split('T')[0],
       purpose: issueData.purpose || 'Site fitout material transfer',
       costCode: issueData.costCode || '',
       requestedBy: issueData.requestedBy || createdBy,
-      status: 'Ready to Issue',
+      receiverName: (issueData as any).receiverName || (issueData as any).receivedByPerson || 'Site Supervisor',
+      status: issueData.status || 'issued',
       items,
+      lines: items as any,
       totalIssueValue: totalValue,
       activityLog: [
         {
@@ -2249,6 +2284,54 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     const normalizedNewIssue = normalizeMaterialIssue(newIssue);
 
     addItem('materialIssues', normalizedNewIssue);
+
+    // Record TRANSFER_OUT stock ledger entries to deduct stock from source location
+    const newStockEntries: StockLedgerEntry[] = items.map((it, idx) => ({
+      id: `stk-out-${normalizedNewIssue.id}-${it.productId || idx}`,
+      transactionNumber: `TXN-${Date.now().toString().slice(-6)}-OUT-${idx + 1}`,
+      transactionType: 'TRANSFER_OUT',
+      entryType: 'TRANSFER_OUT',
+      transactionDate: now.split('T')[0],
+      transactionTime: new Date().toLocaleTimeString('en-US', { hour12: false }),
+      entryDate: now.split('T')[0],
+      createdTime: now,
+      productId: it.productId,
+      productCode: it.productId,
+      productName: it.productDescription,
+      productDescription: it.productDescription,
+      categoryName: it.categoryName || 'General Material',
+      warehouseId: sourceLocId,
+      warehouseName: sourceLocName,
+      locationId: sourceLocId,
+      locationName: sourceLocName,
+      projectId: normalizedNewIssue.projectId,
+      projectName: normalizedNewIssue.projectName,
+      quantityIn: 0,
+      quantityOut: it.issueQty,
+      inQuantity: 0,
+      outQuantity: it.issueQty,
+      runningBalance: Math.max(0, it.availableStock - it.issueQty),
+      unit: it.unit,
+      unitSymbol: it.unit,
+      unitRate: it.unitRate || 0,
+      transactionValue: it.issueQty * (it.unitRate || 0),
+      totalValue: it.issueQty * (it.unitRate || 0),
+      sourceType: 'MATERIAL_ISSUE',
+      sourceId: normalizedNewIssue.id,
+      sourceNumber: normalizedNewIssue.issueNumber,
+      sourceDocumentId: normalizedNewIssue.id,
+      sourceDocumentNumber: normalizedNewIssue.issueNumber,
+      isImmutable: true,
+      remarks: `Issued to ${normalizedNewIssue.projectName}`,
+      createdBy,
+      recordedBy: createdBy,
+      createdAt: now,
+    }));
+
+    if (newStockEntries.length > 0) {
+      const currentLedger = state.stockLedger || [];
+      updateCollection('stockLedger', [...currentLedger, ...newStockEntries]);
+    }
 
     logAudit({
       documentType: 'material_issue',
@@ -2567,6 +2650,115 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
       performedBy: receivedBy,
       newStatus,
       details: `Recorded site receipt for ${issue.issueNumber} at ${issue.destinationStoreName}`,
+    });
+
+    return { success: true };
+  };
+
+  // Cancel Material Issue (Reverses stock entries if already issued/dispatched and updates status to Cancelled)
+  const cancelMaterialIssue = (issueId: string, cancelledBy: string = 'Stores Officer', reason?: string) => {
+    const issue = (state.materialIssues || []).find((m) => m.id === issueId);
+    if (!issue) return { success: false, error: 'Material issue not found' };
+
+    const hasConsumptions = (state.materialConsumptions || []).some(
+      (c: any) => c.originalIssueId === issueId || c.issueId === issueId || c.documentNumber === issue.documentNumber
+    );
+    const hasReturns = (state.materialReturns || []).some(
+      (r: any) => r.originalIssueId === issueId || r.issueId === issueId || r.originalIssueNumber === issue.documentNumber
+    );
+
+    if (hasConsumptions || hasReturns) {
+      return {
+        success: false,
+        error: 'Cannot cancel Material Issue that has downstream Site Consumptions or Material Returns recorded.',
+      };
+    }
+
+    const currentLedger = state.stockLedger || [];
+    const now = new Date().toISOString();
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const reversalEntries: StockLedgerEntry[] = [];
+    const issueItems = issue.items || issue.lines || [];
+
+    // Reverse stock OUT entries if status was issued or dispatched
+    if (issue.status !== 'Draft' && issue.status !== 'draft') {
+      issueItems.forEach((item: any, idx: number) => {
+        const pQty = Number(item.issueQty ?? item.issuedQty ?? 0);
+        if (pQty > 0) {
+          reversalEntries.push({
+            id: `stk-cancel-rev-${issue.id}-${item.productId}-${idx}`,
+            transactionNumber: `TXN-${Date.now().toString().slice(-6)}-CANCEL-REV`,
+            transactionType: 'TRANSFER_IN',
+            entryType: 'TRANSFER_IN',
+            transactionDate: now.split('T')[0],
+            transactionTime: timeStr,
+            entryDate: now.split('T')[0],
+            createdTime: now,
+            productId: item.productId,
+            productCode: item.productId,
+            productName: item.productDescription || item.productName || 'Material Item',
+            productDescription: item.productDescription || item.productName || 'Material Item',
+            categoryName: item.categoryName || 'General Material',
+            warehouseId: issue.sourceLocationId || issue.sourceWarehouseId || 'loc-001',
+            warehouseName: issue.sourceLocationName || issue.sourceWarehouseName || 'Central Site Store',
+            locationId: issue.sourceLocationId || issue.sourceWarehouseId || 'loc-001',
+            locationName: issue.sourceLocationName || issue.sourceWarehouseName || 'Central Site Store',
+            projectId: issue.projectId,
+            projectName: issue.projectName,
+            quantityIn: pQty,
+            quantityOut: 0,
+            inQuantity: pQty,
+            outQuantity: 0,
+            runningBalance: 0,
+            unit: item.unit || item.unitSymbol || 'units',
+            unitSymbol: item.unit || item.unitSymbol || 'units',
+            unitRate: item.unitRate || 0,
+            transactionValue: pQty * (item.unitRate || 0),
+            totalValue: pQty * (item.unitRate || 0),
+            sourceType: 'MATERIAL_ISSUE_CANCEL',
+            sourceId: issue.id,
+            sourceNumber: issue.issueNumber,
+            sourceDocumentId: issue.id,
+            sourceDocumentNumber: issue.issueNumber,
+            isImmutable: true,
+            remarks: `Reversal entry due to issue cancellation (${reason || 'Cancelled by user'})`,
+            createdBy: cancelledBy,
+            recordedBy: cancelledBy,
+            createdAt: now,
+          });
+        }
+      });
+
+      if (reversalEntries.length > 0) {
+        updateCollection('stockLedger', [...currentLedger, ...reversalEntries]);
+      }
+    }
+
+    const activityLog = [
+      ...(issue.activityLog || []),
+      {
+        id: `act-${Date.now()}`,
+        timestamp: now,
+        user: cancelledBy,
+        action: 'ISSUE_CANCELLED' as any,
+        description: `Cancelled Material Issue ${issue.issueNumber}. Reason: ${reason || 'User request'}`,
+      },
+    ];
+
+    updateItem('materialIssues', issue.id, {
+      status: 'Cancelled',
+      activityLog,
+      updatedAt: now,
+    });
+
+    logAudit({
+      documentType: 'material_issue',
+      documentId: issue.id,
+      documentNumber: issue.issueNumber,
+      action: 'CANCELLED',
+      performedBy: cancelledBy,
+      newStatus: 'Cancelled',
+      details: `Cancelled material issue ${issue.issueNumber}. ${reason ? `Reason: ${reason}` : ''}`,
     });
 
     return { success: true };
@@ -3065,6 +3257,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         createMaterialIssue,
         dispatchMaterialIssue,
         recordSiteReceipt,
+        cancelMaterialIssue,
         createMaterialReturn,
         createMaterialConsumption,
         createSubcontractorWorkOrder,

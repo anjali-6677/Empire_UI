@@ -2,24 +2,58 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
 import { GoodsReceipt, GRNPayment } from '../../domain/types';
+import { resolveTokenNumber, resolvePONumber, resolveGRNNumber } from '../../domain/documentNumbers';
+import { getGRNNetPayable, getGRNPaidAmount, getGRNOutstanding, getGRNPaymentStatus } from '../../domain/selectors';
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
-import { FilterToolbar } from '../../components/common/FilterToolbar';
 import { RowActionMenu, RowActionMenuItem, RowActionMenuDivider } from '../../components/common/RowActionMenu';
 import {
   MoreVertical,
   Eye,
   FileText,
+  ShieldCheck,
   Printer,
   Download,
   CreditCard,
   History,
   X,
+  Search,
+  RotateCcw,
   CheckCircle2,
 } from 'lucide-react';
 
+const formatGRNDate = (dateStr?: string): string => {
+  if (!dateStr || dateStr === 'Not Set') return 'Not Set';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const day = String(date.getDate()).padStart(2, '0');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+const formatIndianCurrency = (amount: number): string => {
+  if (isNaN(amount)) return '₹0';
+  const isNegative = amount < 0;
+  const absVal = Math.abs(amount);
+  const parts = absVal.toFixed(2).split('.');
+  let integerPart = parts[0];
+  const decimalPart = parts[1];
+
+  let lastThree = integerPart.substring(integerPart.length - 3);
+  const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+  if (otherNumbers !== '') {
+    lastThree = ',' + lastThree;
+  }
+  const formattedInt = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + lastThree;
+  const formattedDecimal = decimalPart && parseInt(decimalPart, 10) > 0 ? `.${decimalPart}` : '';
+  return `${isNegative ? '-' : ''}₹${formattedInt}${formattedDecimal}`;
+};
+
 interface GRNActionCellProps {
   grn: GoodsReceipt;
+  poId?: string;
   outstanding: number;
   onOpenRecordPayment: (grn: GoodsReceipt) => void;
   onOpenPaymentHistory: (grn: GoodsReceipt) => void;
@@ -28,6 +62,7 @@ interface GRNActionCellProps {
 
 const GRNActionCell: React.FC<GRNActionCellProps> = ({
   grn,
+  poId,
   outstanding,
   onOpenRecordPayment,
   onOpenPaymentHistory,
@@ -43,6 +78,7 @@ const GRNActionCell: React.FC<GRNActionCellProps> = ({
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         className="p-1.5 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+        title="Actions"
       >
         <MoreVertical className="w-4 h-4" />
       </button>
@@ -66,6 +102,14 @@ const GRNActionCell: React.FC<GRNActionCellProps> = ({
         />
         <RowActionMenuItem
           icon={<FileText className="w-3.5 h-3.5" />}
+          label="View Purchase Order"
+          onClick={() => {
+            setIsOpen(false);
+            navigate(poId ? `/procurement/purchase-orders/${poId}` : `/procurement/purchase-orders`);
+          }}
+        />
+        <RowActionMenuItem
+          icon={<ShieldCheck className="w-3.5 h-3.5 text-blue-600" />}
           label="View QC Report"
           onClick={() => {
             setIsOpen(false);
@@ -75,7 +119,7 @@ const GRNActionCell: React.FC<GRNActionCellProps> = ({
 
         <RowActionMenuDivider />
 
-        {outstanding > 0 && (
+        {outstanding > 0.01 && (
           <RowActionMenuItem
             variant="success"
             icon={<CreditCard className="w-3.5 h-3.5" />}
@@ -124,16 +168,26 @@ export const GRNListPage: React.FC = () => {
   const { state, recordGRNPayment } = useERPStore();
 
   const grns: GoodsReceipt[] = state.goodsReceipts || [];
-  const projects = state.projects || [];
   const vendors = state.vendors || [];
   const pos = state.purchaseOrders || [];
   const tokens = state.materialEntryTokens || [];
   const allPayments: GRNPayment[] = state.grnPayments || [];
 
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
+  // Filter Form State
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedVendorId, setSelectedVendorId] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+
+  // Applied Filter State (triggered by Apply / Clear or typing search)
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: '',
+    vendorId: 'all',
+    status: 'all',
+    from: '',
+    to: '',
+  });
 
   // Payment Recording Modal State
   const [paymentModalGRN, setPaymentModalGRN] = useState<{
@@ -159,19 +213,97 @@ export const GRNListPage: React.FC = () => {
     outstanding: number;
   } | null>(null);
 
+  const todayISO = new Date().toISOString().split('T')[0];
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      search: searchQuery,
+      vendorId: selectedVendorId,
+      status: statusFilter,
+      from: dateFrom,
+      to: dateTo,
+    });
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSelectedVendorId('all');
+    setStatusFilter('all');
+    setDateFrom('');
+    setDateTo('');
+    setAppliedFilters({
+      search: '',
+      vendorId: 'all',
+      status: 'all',
+      from: '',
+      to: '',
+    });
+  };
+
+  // Filtered GRN records
   const filteredGRNs = grns.filter((g) => {
-    const matchesProject = selectedProjectId === 'all' || g.projectId === selectedProjectId;
-    const matchesVendor = selectedVendorId === 'all' || g.vendorId === selectedVendorId;
-    const matchesStatus = statusFilter === 'all' || g.status === statusFilter || g.paymentStatus === statusFilter;
+    const matchesVendor = appliedFilters.vendorId === 'all' || g.vendorId === appliedFilters.vendorId;
+
+    const po = pos.find((p) => p.id === g.poId || p.poNumber === g.poNumber || p.documentNumber === g.poNumber);
+    const token = tokens.find((t) => t.id === g.tokenId || t.tokenNumber === g.tokenId);
+    const firstItem = g.items && g.items.length > 0 ? g.items[0] : null;
+    const poLine = po && (po as any).lines && (po as any).lines.length > 0 ? (po as any).lines[0] : null;
+    const productName = firstItem?.description || poLine?.materialName || poLine?.productName || token?.materialName || 'Material';
+    const computedStatus = getGRNPaymentStatus(g, allPayments, po, todayISO);
+
+    const matchesStatus = appliedFilters.status === 'all' || computedStatus === appliedFilters.status || g.status === appliedFilters.status;
+
+    // Date Range Filtering against GRN creation/receipt date
+    const gDateStr = g.grnDate || g.receivedDate || (g as any).createdAt?.split('T')[0] || '';
+    let matchesDate = true;
+    if (appliedFilters.from) {
+      matchesDate = matchesDate && gDateStr >= appliedFilters.from;
+    }
+    if (appliedFilters.to) {
+      matchesDate = matchesDate && gDateStr <= appliedFilters.to;
+    }
+
+    const searchLower = appliedFilters.search.trim().toLowerCase();
+    const grnNumDisplay = resolveGRNNumber(grns, g);
+    const tokenNumDisplay = resolveTokenNumber(tokens, g.tokenId || token);
+    const poNumDisplay = resolvePONumber(pos, g.poId || po || g.poNumber);
+    const vehicleNum = (token as any)?.vehicleNumber || (g as any)?.vehicleNumber || '';
+
     const matchesSearch =
-      searchQuery === '' ||
-      g.grnNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (g.tokenId && g.tokenId.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      g.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (g.vendorName && g.vendorName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (g.projectName && g.projectName.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesProject && matchesVendor && matchesStatus && matchesSearch;
+      searchLower === '' ||
+      g.grnNumber.toLowerCase().includes(searchLower) ||
+      grnNumDisplay.toLowerCase().includes(searchLower) ||
+      (g.tokenId && g.tokenId.toLowerCase().includes(searchLower)) ||
+      tokenNumDisplay.toLowerCase().includes(searchLower) ||
+      g.poNumber.toLowerCase().includes(searchLower) ||
+      poNumDisplay.toLowerCase().includes(searchLower) ||
+      (g.vendorName && g.vendorName.toLowerCase().includes(searchLower)) ||
+      (g.projectName && g.projectName.toLowerCase().includes(searchLower)) ||
+      productName.toLowerCase().includes(searchLower) ||
+      vehicleNum.toLowerCase().includes(searchLower);
+
+    return matchesVendor && matchesStatus && matchesDate && matchesSearch;
   });
+
+  // Dynamic KPI Card Calculations
+  const validGRNs = filteredGRNs.filter((g) => g.status !== 'Cancelled' && g.status !== 'cancelled');
+  const totalGRNsCount = validGRNs.length;
+
+  const openGRNsCount = validGRNs.filter((g) => {
+    const po = pos.find((p) => p.id === g.poId || p.poNumber === g.poNumber || p.documentNumber === g.poNumber);
+    return getGRNOutstanding(g, allPayments, po) > 0.01;
+  }).length;
+
+  const totalNetPayableSum = validGRNs.reduce((sum, g) => {
+    const po = pos.find((p) => p.id === g.poId || p.poNumber === g.poNumber || p.documentNumber === g.poNumber);
+    return sum + getGRNNetPayable(g, po);
+  }, 0);
+
+  const totalOutstandingSum = validGRNs.reduce((sum, g) => {
+    const po = pos.find((p) => p.id === g.poId || p.poNumber === g.poNumber || p.documentNumber === g.poNumber);
+    return sum + getGRNOutstanding(g, allPayments, po);
+  }, 0);
+
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
@@ -179,8 +311,8 @@ export const GRNListPage: React.FC = () => {
         return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">Paid</span>;
       case 'Partially Paid':
         return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">Partially Paid</span>;
-      case 'On Hold':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-50 text-red-800 border border-red-200">On Hold</span>;
+      case 'Overdue':
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-50 text-red-800 border border-red-200">Overdue</span>;
       case 'Cancelled':
         return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">Cancelled</span>;
       case 'Payment Pending':
@@ -289,71 +421,156 @@ export const GRNListPage: React.FC = () => {
         subtitle="Final verified inventory receipts generated automatically following Quality Control clearance."
       />
 
-      <FilterToolbar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        searchPlaceholder="Search GRN #, Token #, PO #, Vendor, or Product..."
-        selectFilters={[
-          {
-            id: 'project-filter',
-            label: 'Project',
-            value: selectedProjectId,
-            onChange: setSelectedProjectId,
-            options: [
-              { value: 'all', label: 'All Projects' },
-              ...projects.map((p) => ({ value: p.id, label: p.projectName })),
-            ],
-          },
-          {
-            id: 'vendor-filter',
-            label: 'Vendor',
-            value: selectedVendorId,
-            onChange: setSelectedVendorId,
-            options: [
-              { value: 'all', label: 'All Vendors' },
-              ...vendors.map((v) => ({ value: v.id, label: v.name })),
-            ],
-          },
-          {
-            id: 'status-filter',
-            label: 'Status',
-            value: statusFilter,
-            onChange: setStatusFilter,
-            options: [
-              { label: 'All Statuses', value: 'all' },
-              { label: 'Payment Pending', value: 'Payment Pending' },
-              { label: 'Partially Paid', value: 'Partially Paid' },
-              { label: 'Paid', value: 'Paid' },
-              { label: 'On Hold', value: 'On Hold' },
-            ],
-          },
-        ]}
-      />
+      {/* 1. FOUR REAL-DATA KPI CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-4">
+        {/* CARD 1: TOTAL GRNS */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 flex flex-col justify-between h-[115px]">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">TOTAL GRNS</span>
+          <span className="text-2xl font-bold text-gray-900">{totalGRNsCount}</span>
+        </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden my-4">
+        {/* CARD 2: OPEN GRNS */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 flex flex-col justify-between h-[115px]">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">OPEN GRNS</span>
+          <span className="text-2xl font-bold text-gray-900">{openGRNsCount}</span>
+        </div>
+
+        {/* CARD 3: NET PAYABLE */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 flex flex-col justify-between h-[115px]">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">NET PAYABLE</span>
+          <span className="text-2xl font-bold text-gray-900">{formatIndianCurrency(totalNetPayableSum)}</span>
+        </div>
+
+        {/* CARD 4: OUTSTANDING */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 flex flex-col justify-between h-[115px]">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">OUTSTANDING</span>
+          <span className="text-2xl font-bold text-gray-900">{formatIndianCurrency(totalOutstandingSum)}</span>
+        </div>
+      </div>
+
+      {/* 2. ADVANCED REFERENCE-STYLE 2-ROW FILTER PANEL */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 mb-4 flex flex-col gap-4">
+        {/* ROW 1: SEARCH, VENDOR, PAYMENT STATUS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* SEARCH */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">SEARCH</label>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleApplyFilters();
+                }}
+                placeholder="GRN, Token, PO, Vehicle, Vendor..."
+                className="w-full pl-9 pr-3 py-1.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* VENDOR */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">VENDOR</label>
+            <select
+              value={selectedVendorId}
+              onChange={(e) => setSelectedVendorId(e.target.value)}
+              className="w-full px-3 py-1.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+            >
+              <option value="all">All Vendors</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* PAYMENT STATUS */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">PAYMENT STATUS</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-1.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+            >
+              <option value="all">All Statuses</option>
+              <option value="Payment Pending">Payment Pending</option>
+              <option value="Partially Paid">Partially Paid</option>
+              <option value="Paid">Paid</option>
+              <option value="Overdue">Overdue</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+
+        {/* ROW 2: ISSUED FROM, ISSUED TO, APPLY FILTERS, CLEAR */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          {/* ISSUED FROM */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">ISSUED FROM</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full px-3 py-1.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+            />
+          </div>
+
+          {/* ISSUED TO */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">ISSUED TO</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full px-3 py-1.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+            />
+          </div>
+
+          {/* ACTION BUTTONS */}
+          <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2 md:pt-0">
+            <button
+              onClick={handleApplyFilters}
+              className="px-5 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-medium text-sm rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Search className="w-4 h-4" />
+              Apply Filters
+            </button>
+            <button
+              onClick={handleClearFilters}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium text-sm rounded-lg border border-gray-300 transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. GRN TABLE */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mb-4">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1100px]">
+          <table className="w-full text-left border-collapse min-w-[1050px]">
             <thead>
               <tr className="bg-white border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="py-3 px-4">GRN #</th>
-                <th className="py-3 px-4">Token #</th>
-                <th className="py-3 px-4">PO #</th>
-                <th className="py-3 px-4">Vendor / Product</th>
-                <th className="py-3 px-4 text-right">Accepted Qty</th>
-                <th className="py-3 px-4 text-right">Rate / Unit</th>
-                <th className="py-3 px-4 text-right">Net Payable</th>
-                <th className="py-3 px-4 text-right">Paid</th>
-                <th className="py-3 px-4 text-right">Outstanding</th>
-                <th className="py-3 px-4">Due Date</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3.5 px-4 w-[190px]">GRN / Source</th>
+                <th className="py-3.5 px-4 min-w-[260px]">Vendor & Material</th>
+                <th className="py-3.5 px-4 text-right whitespace-nowrap">Accepted</th>
+                <th className="py-3.5 px-4 text-right whitespace-nowrap">Rate</th>
+                <th className="py-3.5 px-4 text-right whitespace-nowrap">Net Payable</th>
+                <th className="py-3.5 px-4 text-right whitespace-nowrap">Payment</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Due Date</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">Status</th>
+                <th className="py-3.5 px-4 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
               {filteredGRNs.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="py-8 text-center text-gray-500">
-                    No Goods Receipt Notes found. Final GRNs will automatically generate here after Quality Inspection clearance.
+                  <td colSpan={9} className="py-8 text-center text-gray-500">
+                    No Goods Receipt Notes found. Adjust filter criteria or receive items via QC to generate GRNs.
                   </td>
                 </tr>
               ) : (
@@ -365,34 +582,18 @@ export const GRNListPage: React.FC = () => {
                   const poLine = po && (po as any).lines && (po as any).lines.length > 0 ? (po as any).lines[0] : null;
 
                   const productName = firstItem?.description || poLine?.materialName || poLine?.productName || token?.materialName || 'Material';
+                  const categoryNameDisplay = firstItem?.categoryName || poLine?.categoryName;
+                  const vendorNameDisplay = grn.vendorName || po?.vendorName || 'Vendor';
+                  const projectNameDisplay = grn.projectName || po?.projectName;
                   const unit = firstItem?.unit || poLine?.unit || 'nos';
                   
                   const rate = grn.poUnitRate ?? firstItem?.poUnitRate ?? firstItem?.unitRate ?? (poLine ? Number(poLine.unitRate ?? poLine.finalRate ?? poLine.basicRate ?? 0) : 0);
                   const acceptedQty = grn.acceptedQty ?? firstItem?.qcApprovedQty ?? 0;
                   
-                  // Net payable from snapshot or calculated
-                  const baseVal = grn.baseAcceptedValue ?? (acceptedQty * rate);
-                  const taxVal = grn.taxAmount ?? (baseVal * 0.18);
-                  const netPayable = grn.netPayable ?? (baseVal + taxVal);
+                  const netPayable = getGRNNetPayable(grn, po);
+                  const paid = getGRNPaidAmount(grn, allPayments);
+                  const outstanding = getGRNOutstanding(grn, allPayments, po);
 
-                  // Payments sum for this GRN
-                  const grnPayments = allPayments.filter((p) => p.grnId === grn.id || p.grnId === grn.grnNumber);
-                  const paid = grn.paidAmount ?? grnPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-                  const outstanding = grn.outstandingAmount ?? Math.max(netPayable - paid, 0);
-
-                  // Derived payment status
-                  let computedPaymentStatus = grn.paymentStatus || 'Payment Pending';
-                  if (netPayable > 0 && paid >= netPayable - 0.01) {
-                    computedPaymentStatus = 'Paid';
-                  } else if (paid > 0) {
-                    computedPaymentStatus = 'Partially Paid';
-                  } else if (netPayable > 0) {
-                    computedPaymentStatus = 'Payment Pending';
-                  } else {
-                    computedPaymentStatus = 'Payment Pending';
-                  }
-
-                  // Due date
                   let dueDate = grn.dueDate || 'Not Set';
                   if (!grn.dueDate && grn.grnDate) {
                     const pTerms = (po as any)?.paymentTerms || (po as any)?.paymentTermsDays;
@@ -402,39 +603,105 @@ export const GRNListPage: React.FC = () => {
                     dueDate = d.toISOString().split('T')[0];
                   }
 
-                  const grnNumDisplay = grn.grnNumber || `GRN-2026-${grn.id.slice(-3)}`;
+                  const isOverdue = outstanding > 0.01 && dueDate !== 'Not Set' && dueDate < todayISO;
+                  const computedStatus = getGRNPaymentStatus(grn, allPayments, po, todayISO);
+
+                  const grnNumDisplay = resolveGRNNumber(grns, grn);
+                  const tokenNumDisplay = resolveTokenNumber(tokens, grn.tokenId || token);
+                  const poNumDisplay = resolvePONumber(pos, grn.poId || po || grn.poNumber);
 
                   return (
                     <tr key={grn.id} className="hover:bg-gray-50/80 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-gray-900">{grnNumDisplay}</td>
-                      <td className="py-3 px-4 font-mono text-xs text-gray-700">{grn.tokenId || token?.tokenNumber || 'N/A'}</td>
-                      <td className="py-3 px-4 font-mono text-xs text-gray-700">{grn.poNumber}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-gray-900">{grn.vendorName || po?.vendorName || 'Vendor'}</span>
-                          <span className="text-xs text-gray-500">{productName}</span>
+                      {/* 1. GRN / SOURCE */}
+                      <td className="py-3.5 px-4 align-top w-[190px]">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-bold text-gray-900 whitespace-nowrap text-sm">{grnNumDisplay}</span>
+                          {tokenNumDisplay && tokenNumDisplay !== 'N/A' && (
+                            <span
+                              onClick={() => navigate('/inventory/gate-tokens')}
+                              className="text-xs text-gray-500 hover:text-amber-700 cursor-pointer whitespace-nowrap transition-colors"
+                            >
+                              Token: <span className="font-mono font-medium">{tokenNumDisplay}</span>
+                            </span>
+                          )}
+                          {poNumDisplay && poNumDisplay !== 'N/A' && (
+                            <span
+                              onClick={() => navigate(po?.id ? `/procurement/purchase-orders/${po.id}` : '/procurement/purchase-orders')}
+                              className="text-xs text-gray-500 hover:text-amber-700 cursor-pointer whitespace-nowrap transition-colors"
+                            >
+                              PO: <span className="font-mono font-medium">{poNumDisplay}</span>
+                            </span>
+                          )}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-right font-semibold text-gray-900">
+
+                      {/* 2. VENDOR & MATERIAL */}
+                      <td className="py-3.5 px-4 align-top min-w-[260px]">
+                        <div className="flex flex-col gap-0.5 max-w-[360px]">
+                          <span className="font-bold text-gray-900 text-sm">{vendorNameDisplay}</span>
+                          <span
+                            className="text-xs text-gray-800 line-clamp-2 leading-relaxed"
+                            title={productName}
+                          >
+                            {productName}
+                          </span>
+                          {(projectNameDisplay || categoryNameDisplay) && (
+                            <span className="text-[11px] text-gray-400 font-medium truncate">
+                              {projectNameDisplay || categoryNameDisplay}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 3. ACCEPTED */}
+                      <td className="py-3.5 px-4 align-top text-right whitespace-nowrap font-medium text-gray-900">
                         {acceptedQty} <span className="text-xs text-gray-500 font-normal">{unit}</span>
                       </td>
-                      <td className="py-3 px-4 text-right text-gray-700">
+
+                      {/* 4. RATE */}
+                      <td className="py-3.5 px-4 align-top text-right whitespace-nowrap text-gray-700">
                         ₹{rate.toLocaleString('en-IN')} / {unit}
                       </td>
-                      <td className="py-3 px-4 text-right font-semibold text-gray-900">
+
+                      {/* 5. NET PAYABLE */}
+                      <td className="py-3.5 px-4 align-top text-right whitespace-nowrap font-semibold text-gray-900">
                         ₹{netPayable.toLocaleString('en-IN')}
                       </td>
-                      <td className="py-3 px-4 text-right text-emerald-700 font-medium">
-                        ₹{paid.toLocaleString('en-IN')}
+
+                      {/* 6. PAYMENT */}
+                      <td className="py-3.5 px-4 align-top text-right whitespace-nowrap">
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className={`text-xs ${paid > 0 ? 'text-emerald-700 font-medium' : 'text-gray-500'}`}>
+                            Paid: ₹{paid.toLocaleString('en-IN')}
+                          </span>
+                          <span className={`text-xs font-semibold ${outstanding > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+                            Due: ₹{outstanding.toLocaleString('en-IN')}
+                          </span>
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-right font-semibold text-amber-800">
-                        ₹{outstanding.toLocaleString('en-IN')}
+
+                      {/* 7. DUE DATE */}
+                      <td className="py-3.5 px-4 align-top whitespace-nowrap">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-medium text-gray-700">{formatGRNDate(dueDate)}</span>
+                          {isOverdue && (
+                            <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">
+                              Overdue
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-xs text-gray-700">{dueDate}</td>
-                      <td className="py-3 px-4 text-center">{getStatusBadge(computedPaymentStatus)}</td>
-                      <td className="py-3 px-4 text-right">
+
+                      {/* 8. STATUS */}
+                      <td className="py-3.5 px-4 align-top text-center whitespace-nowrap">
+                        {getStatusBadge(computedStatus)}
+                      </td>
+
+                      {/* 9. ACTIONS */}
+                      <td className="py-3.5 px-4 align-top text-right whitespace-nowrap">
                         <GRNActionCell
                           grn={grn}
+                          poId={po?.id}
                           outstanding={outstanding}
                           onOpenRecordPayment={handleOpenRecordPayment}
                           onOpenPaymentHistory={handleOpenPaymentHistory}

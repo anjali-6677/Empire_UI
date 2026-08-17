@@ -24,7 +24,7 @@ import {
   Printer,
   Download,
 } from 'lucide-react';
-import { buildRFQDocumentHtml, printDocumentHtml, downloadDocumentHtml } from '../../utils/documentGenerator';
+import { downloadRFQPdf, printRFQPdf } from '../../utils/rfqPdfGenerator';
 
 export const RFQDetailsPage: React.FC = () => {
   const { rfqId } = useParams<{ rfqId: string }>();
@@ -91,22 +91,20 @@ export const RFQDetailsPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
-              const documentNumber = rfq.documentNumber || rfq.id;
-              const htmlContent = buildRFQDocumentHtml(rfq);
-              printDocumentHtml(`RFQ ${documentNumber}`, htmlContent);
+              const vendor = invitedVendors[0] || state.vendors[0];
+              printRFQPdf(rfq, vendor);
             }}
-            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-semibold flex items-center gap-1"
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-semibold flex items-center gap-1 cursor-pointer"
           >
             <Printer className="h-3.5 w-3.5" /> Print RFQ
           </button>
 
           <button
             onClick={() => {
-              const documentNumber = rfq.documentNumber || rfq.id;
-              const htmlContent = buildRFQDocumentHtml(rfq);
-              downloadDocumentHtml(`${documentNumber}.pdf`, `RFQ ${documentNumber}`, htmlContent);
+              const vendor = invitedVendors[0] || state.vendors[0];
+              downloadRFQPdf(rfq, vendor);
             }}
-            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-500 rounded font-semibold flex items-center gap-1"
+            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-500 rounded font-semibold flex items-center gap-1 cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" /> Download RFQ
           </button>

@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   History,
   Download,
+  Printer,
   XCircle,
 } from 'lucide-react';
 import { RFQ } from '../../domain/types';
@@ -28,6 +29,7 @@ export interface RFQRowActionsMenuProps {
   onCreatePO: (rfqId: string) => void;
   onViewActivity: (rfqId: string) => void;
   onDownload: (rfq: RFQ) => void;
+  onPrint?: (rfq: RFQ) => void;
   onCancel: (rfq: RFQ) => void;
 }
 
@@ -52,6 +54,7 @@ export function getRFQRowActions(
     onCreatePO: () => void;
     onViewActivity: () => void;
     onDownload: () => void;
+    onPrint?: () => void;
     onCancel: () => void;
   }
 ): RFQActionItem[] {
@@ -167,6 +170,15 @@ export function getRFQRowActions(
     onClick: callbacks.onDownload,
   });
 
+  if (callbacks.onPrint) {
+    actions.push({
+      id: 'print',
+      label: 'Print RFQ',
+      icon: Printer,
+      onClick: callbacks.onPrint,
+    });
+  }
+
   // Cancel RFQ (Available for active draft/issued/quotes_received)
   if (rfq.status !== 'cancelled' && rfq.status !== 'awarded') {
     actions.push({
@@ -191,6 +203,7 @@ export const RFQRowActionsMenu: React.FC<RFQRowActionsMenuProps> = ({
   onCreatePO,
   onViewActivity,
   onDownload,
+  onPrint,
   onCancel,
 }) => {
   const actions = getRFQRowActions(rfq, receivedQuotesCount, {
@@ -201,6 +214,7 @@ export const RFQRowActionsMenu: React.FC<RFQRowActionsMenuProps> = ({
     onCreatePO: () => onCreatePO(rfq.id),
     onViewActivity: () => onViewActivity(rfq.id),
     onDownload: () => onDownload(rfq),
+    onPrint: onPrint ? () => onPrint(rfq) : undefined,
     onCancel: () => onCancel(rfq),
   });
 
