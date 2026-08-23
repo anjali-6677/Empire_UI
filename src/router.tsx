@@ -82,6 +82,14 @@ import CategoryDetailsPage from './pages/masters/CategoryDetailsPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
+// Reports Module Pages
+import { ReportsCenterPage } from './pages/reports/ReportsCenterPage';
+import { ProjectsCommercialReportsPage } from './pages/reports/ProjectsCommercialReportsPage';
+import { ProcurementReportsPage } from './pages/reports/ProcurementReportsPage';
+import { InventoryQualityReportsPage } from './pages/reports/InventoryQualityReportsPage';
+import { FinanceReportsPage } from './pages/reports/FinanceReportsPage';
+
+
 export const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
@@ -223,6 +231,41 @@ export const AppRouter: React.FC = () => {
             <Route path="masters/employees" element={<UsersEmployeesPage />} />
             <Route path="masters/users" element={<UsersEmployeesPage />} />
             <Route path="masters/categories" element={<CategoriesFactorsPage />} />
+
+            {/* Reports Module Central & Category Routes */}
+            <Route path="reports" element={<ReportsCenterPage />} />
+            
+            <Route path="reports/projects" element={<ProjectsCommercialReportsPage />} />
+            <Route path="reports/projects/:tab" element={<ProjectsCommercialReportsPage />} />
+            
+            <Route path="reports/procurement" element={<ProcurementReportsPage />} />
+            <Route path="reports/procurement/:tab" element={<ProcurementReportsPage />} />
+            
+            <Route path="reports/inventory-quality" element={<InventoryQualityReportsPage />} />
+            <Route path="reports/inventory-quality/:tab" element={<InventoryQualityReportsPage />} />
+            
+            <Route path="reports/finance" element={<FinanceReportsPage />} />
+            <Route path="reports/finance/:tab" element={<FinanceReportsPage />} />
+
+            {/* Legacy Detail Report Route Redirects */}
+            <Route path="reports/project-financial-summary" element={<Navigate to="/reports/projects/financial-summary" replace />} />
+            <Route path="reports/project-budget-vs-actual" element={<Navigate to="/reports/projects/budget-vs-actual" replace />} />
+            <Route path="reports/project-analytics" element={<Navigate to="/reports/projects/analytics" replace />} />
+            <Route path="reports/project-expenditure-breakdown" element={<Navigate to="/reports/projects/expenditure" replace />} />
+            <Route path="reports/purchase-analysis" element={<Navigate to="/reports/procurement/purchase-analysis" replace />} />
+            <Route path="reports/vendor-purchase-analysis" element={<Navigate to="/reports/procurement/vendor-analysis" replace />} />
+            <Route path="reports/material-rate-analysis" element={<Navigate to="/reports/procurement/material-rates" replace />} />
+            <Route path="reports/rfq-quotation-analysis" element={<Navigate to="/reports/procurement/rfq-analysis" replace />} />
+            <Route path="reports/procurement-cycle-analysis" element={<Navigate to="/reports/procurement/cycle-analysis" replace />} />
+            <Route path="reports/grn-receiving-analysis" element={<Navigate to="/reports/inventory-quality/grn" replace />} />
+            <Route path="reports/quality-control-analysis" element={<Navigate to="/reports/inventory-quality/qc" replace />} />
+            <Route path="reports/stock-summary" element={<Navigate to="/reports/inventory-quality/stock" replace />} />
+            <Route path="reports/material-movement-consumption" element={<Navigate to="/reports/inventory-quality/movement" replace />} />
+            <Route path="reports/vendor-payable-analysis" element={<Navigate to="/reports/finance/vendor-payables" replace />} />
+            <Route path="reports/subcontractor-analysis" element={<Navigate to="/reports/finance/subcontractors" replace />} />
+            <Route path="reports/client-billing-receivables" element={<Navigate to="/reports/finance/client-billing" replace />} />
+            <Route path="reports/client-receivable-aging" element={<Navigate to="/reports/finance/receivables" replace />} />
+            <Route path="reports/project-billing-milestones" element={<Navigate to="/reports/projects/billing-milestones" replace />} />
 
             {/* Universal Catch-all Route Handler */}
             <Route path="*" element={<ModulePageRenderer />} />
