@@ -10,12 +10,14 @@ import {
   X
 } from 'lucide-react';
 import { useWorkflow } from '../context/WorkflowContext';
+import { useProjectContext } from '../context/ProjectContext';
 
 export const CalendarPage: React.FC = () => {
   const navigate = useNavigate();
   const { calendarEvents, tasks, alerts } = useWorkflow();
+  const { selectedProject } = useProjectContext();
 
-  const [currentDate, setCurrentDate] = React.useState(new Date(2026, 6, 1)); // July 2026
+  const [currentDate, setCurrentDate] = React.useState(new Date(2026, 7, 1)); // August 2026
   const [viewMode, setViewMode] = React.useState<'month' | 'agenda'>('month');
   const [userScope, setUserScope] = React.useState<'my' | 'other'>('my');
   const [selectedEvent, setSelectedEvent] = React.useState<any>(null);
@@ -57,9 +59,20 @@ export const CalendarPage: React.FC = () => {
     return combined.filter((e) => {
       if (userScope === 'my' && e.userScope !== 'my') return false;
       if (userScope === 'other' && e.userScope !== 'other') return false;
+
+      // Active Project filter
+      if (selectedProject) {
+        const pName = (selectedProject.projectName || '').toLowerCase();
+        const pCode = (selectedProject.projectCode || '').toLowerCase();
+        const site = (e.relatedSite || '').toLowerCase();
+        if (site && !site.includes(pName) && !site.includes(pCode) && !pName.includes(site)) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [calendarEvents, tasks, alerts, userScope]);
+  }, [calendarEvents, tasks, alerts, userScope, selectedProject]);
 
   // Calendar Month Calculations
   const year = currentDate.getFullYear();
@@ -72,7 +85,7 @@ export const CalendarPage: React.FC = () => {
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-  const goToday = () => setCurrentDate(new Date(2026, 6, 24)); // Fixed ERP date anchor
+  const goToday = () => setCurrentDate(new Date(2026, 7, 29)); // August 29, 2026
 
   const getEventsForDay = (day: number) => {
     const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;

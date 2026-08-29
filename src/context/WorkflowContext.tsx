@@ -411,19 +411,38 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     tenders: INITIAL_COLLECTIONS.tenders as unknown as TenderRecord[],
     workOrders: INITIAL_COLLECTIONS.workOrders as unknown as WorkOrderRecord[],
     tasks: [
-      { id: 't-101', taskCode: 'TSK-101', subject: 'Finalize Joinery Vendor Rates for Lobby', description: 'Review quotation matrix for Asian Paints and Century Ply for Nexus Tech Park lobby woodwork.', assignedTo: 'Amit Dev', assignedBy: 'Rajesh Kumar', relatedSite: 'Nexus Tech Park', relatedModule: 'Procurement', relatedRecord: 'RFQ-2026-089', relatedRoute: '/procurement/rfqs', priority: 'high', assignedDate: '2026-07-15', dueDate: '2026-07-22', status: 'overdue', readDate: '2026-07-16' },
-      { id: 't-102', taskCode: 'TSK-102', subject: 'Verify Material GRN PO-2026-089', description: 'Inspect 500 Pcs 18mm Plywood delivered at Grand Hyatt Goa site.', assignedTo: 'Amit Dev', assignedBy: 'Anita Rao', relatedSite: 'Grand Hyatt Goa', relatedModule: 'GRN', relatedRecord: 'GRN-2026-014', relatedRoute: '/procurement/grns', priority: 'medium', assignedDate: '2026-07-20', dueDate: '2026-07-28', status: 'in_progress', readDate: '2026-07-21' },
-      { id: 't-103', taskCode: 'TSK-103', subject: 'Approve Payment Request REQ-2026-042', description: 'Final signoff on ₹14.5 L vendor payment request.', assignedTo: 'Amit Dev', assignedBy: 'Sanjay Mehta', relatedSite: 'Imperial Heights', relatedModule: 'Finance', relatedRecord: 'PREQ-2026-042', relatedRoute: '/finance/payment-requests', priority: 'urgent', assignedDate: '2026-07-22', dueDate: '2026-07-25', status: 'pending_acceptance', readDate: '2026-07-22' },
-      { id: 't-104', taskCode: 'TSK-104', subject: 'Submit Client Milestone Bill #3', description: 'Prepare and upload 3rd stage client billing certificate for ₹45.0 L.', assignedTo: 'Amit Dev', assignedBy: 'Priya Sharma', relatedSite: 'Nexus Tech Park', relatedModule: 'Billing', relatedRecord: 'BILL-2026-003', relatedRoute: '/sites', priority: 'high', assignedDate: '2026-07-10', dueDate: '2026-07-20', completedDate: '2026-07-24', status: 'completed', readDate: '2026-07-11' },
-      { id: 't-105', taskCode: 'TSK-105', subject: 'Site Electrical Audit Inspection', description: 'Perform safety inspection for high-voltage panel room.', assignedTo: 'Rohan Verma', assignedBy: 'Amit Dev', relatedSite: 'Oberoi Sky City', relatedModule: 'Sites', relatedRecord: 'SITE-2026-004', relatedRoute: '/sites', priority: 'medium', assignedDate: '2026-07-24', dueDate: '2026-07-29', status: 'upcoming', readDate: '2026-07-24' },
-      { id: 't-106', taskCode: 'TSK-106', subject: 'Architect Drawing Approval', description: 'Sign off on revised HVAC layout drawings.', assignedTo: 'Rohan Verma', assignedBy: 'Amit Dev', relatedSite: 'Imperial Heights', relatedModule: 'Projects', relatedRecord: 'ARCH-2026-002', relatedRoute: '/projects/list', priority: 'low', assignedDate: '2026-07-18', dueDate: '2026-07-23', status: 'overdue', readDate: '2026-07-19' }
+      { id: 't-101', taskCode: 'TSK-2026-001', subject: 'Finalize Joinery Vendor Rates for Lobby', description: 'Review quotation matrix for Asian Paints and Century Ply for Nexus Tech Park lobby woodwork.', assignedTo: 'Amit Dev', assignedBy: 'Rajesh Kumar', relatedSite: 'Nexus Tech Park Lobby Renovations', relatedModule: 'Procurement', relatedRecord: 'RFQ-2026-089', relatedRoute: '/procurement/rfqs', priority: 'high', assignedDate: '2026-08-15', dueDate: '2026-08-22', status: 'overdue', readDate: '2026-08-16' },
+      { id: 't-102', taskCode: 'TSK-2026-002', subject: 'Verify Material GRN PO-2026-089', description: 'Inspect 500 Pcs 18mm Plywood delivered at Corporate Office site.', assignedTo: 'Amit Dev', assignedBy: 'Anita Rao', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedModule: 'GRN', relatedRecord: 'GRN-2026-014', relatedRoute: '/inventory/grn', priority: 'medium', assignedDate: '2026-08-20', dueDate: '2026-08-28', status: 'in_progress', readDate: '2026-08-21' },
+      { id: 't-103', taskCode: 'TSK-2026-003', subject: 'Approve Payment Request REQ-2026-042', description: 'Final signoff on ₹14.5 L vendor payment request for Century Ply.', assignedTo: 'Amit Dev', assignedBy: 'Sanjay Mehta', relatedSite: 'Nouveau Penthouse Fitout', relatedModule: 'Finance', relatedRecord: 'PREQ-2026-042', relatedRoute: '/finance/accounts-payable', priority: 'urgent', assignedDate: '2026-08-22', dueDate: '2026-08-25', status: 'pending_acceptance', readDate: '2026-08-22' },
+      { id: 't-104', taskCode: 'TSK-2026-004', subject: 'Submit Client Milestone RA Bill #3', description: 'Prepare and upload 3rd stage client billing certificate for ₹45.0 L.', assignedTo: 'Amit Dev', assignedBy: 'Priya Sharma', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedModule: 'Billing', relatedRecord: 'BILL-2026-003', relatedRoute: '/finance/client-ra-bills', priority: 'high', assignedDate: '2026-08-10', dueDate: '2026-08-20', completedDate: '2026-08-24', status: 'completed', readDate: '2026-08-11' },
+      { id: 't-105', taskCode: 'TSK-2026-005', subject: 'Site Electrical Audit Inspection', description: 'Perform safety inspection for high-voltage panel room.', assignedTo: 'Rohan Verma', assignedBy: 'Amit Dev', relatedSite: 'Cyber Towers Corporate Office Fitout', relatedModule: 'Execution', relatedRecord: 'SITE-2026-004', relatedRoute: '/projects/workspace', priority: 'medium', assignedDate: '2026-08-24', dueDate: '2026-08-29', status: 'in_progress', readDate: '2026-08-24' },
+      { id: 't-106', taskCode: 'TSK-2026-006', subject: 'Architect Drawing Approval for HVAC', description: 'Sign off on revised HVAC ceiling layout drawings.', assignedTo: 'Rohan Verma', assignedBy: 'Amit Dev', relatedSite: 'Nouveau Penthouse Fitout', relatedModule: 'Projects', relatedRecord: 'ARCH-2026-002', relatedRoute: '/projects/workspace', priority: 'low', assignedDate: '2026-08-18', dueDate: '2026-08-23', status: 'overdue', readDate: '2026-08-19' },
+      { id: 't-107', taskCode: 'TSK-2026-007', subject: 'Review Subcontractor WIP Measurement Sheet', description: 'Cross-verify ceiling framing quantities submitted by Unique Carpentry.', assignedTo: 'Amit Dev', assignedBy: 'Rajesh Kumar', relatedSite: 'Reliance HQ Executive Floor', relatedModule: 'Subcontractor', relatedRecord: 'WO-2026-008', relatedRoute: '/procurement/work-orders', priority: 'high', assignedDate: '2026-08-25', dueDate: '2026-08-30', status: 'in_progress', readDate: '2026-08-25' },
+      { id: 't-108', taskCode: 'TSK-2026-008', subject: 'Issue Material Indent IND-2026-112', description: 'Raise urgent indent for 200 sqm Italian Marble for Grand Hyatt lounge.', assignedTo: 'Anita Rao', assignedBy: 'Amit Dev', relatedSite: 'Grand Hyatt Executive Lounge Café', relatedModule: 'Procurement', relatedRecord: 'IND-2026-112', relatedRoute: '/procurement/indents', priority: 'urgent', assignedDate: '2026-08-26', dueDate: '2026-08-29', status: 'in_progress', readDate: '2026-08-26' },
+      { id: 't-109', taskCode: 'TSK-2026-009', subject: 'Audit Material Gate Token Tokens', description: 'Verify gate token dispatch records for incoming glass panels.', assignedTo: 'Amit Dev', assignedBy: 'Anita Rao', relatedSite: 'Highstreet Retail Storefront', relatedModule: 'Inventory', relatedRecord: 'GT-2026-044', relatedRoute: '/inventory/gate-tokens', priority: 'medium', assignedDate: '2026-08-27', dueDate: '2026-09-01', status: 'in_progress', readDate: '2026-08-27' },
+      { id: 't-110', taskCode: 'TSK-2026-010', subject: 'Vendor Pre-qualification Signoff', description: 'Complete compliance check for Asian Paints commercial contract.', assignedTo: 'Rohan Verma', assignedBy: 'Sanjay Mehta', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedModule: 'Vendor Master', relatedRecord: 'VEN-2026-002', relatedRoute: '/masters/vendors', priority: 'low', assignedDate: '2026-08-21', dueDate: '2026-08-27', status: 'completed', readDate: '2026-08-22' },
+      { id: 't-111', taskCode: 'TSK-2026-011', subject: 'Finalize BOQ Change Order #2', description: 'Process client variation request for acoustic paneling upgrade.', assignedTo: 'Amit Dev', assignedBy: 'Rajesh Kumar', relatedSite: 'Apex Healthcare Medical Center', relatedModule: 'CRM', relatedRecord: 'EST-2026-019', relatedRoute: '/crm', priority: 'urgent', assignedDate: '2026-08-28', dueDate: '2026-09-02', status: 'in_progress', readDate: '2026-08-28' },
+      { id: 't-112', taskCode: 'TSK-2026-012', subject: 'Verify Stock Ledger Reconciliation', description: 'Check discrepancy of 25 Ltr paint cans at Peenya central store.', assignedTo: 'Anita Rao', assignedBy: 'Amit Dev', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedModule: 'Inventory', relatedRecord: 'STK-2026-088', relatedRoute: '/inventory/stock-ledger', priority: 'high', assignedDate: '2026-08-24', dueDate: '2026-08-28', status: 'overdue', readDate: '2026-08-25' },
+      { id: 't-113', taskCode: 'TSK-2026-013', subject: 'Client Signoff on Mockup Room', description: 'Conduct client walk-through of executive suite sample room.', assignedTo: 'Amit Dev', assignedBy: 'Vikram Shah', relatedSite: 'Sovereign Heights Luxury Villa', relatedModule: 'Projects', relatedRecord: 'PRJ-2026-014', relatedRoute: '/projects/workspace', priority: 'high', assignedDate: '2026-08-25', dueDate: '2026-08-31', status: 'in_progress', readDate: '2026-08-26' },
+      { id: 't-114', taskCode: 'TSK-2026-014', subject: 'Reconcile Accounts Payable Outstanding', description: 'Review weekly AP aging report with Finance lead.', assignedTo: 'Rohan Verma', assignedBy: 'Sanjay Mehta', relatedSite: 'Cyber Towers Corporate Office Fitout', relatedModule: 'Finance', relatedRecord: 'AP-2026-090', relatedRoute: '/finance/accounts-payable', priority: 'medium', assignedDate: '2026-08-26', dueDate: '2026-09-03', status: 'in_progress', readDate: '2026-08-26' },
+      { id: 't-115', taskCode: 'TSK-2026-015', subject: 'QC Test Certificate Clearance', description: 'Upload lab test report for fire-retardant door cores.', assignedTo: 'Amit Dev', assignedBy: 'Anita Rao', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedModule: 'QC', relatedRecord: 'QC-2026-018', relatedRoute: '/inventory/qc', priority: 'high', assignedDate: '2026-08-27', dueDate: '2026-09-04', status: 'in_progress', readDate: '2026-08-27' }
     ],
     alerts: [
-      { id: 'alt-801', alertCode: 'ALT-801', title: 'Site SITE-2026-006 Pending Budget Approval', description: 'Project budget revision requested for structural reinforcement.', alertDate: '2026-07-24', dueDate: '2026-07-26', raisedBy: 'Rajesh Kumar', alertFor: 'Amit Dev', relatedSite: 'Nexus Tech Park', relatedRecord: 'SITE-2026-006', relatedRoute: '/sites', priority: 'high', readStatus: 'unread' },
-      { id: 'alt-802', alertCode: 'ALT-802', title: 'Material Delivery Exception PO-2026-089', description: 'Partial delivery of 200 Pcs gypsum board reported at site.', alertDate: '2026-07-24', dueDate: '2026-07-27', raisedBy: 'Site Logistics', alertFor: 'Amit Dev', relatedSite: 'Grand Hyatt Goa', relatedRecord: 'PO-2026-089', relatedRoute: '/procurement/purchase-orders', priority: 'medium', readStatus: 'unread' },
-      { id: 'alt-803', alertCode: 'ALT-803', title: 'Rate Finalization Approved', description: 'Chairman approved rate card for Schneider Electric fittings.', alertDate: '2026-07-23', dueDate: '2026-07-24', raisedBy: 'System Engine', alertFor: 'Amit Dev', relatedSite: 'Imperial Heights', relatedRecord: 'RFQ-2026-077', relatedRoute: '/procurement/rfqs', priority: 'low', readStatus: 'read' },
-      { id: 'alt-804', alertCode: 'ALT-804', title: 'Client Bill Payment Received', description: 'Direct wire credit of ₹25.0 L received from Hyatt Hotels.', alertDate: '2026-07-22', dueDate: '2026-07-23', raisedBy: 'Accounts Dept', alertFor: 'Amit Dev', relatedSite: 'Grand Hyatt Goa', relatedRecord: 'INV-2026-031', relatedRoute: '/finance/invoices', priority: 'high', readStatus: 'read' },
-      { id: 'alt-805', alertCode: 'ALT-805', title: 'Vendor Payment Overdue Alert', description: 'Asian Paints invoice INV-VND-8902 overdue by 5 days.', alertDate: '2026-07-20', dueDate: '2026-07-22', raisedBy: 'System Engine', alertFor: 'Rohan Verma', relatedSite: 'Nexus Tech Park', relatedRecord: 'INV-VND-8902', relatedRoute: '/finance/invoices', priority: 'urgent', readStatus: 'unread' }
+      { id: 'alt-801', alertCode: 'ALT-2026-001', title: 'Site Budget Revision Clearance Needed', description: 'Project budget revision requested for structural reinforcement at Corporate Office site.', alertDate: '2026-08-28', dueDate: '2026-08-30', raisedBy: 'Rajesh Kumar', alertFor: 'Amit Dev', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'PRJ-2026-002', relatedRoute: '/projects/workspace', priority: 'high', readStatus: 'unread' },
+      { id: 'alt-802', alertCode: 'ALT-2026-002', title: 'Material Delivery Exception PO-2026-089', description: 'Partial delivery of 200 Pcs gypsum board reported at site.', alertDate: '2026-08-28', dueDate: '2026-08-31', raisedBy: 'Site Logistics', alertFor: 'Amit Dev', relatedSite: 'Grand Hyatt Executive Lounge Café', relatedRecord: 'PO-2026-089', relatedRoute: '/procurement/purchase-orders', priority: 'medium', readStatus: 'unread' },
+      { id: 'alt-803', alertCode: 'ALT-2026-003', title: 'Rate Finalization Approved', description: 'Chairman approved rate card for Schneider Electric fittings.', alertDate: '2026-08-27', dueDate: '2026-08-28', raisedBy: 'System Engine', alertFor: 'Amit Dev', relatedSite: 'Nouveau Penthouse Fitout', relatedRecord: 'RFQ-2026-077', relatedRoute: '/procurement/rfqs', priority: 'low', readStatus: 'read' },
+      { id: 'alt-804', alertCode: 'ALT-2026-004', title: 'Client Bill Payment Received', description: 'Direct wire credit of ₹25.0 L received from Hyatt Hotels.', alertDate: '2026-08-26', dueDate: '2026-08-27', raisedBy: 'Accounts Dept', alertFor: 'Amit Dev', relatedSite: 'Grand Hyatt Executive Lounge Café', relatedRecord: 'INV-2026-031', relatedRoute: '/finance/client-ra-bills', priority: 'high', readStatus: 'read' },
+      { id: 'alt-805', alertCode: 'ALT-2026-005', title: 'Vendor Payment Overdue Alert', description: 'Asian Paints invoice INV-VND-8902 overdue by 5 days.', alertDate: '2026-08-25', dueDate: '2026-08-27', raisedBy: 'System Engine', alertFor: 'Amit Dev', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'INV-VND-8902', relatedRoute: '/finance/accounts-payable', priority: 'urgent', readStatus: 'unread' },
+      { id: 'alt-806', alertCode: 'ALT-2026-006', title: 'QC Rejection Notice for Plywood Lot', description: 'QC inspector flagged moisture content above allowable limit on Lot #44.', alertDate: '2026-08-28', dueDate: '2026-08-30', raisedBy: 'Quality Inspection', alertFor: 'Amit Dev', relatedSite: 'Cyber Towers Corporate Office Fitout', relatedRecord: 'QC-2026-019', relatedRoute: '/inventory/qc', priority: 'urgent', readStatus: 'unread' },
+      { id: 'alt-807', alertCode: 'ALT-2026-007', title: 'Subcontractor Bill Submitted for Certification', description: 'Unique Carpentry submitted RA Bill #2 for ₹8.5 L.', alertDate: '2026-08-27', dueDate: '2026-08-31', raisedBy: 'Murugan K', alertFor: 'Amit Dev', relatedSite: 'Reliance HQ Executive Floor', relatedRecord: 'SBIL-2026-012', relatedRoute: '/finance/subcontractor-bills', priority: 'high', readStatus: 'unread' },
+      { id: 'alt-808', alertCode: 'ALT-2026-008', title: 'Gate Entry Token Approved', description: 'Material Gate Token GT-2026-091 verified at site gate.', alertDate: '2026-08-26', dueDate: '2026-08-27', raisedBy: 'Gate Security', alertFor: 'Amit Dev', relatedSite: 'Nouveau Penthouse Fitout', relatedRecord: 'GT-2026-091', relatedRoute: '/inventory/gate-tokens', priority: 'low', readStatus: 'read' },
+      { id: 'alt-809', alertCode: 'ALT-2026-009', title: 'Client RA Bill Certified', description: 'Client PMC certified RA Bill #4 for Corporate Office project.', alertDate: '2026-08-25', dueDate: '2026-08-29', raisedBy: 'Priya Sharma', alertFor: 'Amit Dev', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'CRAB-2026-004', relatedRoute: '/finance/client-ra-bills', priority: 'medium', readStatus: 'read' },
+      { id: 'alt-810', alertCode: 'ALT-2026-010', title: 'RFQ Deadline Expiry Alert', description: 'Electrical fittings RFQ-2026-042 closing in 24 hours.', alertDate: '2026-08-28', dueDate: '2026-08-29', raisedBy: 'Procurement Bot', alertFor: 'Amit Dev', relatedSite: 'Highstreet Retail Storefront', relatedRecord: 'RFQ-2026-042', relatedRoute: '/procurement/rfqs', priority: 'high', readStatus: 'unread' },
+      { id: 'alt-811', alertCode: 'ALT-2026-011', title: 'Safety Audit Non-Compliance Flagged', description: 'Temporary power cabling safety violation noted during audit.', alertDate: '2026-08-24', dueDate: '2026-08-26', raisedBy: 'Safety Officer', alertFor: 'Amit Dev', relatedSite: 'Apex Healthcare Medical Center', relatedRecord: 'SAF-2026-003', relatedRoute: '/projects/workspace', priority: 'urgent', readStatus: 'read' },
+      { id: 'alt-812', alertCode: 'ALT-2026-012', title: 'Purchase Order Issued to Vendor', description: 'PO-2026-104 successfully dispatched to Saint-Gobain.', alertDate: '2026-08-23', dueDate: '2026-08-24', raisedBy: 'Anita Rao', alertFor: 'Amit Dev', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'PO-2026-104', relatedRoute: '/procurement/purchase-orders', priority: 'low', readStatus: 'read' },
+      { id: 'alt-813', alertCode: 'ALT-2026-013', title: 'Low Stock Reorder Warning', description: 'Gypsum board stock at site warehouse fallen below reorder point (150 sq ft).', alertDate: '2026-08-28', dueDate: '2026-08-30', raisedBy: 'Warehouse Engine', alertFor: 'Amit Dev', relatedSite: 'Sovereign Heights Luxury Villa', relatedRecord: 'STK-2026-011', relatedRoute: '/inventory/stock-ledger', priority: 'medium', readStatus: 'unread' },
+      { id: 'alt-814', alertCode: 'ALT-2026-014', title: 'Project Milestone Milestone Achieved', description: 'Civil drywall framing phase completed 2 days ahead of schedule.', alertDate: '2026-08-27', dueDate: '2026-08-28', raisedBy: 'Rajesh Kumar', alertFor: 'Amit Dev', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'PRJ-2026-002', relatedRoute: '/projects/workspace', priority: 'low', readStatus: 'read' },
+      { id: 'alt-815', alertCode: 'ALT-2026-015', title: 'Bank Account Wire Transfer Confirmed', description: 'Payment of ₹12,40,000 processed for Greenlam Industries.', alertDate: '2026-08-26', dueDate: '2026-08-27', raisedBy: 'Sanjay Mehta', alertFor: 'Amit Dev', relatedSite: 'Cyber Towers Corporate Office Fitout', relatedRecord: 'PAY-2026-055', relatedRoute: '/finance/accounts-payable', priority: 'medium', readStatus: 'read' }
     ],
     messages: [
       {
@@ -431,13 +450,14 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         userName: 'Rajesh Kumar',
         userRole: 'Project Manager',
         avatar: 'RK',
-        lastMessage: 'Please review the updated Joinery rates for Nexus Tech Park.',
+        lastMessage: 'Please review the updated Joinery rates for Corporate Office site.',
         timestamp: '10:45 AM',
         unreadCount: 1,
+        relatedSite: 'Corporate Office Turnkey Interior Fitout',
         messages: [
           { id: 'm1', sender: 'Rajesh Kumar', text: 'Hi Amit, I have uploaded the joinery vendor rates.', time: '10:30 AM', isMine: false },
           { id: 'm2', sender: 'Amit Dev', text: 'Thanks Rajesh. Will verify the comparison matrix shortly.', time: '10:38 AM', isMine: true },
-          { id: 'm3', sender: 'Rajesh Kumar', text: 'Please review the updated Joinery rates for Nexus Tech Park.', time: '10:45 AM', isMine: false }
+          { id: 'm3', sender: 'Rajesh Kumar', text: 'Please review the updated Joinery rates for Corporate Office site.', time: '10:45 AM', isMine: false }
         ]
       },
       {
@@ -448,6 +468,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         lastMessage: 'GRN inspection is completed for Grand Hyatt.',
         timestamp: 'Yesterday',
         unreadCount: 0,
+        relatedSite: 'Grand Hyatt Executive Lounge Café',
         messages: [
           { id: 'm1', sender: 'Anita Rao', text: 'The plywood delivery arrived at Goa site.', time: '4:15 PM', isMine: false },
           { id: 'm2', sender: 'Amit Dev', text: 'Great, please ensure physical tally before approving GRN.', time: '4:20 PM', isMine: true },
@@ -460,20 +481,188 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         userRole: 'Finance Head',
         avatar: 'SM',
         lastMessage: 'Payment batch #42 sent to HDFC Bank for RTGS processing.',
-        timestamp: 'Jul 23',
+        timestamp: 'Aug 28',
         unreadCount: 0,
+        relatedSite: 'Nouveau Penthouse Fitout',
         messages: [
           { id: 'm1', sender: 'Sanjay Mehta', text: 'Payment batch #42 sent to HDFC Bank for RTGS processing.', time: '3:30 PM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-4',
+        userName: 'Priya Sharma',
+        userRole: 'Billing Engineer',
+        avatar: 'PS',
+        lastMessage: 'RA Bill #3 documentation sent for PMC signature.',
+        timestamp: 'Aug 28',
+        unreadCount: 2,
+        relatedSite: 'Corporate Office Turnkey Interior Fitout',
+        messages: [
+          { id: 'm1', sender: 'Priya Sharma', text: 'Client PMC requested joint measurement for 4th floor partition.', time: '11:00 AM', isMine: false },
+          { id: 'm2', sender: 'Priya Sharma', text: 'RA Bill #3 documentation sent for PMC signature.', time: '11:15 AM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-5',
+        userName: 'Vikram Shah',
+        userRole: 'Client Representative',
+        avatar: 'VS',
+        lastMessage: 'Veneer shade selection approved by architectural consultant.',
+        timestamp: 'Aug 27',
+        unreadCount: 0,
+        relatedSite: 'Nouveau Penthouse Fitout',
+        messages: [
+          { id: 'm1', sender: 'Amit Dev', text: 'Hi Vikram, please confirm veneer sample approval.', time: '2:00 PM', isMine: true },
+          { id: 'm2', sender: 'Vikram Shah', text: 'Veneer shade selection approved by architectural consultant.', time: '2:45 PM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-6',
+        userName: 'Murugan K',
+        userRole: 'Subcontractor Lead',
+        avatar: 'MK',
+        lastMessage: '2nd floor ceiling framing completed ahead of target.',
+        timestamp: 'Aug 27',
+        unreadCount: 0,
+        relatedSite: 'Reliance HQ Executive Floor',
+        messages: [
+          { id: 'm1', sender: 'Murugan K', text: '2nd floor ceiling framing completed ahead of target.', time: '6:10 PM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-7',
+        userName: 'Rohan Verma',
+        userRole: 'Site Engineer',
+        avatar: 'RV',
+        lastMessage: 'Electrical panel testing scheduled for tomorrow 10 AM.',
+        timestamp: 'Aug 26',
+        unreadCount: 0,
+        relatedSite: 'Cyber Towers Corporate Office Fitout',
+        messages: [
+          { id: 'm1', sender: 'Rohan Verma', text: 'Electrical panel testing scheduled for tomorrow 10 AM.', time: '5:30 PM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-8',
+        userName: 'Ketan Shah',
+        userRole: 'Vendor Account Manager',
+        avatar: 'KS',
+        lastMessage: 'Dispatched 500 Pcs fittings via VRL Logistics.',
+        timestamp: 'Aug 26',
+        unreadCount: 0,
+        relatedSite: 'Corporate Office Turnkey Interior Fitout',
+        messages: [
+          { id: 'm1', sender: 'Ketan Shah', text: 'Dispatched 500 Pcs fittings via VRL Logistics.', time: '1:20 PM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-9',
+        userName: 'Sunil Verma',
+        userRole: 'Safety Inspector',
+        avatar: 'SV',
+        lastMessage: 'Weekly safety audit report uploaded to project portal.',
+        timestamp: 'Aug 25',
+        unreadCount: 0,
+        relatedSite: 'Apex Healthcare Medical Center',
+        messages: [
+          { id: 'm1', sender: 'Sunil Verma', text: 'Weekly safety audit report uploaded to project portal.', time: '4:00 PM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-10',
+        userName: 'Meera Patel',
+        userRole: 'Architectural Consultant',
+        avatar: 'MP',
+        lastMessage: 'Lighting layout revision 2 attached for your review.',
+        timestamp: 'Aug 25',
+        unreadCount: 1,
+        relatedSite: 'Sovereign Heights Luxury Villa',
+        messages: [
+          { id: 'm1', sender: 'Meera Patel', text: 'Lighting layout revision 2 attached for your review.', time: '11:50 AM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-11',
+        userName: 'Pradeep Nair',
+        userRole: 'Civil Works Head',
+        avatar: 'PN',
+        lastMessage: 'Slab curing complete, ready for waterproofing test.',
+        timestamp: 'Aug 24',
+        unreadCount: 0,
+        relatedSite: 'Corporate Office Turnkey Interior Fitout',
+        messages: [
+          { id: 'm1', sender: 'Pradeep Nair', text: 'Slab curing complete, ready for waterproofing test.', time: '9:30 AM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-12',
+        userName: 'Preet Arora',
+        userRole: 'Laminate Representative',
+        avatar: 'PA',
+        lastMessage: 'New 2026 laminate catalog samples dispatched to office.',
+        timestamp: 'Aug 24',
+        unreadCount: 0,
+        relatedSite: 'Highstreet Retail Storefront',
+        messages: [
+          { id: 'm1', sender: 'Preet Arora', text: 'New 2026 laminate catalog samples dispatched to office.', time: '3:15 PM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-13',
+        userName: 'Suresh Babu',
+        userRole: 'Electrical Subcontractor',
+        avatar: 'SB',
+        lastMessage: 'Cable pull complete for Server room distribution board.',
+        timestamp: 'Aug 23',
+        unreadCount: 0,
+        relatedSite: 'Cyber Towers Corporate Office Fitout',
+        messages: [
+          { id: 'm1', sender: 'Suresh Babu', text: 'Cable pull complete for Server room distribution board.', time: '5:45 PM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-14',
+        userName: 'Anand Varma',
+        userRole: 'Paint Technical Specialist',
+        avatar: 'AV',
+        lastMessage: 'Royale Sheen batch test certificate sent by email.',
+        timestamp: 'Aug 23',
+        unreadCount: 0,
+        relatedSite: 'Corporate Office Turnkey Interior Fitout',
+        messages: [
+          { id: 'm1', sender: 'Anand Varma', text: 'Royale Sheen batch test certificate sent by email.', time: '10:10 AM', isMine: false }
+        ]
+      },
+      {
+        id: 'conv-15',
+        userName: 'Vikram Joshi',
+        userRole: 'Saint-Gobain Tech Lead',
+        avatar: 'VJ',
+        lastMessage: 'Acoustic glass rating certificate verified.',
+        timestamp: 'Aug 22',
+        unreadCount: 0,
+        relatedSite: 'Corporate Office Turnkey Interior Fitout',
+        messages: [
+          { id: 'm1', sender: 'Vikram Joshi', text: 'Acoustic glass rating certificate verified.', time: '4:50 PM', isMine: false }
         ]
       }
     ],
     calendarEvents: [
-      { id: 'ce-1', title: 'Joinery Rates Due (TSK-101)', date: '2026-07-22', type: 'task', userScope: 'my', relatedSite: 'Nexus Tech Park', relatedRecord: 'TSK-101', relatedRoute: '/overview/my-tasks', details: 'Task due date' },
-      { id: 'ce-2', title: 'Material GRN Inspection (TSK-102)', date: '2026-07-28', type: 'task', userScope: 'my', relatedSite: 'Grand Hyatt Goa', relatedRecord: 'TSK-102', relatedRoute: '/overview/my-tasks', details: 'GRN physical verification' },
-      { id: 'ce-3', title: 'Budget Signoff Alert (ALT-801)', date: '2026-07-26', type: 'alert', userScope: 'my', relatedSite: 'Nexus Tech Park', relatedRecord: 'ALT-801', relatedRoute: '/overview/notifications', details: 'High priority alert' },
-      { id: 'ce-4', title: 'Plywood Delivery Expected', date: '2026-07-26', type: 'delivery', userScope: 'my', relatedSite: 'Grand Hyatt Goa', relatedRecord: 'PO-2026-089', relatedRoute: '/orders', details: 'Century Ply shipment' },
-      { id: 'ce-5', title: 'Vendor Invoice Settlement Due', date: '2026-07-30', type: 'invoice', userScope: 'my', relatedSite: 'Imperial Heights', relatedRecord: 'INV-2026-044', relatedRoute: '/invoices', details: 'Asian Paints invoice due' },
-      { id: 'ce-6', title: 'Tender Submission Deadline', date: '2026-07-29', type: 'tender', userScope: 'other', relatedSite: 'Oberoi Sky City', relatedRecord: 'TND-2026-009', relatedRoute: '/projects', details: 'MEP contractor tender' }
+      { id: 'ce-1', title: 'Joinery Rates Finalization Due (TSK-2026-001)', date: '2026-08-22', type: 'task', userScope: 'my', relatedSite: 'Nexus Tech Park Lobby Renovations', relatedRecord: 'TSK-2026-001', relatedRoute: '/overview/my-tasks', details: 'Task due date for Joinery quotation matrix' },
+      { id: 'ce-2', title: 'Plywood GRN Verification (TSK-2026-002)', date: '2026-08-28', type: 'task', userScope: 'my', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'TSK-2026-002', relatedRoute: '/overview/my-tasks', details: 'Physical count and moisture check for 500 Pcs plywood' },
+      { id: 'ce-3', title: 'Site Budget Clearance Clearance (ALT-2026-001)', date: '2026-08-30', type: 'alert', userScope: 'my', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'ALT-2026-001', relatedRoute: '/overview/notifications', details: 'High priority budget signoff deadline' },
+      { id: 'ce-4', title: 'Century Ply Shipment Expected (PO-2026-089)', date: '2026-08-31', type: 'delivery', userScope: 'my', relatedSite: 'Grand Hyatt Executive Lounge Café', relatedRecord: 'PO-2026-089', relatedRoute: '/procurement/purchase-orders', details: 'Delivery of 200 Pcs Gypsum Board' },
+      { id: 'ce-5', title: 'Vendor Invoice Settlement Due (INV-VND-8902)', date: '2026-08-27', type: 'invoice', userScope: 'my', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'INV-VND-8902', relatedRoute: '/finance/accounts-payable', details: 'Asian Paints invoice due for payment' },
+      { id: 'ce-6', title: 'Tender Submission Deadline (TND-2026-009)', date: '2026-09-02', type: 'tender', userScope: 'other', relatedSite: 'Cyber Towers Corporate Office Fitout', relatedRecord: 'TND-2026-009', relatedRoute: '/crm', details: 'MEP contractor tender submission deadline' },
+      { id: 'ce-7', title: 'Electrical Panel Room Audit (TSK-2026-005)', date: '2026-08-29', type: 'task', userScope: 'other', relatedSite: 'Cyber Towers Corporate Office Fitout', relatedRecord: 'TSK-2026-005', relatedRoute: '/overview/my-tasks', details: 'High-voltage safety inspection' },
+      { id: 'ce-8', title: 'RA Bill #3 Payment Milestone', date: '2026-08-29', type: 'billing', userScope: 'my', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'BILL-2026-003', relatedRoute: '/finance/client-ra-bills', details: 'Milestone billing receipt date' },
+      { id: 'ce-9', title: 'Subcontractor WIP Certification Due', date: '2026-08-30', type: 'task', userScope: 'my', relatedSite: 'Reliance HQ Executive Floor', relatedRecord: 'WO-2026-008', relatedRoute: '/procurement/work-orders', details: 'Ceiling framing measurement signoff' },
+      { id: 'ce-10', title: 'RFQ Closing Date (RFQ-2026-042)', date: '2026-08-29', type: 'alert', userScope: 'my', relatedSite: 'Highstreet Retail Storefront', relatedRecord: 'RFQ-2026-042', relatedRoute: '/procurement/rfqs', details: 'Bidding window close date' },
+      { id: 'ce-11', title: 'Client Mockup Walkthrough Meeting', date: '2026-08-31', type: 'meeting', userScope: 'my', relatedSite: 'Sovereign Heights Luxury Villa', relatedRecord: 'PRJ-2026-014', relatedRoute: '/projects/workspace', details: 'Joint walk-through with client and architect' },
+      { id: 'ce-12', title: 'Safety Compliance Followup Audit', date: '2026-08-26', type: 'alert', userScope: 'my', relatedSite: 'Apex Healthcare Medical Center', relatedRecord: 'SAF-2026-003', relatedRoute: '/projects/workspace', details: 'Temporary cabling safety audit' },
+      { id: 'ce-13', title: 'Waterproofing Flood Test Clearance', date: '2026-09-01', type: 'task', userScope: 'other', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'SITE-2026-002', relatedRoute: '/projects/workspace', details: '24-hour flood test inspection' },
+      { id: 'ce-14', title: 'Saint-Gobain Glass Delivery', date: '2026-09-03', type: 'delivery', userScope: 'my', relatedSite: 'Corporate Office Turnkey Interior Fitout', relatedRecord: 'PO-2026-104', relatedRoute: '/procurement/purchase-orders', details: '12mm tempered acoustic glass delivery' },
+      { id: 'ce-15', title: 'Weekly Executive Site Progress Review', date: '2026-09-04', type: 'meeting', userScope: 'my', relatedSite: 'Nouveau Penthouse Fitout', relatedRecord: 'PRJ-2026-001', relatedRoute: '/projects/workspace', details: 'Review milestone progress with directors' }
     ],
     brands: initCollection<BrandRecord>(ROUTES.BRANDS),
     locations: initCollection<LocationRecord>(ROUTES.LOCATIONS),

@@ -16,12 +16,14 @@ import {
 } from 'lucide-react';
 import { useWorkflow } from '../context/WorkflowContext';
 import { useSites } from '../context/SitesContext';
+import { useProjectContext } from '../context/ProjectContext';
 import { StatusBadge } from '../components/StatusBadge';
 
 export const MyTasksPage: React.FC = () => {
   const navigate = useNavigate();
   const { tasks, updateTaskStatus, reassignTask, addRecord } = useWorkflow();
   const { sites } = useSites();
+  const { selectedProject } = useProjectContext();
 
   // Filters & State
   const [userScope, setUserScope] = React.useState<'my' | 'other'>('my');
@@ -49,17 +51,41 @@ export const MyTasksPage: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Filter Tasks
-  const filteredTasks = React.useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const sevenDaysLater = new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0];
-
+  // Base scope-filtered tasks for KPI calculation
+  const scopeTasks = React.useMemo(() => {
     return tasks.filter((t: any) => {
       // User scope filter
       const isMyTask = t.assignedTo === 'Amit Dev';
       if (userScope === 'my' && !isMyTask) return false;
       if (userScope === 'other' && isMyTask) return false;
 
+      // Active Project filter
+      if (selectedProject) {
+        const pName = (selectedProject.projectName || '').toLowerCase();
+        const pCode = (selectedProject.projectCode || '').toLowerCase();
+        const site = (t.relatedSite || '').toLowerCase();
+        if (site && !site.includes(pName) && !site.includes(pCode) && !pName.includes(site)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [tasks, userScope, selectedProject]);
+
+  // Dynamic KPI Counts
+  const todayStr = new Date().toISOString().split('T')[0];
+  const kpiOverdue = React.useMemo(() => scopeTasks.filter((t: any) => t.status === 'overdue' || (t.status !== 'completed' && t.dueDate < todayStr)).length, [scopeTasks, todayStr]);
+  const kpiInProgress = React.useMemo(() => scopeTasks.filter((t: any) => t.status === 'in_progress').length, [scopeTasks]);
+  const kpiPendingAcceptance = React.useMemo(() => scopeTasks.filter((t: any) => t.status === 'pending_acceptance').length, [scopeTasks]);
+  const kpiCompleted = React.useMemo(() => scopeTasks.filter((t: any) => t.status === 'completed').length, [scopeTasks]);
+
+  // Filter Tasks for Table View
+  const filteredTasks = React.useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const sevenDaysLater = new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0];
+
+    return scopeTasks.filter((t: any) => {
       // Status / tab filter
       if (activeTab === 'overdue') {
         if (t.status !== 'overdue' && (t.status === 'completed' || t.dueDate >= today)) return false;
@@ -86,7 +112,7 @@ export const MyTasksPage: React.FC = () => {
 
       return true;
     });
-  }, [tasks, userScope, activeTab, searchQuery]);
+  }, [scopeTasks, activeTab, searchQuery]);
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,17 +219,49 @@ export const MyTasksPage: React.FC = () => {
         </div>
       </div>
 
+      {/* KPI Overview Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Total Active Tasks</span>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-xl font-black text-gray-900">{scopeTasks.length}</span>
+            <span className="text-[10px] font-bold text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded">All Sites</span>
+          </div>
+        </div>
+        <div className="bg-white p-3 rounded-lg border border-rose-200 bg-rose-50/20 shadow-sm flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Overdue Tasks</span>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-xl font-black text-rose-700">{kpiOverdue}</span>
+            <span className="text-[10px] font-bold text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded">Action Required</span>
+          </div>
+        </div>
+        <div className="bg-white p-3 rounded-lg border border-amber-200 bg-amber-50/20 shadow-sm flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">In Progress</span>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-xl font-black text-amber-800">{kpiInProgress}</span>
+            <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Underway</span>
+          </div>
+        </div>
+        <div className="bg-white p-3 rounded-lg border border-emerald-200 bg-emerald-50/20 shadow-sm flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Completed</span>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-xl font-black text-emerald-800">{kpiCompleted}</span>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Closed</span>
+          </div>
+        </div>
+      </div>
+
       {/* Tabs & Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 border border-gray-200 rounded-lg">
         {/* Status Tabs */}
         <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           {[
-            { id: 'all', label: 'All Tasks', count: tasks.length },
-            { id: 'overdue', label: 'Overdue', count: tasks.filter((t: any) => t.status === 'overdue' || (t.status !== 'completed' && t.dueDate < new Date().toISOString().split('T')[0])).length, color: 'text-rose-600' },
-            { id: 'upcoming', label: 'Upcoming 7 Days', count: tasks.filter((t: any) => t.status === 'upcoming').length, color: 'text-blue-600' },
-            { id: 'in_progress', label: 'In Progress', count: tasks.filter((t: any) => t.status === 'in_progress').length, color: 'text-amber-600' },
-            { id: 'pending_acceptance', label: 'Completion Acceptance Pending', count: tasks.filter((t: any) => t.status === 'pending_acceptance').length, color: 'text-purple-600' },
-            { id: 'completed', label: 'Completed', count: tasks.filter((t: any) => t.status === 'completed').length, color: 'text-emerald-700' }
+            { id: 'all', label: 'All Tasks', count: scopeTasks.length },
+            { id: 'overdue', label: 'Overdue', count: kpiOverdue, color: 'text-rose-600' },
+            { id: 'upcoming', label: 'Upcoming 7 Days', count: scopeTasks.filter((t: any) => t.dueDate >= todayStr && t.dueDate <= new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0] && t.status !== 'completed').length, color: 'text-blue-600' },
+            { id: 'in_progress', label: 'In Progress', count: kpiInProgress, color: 'text-amber-600' },
+            { id: 'pending_acceptance', label: 'Completion Acceptance Pending', count: kpiPendingAcceptance, color: 'text-purple-600' },
+            { id: 'completed', label: 'Completed', count: kpiCompleted, color: 'text-emerald-700' }
           ].map((tab) => (
             <button
               key={tab.id}

@@ -105,9 +105,13 @@ export const AppRouter: React.FC = () => {
             <Route path="sites/new" element={<Navigate to="/projects/new" replace />} />
             <Route path="map" element={<ProjectMapPage />} />
             <Route path="tasks" element={<MyTasksPage />} />
+            <Route path="overview/my-tasks" element={<MyTasksPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="overview/notifications" element={<NotificationsPage />} />
             <Route path="calendar" element={<CalendarPage />} />
+            <Route path="overview/calendar" element={<CalendarPage />} />
             <Route path="messages" element={<MessagesPage />} />
+            <Route path="overview/messages" element={<MessagesPage />} />
 
             {/* CRM & Commercial Estimation Routes */}
             <Route path="crm" element={<CRMWorkspacePage />} />

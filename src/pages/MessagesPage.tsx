@@ -9,6 +9,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useWorkflow } from '../context/WorkflowContext';
+import { useProjectContext } from '../context/ProjectContext';
 
 interface ChatMessage {
   id: string;
@@ -26,11 +27,13 @@ interface ConversationItem {
   lastMessage: string;
   timestamp: string;
   unreadCount: number;
+  relatedSite?: string;
   messages: ChatMessage[];
 }
 
 export const MessagesPage: React.FC = () => {
   const { messages, sendMessage } = useWorkflow();
+  const { selectedProject } = useProjectContext();
 
   const convList = (messages || []) as unknown as ConversationItem[];
 
@@ -42,21 +45,32 @@ export const MessagesPage: React.FC = () => {
 
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
-  const activeConv = React.useMemo<ConversationItem | undefined>(() => {
-    return convList.find((c) => c.id === activeConvId) || convList[0];
-  }, [convList, activeConvId]);
-
   const filteredConversations = React.useMemo<ConversationItem[]>(() => {
-    return convList.filter((c) => {
+    return convList.filter((c: any) => {
+      // Active Project filter
+      if (selectedProject) {
+        const pName = (selectedProject.projectName || '').toLowerCase();
+        const pCode = (selectedProject.projectCode || '').toLowerCase();
+        const site = (c.relatedSite || '').toLowerCase();
+        if (site && !site.includes(pName) && !site.includes(pCode) && !pName.includes(site)) {
+          return false;
+        }
+      }
+
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
         (c.userName && c.userName.toLowerCase().includes(q)) ||
         (c.userRole && c.userRole.toLowerCase().includes(q)) ||
-        (c.lastMessage && c.lastMessage.toLowerCase().includes(q))
+        (c.lastMessage && c.lastMessage.toLowerCase().includes(q)) ||
+        (c.relatedSite && c.relatedSite.toLowerCase().includes(q))
       );
     });
-  }, [convList, searchQuery]);
+  }, [convList, searchQuery, selectedProject]);
+
+  const activeConv = React.useMemo<ConversationItem | undefined>(() => {
+    return filteredConversations.find((c) => c.id === activeConvId) || filteredConversations[0] || convList[0];
+  }, [filteredConversations, convList, activeConvId]);
 
   const scrollToBottom = (smooth = true) => {
     setTimeout(() => {

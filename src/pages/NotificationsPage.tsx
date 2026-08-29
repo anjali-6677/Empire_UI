@@ -12,10 +12,12 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useWorkflow } from '../context/WorkflowContext';
+import { useProjectContext } from '../context/ProjectContext';
 
 export const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
   const { alerts, markAlertRead, markAllAlertsRead, deleteAlert } = useWorkflow();
+  const { selectedProject } = useProjectContext();
 
   const [userScope, setUserScope] = React.useState<'my' | 'other'>('my');
   const [activeTab, setActiveTab] = React.useState<'all' | 'unread' | 'read' | 'upcoming' | 'past'>('all');
@@ -27,15 +29,31 @@ export const NotificationsPage: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const filteredAlerts = React.useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const sevenDaysLater = new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0];
-
+  const scopeAlerts = React.useMemo(() => {
     return alerts.filter((a: any) => {
       const isMyAlert = a.alertFor === 'Amit Dev';
       if (userScope === 'my' && !isMyAlert) return false;
       if (userScope === 'other' && isMyAlert) return false;
 
+      // Active Project filter
+      if (selectedProject) {
+        const pName = (selectedProject.projectName || '').toLowerCase();
+        const pCode = (selectedProject.projectCode || '').toLowerCase();
+        const site = (a.relatedSite || '').toLowerCase();
+        if (site && !site.includes(pName) && !site.includes(pCode) && !pName.includes(site)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [alerts, userScope, selectedProject]);
+
+  const filteredAlerts = React.useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const sevenDaysLater = new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0];
+
+    return scopeAlerts.filter((a: any) => {
       if (activeTab === 'unread') {
         if (a.readStatus !== 'unread') return false;
       } else if (activeTab === 'read') {
@@ -58,11 +76,11 @@ export const NotificationsPage: React.FC = () => {
 
       return true;
     });
-  }, [alerts, userScope, activeTab, searchQuery]);
+  }, [scopeAlerts, activeTab, searchQuery]);
 
   const unreadCount = React.useMemo(() => {
-    return alerts.filter((a: any) => a.alertFor === 'Amit Dev' && a.readStatus === 'unread').length;
-  }, [alerts]);
+    return scopeAlerts.filter((a: any) => a.readStatus === 'unread').length;
+  }, [scopeAlerts]);
 
   return (
     <div className="space-y-4 font-sans text-xs pb-12 select-none relative">
