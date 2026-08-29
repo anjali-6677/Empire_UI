@@ -4,7 +4,6 @@ import { useERPStore } from '../../store/ERPStoreContext';
 import { MaterialEntryToken, MaterialEntryTokenStatus, TokenActivity } from '../../domain/types';
 import {
   Truck,
-  Plus,
   Search,
   Filter,
   CheckCircle,
@@ -151,6 +150,11 @@ const TokenActionCell: React.FC<TokenActionCellProps> = ({
     </>
   );
 };
+
+import { ListPageLayout } from '../../components/common/ListPageLayout';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
 
 export const MaterialEntryTokensPage: React.FC = () => {
   const navigate = useNavigate();
@@ -337,74 +341,53 @@ export const MaterialEntryTokensPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <ListPageLayout>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
-            <Truck className="w-7 h-7 text-[#C5A059]" />
-            Material Gate Entry Tokens
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Gate-to-GRN Workflow: Generate sequence tokens upon vehicle arrival, track live stage, put tokens on hold/cancel, and audit full logs.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#C5A059] hover:bg-[#b08d48] text-white font-medium rounded-lg shadow-sm transition-colors text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Generate Gate Entry Token
-        </button>
-      </div>
+      <PageHeader
+        title="Material Gate Entry Tokens"
+        subtitle="Generate sequence tokens upon vehicle arrival, track live stage, put tokens on hold/cancel, and audit full logs."
+        breadcrumbs={[
+          { label: 'Inventory & Execution' },
+          { label: 'Material Gate Tokens' }
+        ]}
+        actions={
+          <PrimaryActionButton
+            label="Generate Gate Entry Token"
+            onClick={() => setShowCreateModal(true)}
+          />
+        }
+      />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Vehicles Today</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{tokens.length}</p>
-          </div>
-          <div className="p-3 bg-amber-50 rounded-lg text-[#C5A059]">
-            <Truck className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Active Tokens</p>
-            <p className="text-2xl font-bold text-blue-700 mt-1">
-              {tokens.filter((t) => t.status !== 'HOLD' && t.status !== 'CANCELLED' && t.status !== 'GRN_GENERATED').length}
-            </p>
-          </div>
-          <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
-            <Clock className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tokens On Hold</p>
-            <p className="text-2xl font-bold text-red-700 mt-1">
-              {tokens.filter((t) => t.status === 'HOLD').length}
-            </p>
-          </div>
-          <div className="p-3 bg-red-50 rounded-lg text-red-600">
-            <PauseCircle className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">GRN Generated</p>
-            <p className="text-2xl font-bold text-emerald-700 mt-1">
-              {tokens.filter((t) => t.status === 'GRN_GENERATED').length}
-            </p>
-          </div>
-          <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
-            <CheckCircle className="w-6 h-6" />
-          </div>
-        </div>
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <SummaryKpiCard
+          title="Total Vehicles Today"
+          value={tokens.length}
+          subtitle="Registered entry tokens"
+          icon={Truck}
+          variant="gold"
+        />
+        <SummaryKpiCard
+          title="Active Tokens"
+          value={tokens.filter((t) => t.status !== 'HOLD' && t.status !== 'CANCELLED' && t.status !== 'GRN_GENERATED').length}
+          subtitle="In pipeline verification"
+          icon={Clock}
+          variant="blue"
+        />
+        <SummaryKpiCard
+          title="Tokens On Hold"
+          value={tokens.filter((t) => t.status === 'HOLD').length}
+          subtitle="Awaiting resolution"
+          icon={PauseCircle}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="GRN Generated"
+          value={tokens.filter((t) => t.status === 'GRN_GENERATED').length}
+          subtitle="Completed intake"
+          icon={CheckCircle}
+          variant="active"
+        />
       </div>
 
       {/* Filter and Search Bar */}
@@ -1093,7 +1076,7 @@ export const MaterialEntryTokensPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </ListPageLayout>
   );
 };
 

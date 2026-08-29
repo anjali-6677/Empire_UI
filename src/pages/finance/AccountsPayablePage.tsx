@@ -4,6 +4,7 @@ import { useERPStore } from '../../store/ERPStoreContext';
 import { VendorAP } from '../../domain/types';
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
 import { FilterToolbar } from '../../components/common/FilterToolbar';
 import { RowActionMenu, RowActionMenuItem, RowActionMenuDivider } from '../../components/common/RowActionMenu';
 import { formatIndianCurrency } from '../../utils/format';
@@ -300,53 +301,42 @@ export const AccountsPayablePage: React.FC = () => {
       <PageHeader
         title="Vendor AP"
         subtitle="Track vendor liabilities generated from GRNs, approve AP records and monitor payments."
+        breadcrumbs={[
+          { label: 'Finance, Billing & Payments' },
+          { label: 'Vendor AP' }
+        ]}
       />
 
       {/* 4 Clean Real-Data KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-4">
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">TOTAL AP LIABILITY</p>
-            <h3 className="text-xl font-bold text-gray-900 mt-1">{formatIndianCurrency(totalNetPayable)}</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{activeScopeAPs.length} AP Records</p>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg text-gray-600">
-            <CreditCard className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">PENDING APPROVAL</p>
-            <h3 className="text-xl font-bold text-amber-700 mt-1">{pendingApprovalCount}</h3>
-            <p className="text-xs text-amber-600 mt-0.5">Awaiting finance approval</p>
-          </div>
-          <div className="p-3 bg-amber-50 rounded-lg text-amber-600">
-            <Clock className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">OUTSTANDING PAYABLE</p>
-            <h3 className="text-xl font-bold text-rose-700 mt-1">{formatIndianCurrency(totalOutstanding)}</h3>
-            <p className="text-xs text-rose-600 mt-0.5">{approvedCountWithBalance} approved APs with balance</p>
-          </div>
-          <div className="p-3 bg-rose-50 rounded-lg text-rose-600">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">TOTAL PAID</p>
-            <h3 className="text-xl font-bold text-emerald-700 mt-1">{formatIndianCurrency(totalPaid)}</h3>
-            <p className="text-xs text-emerald-600 mt-0.5">Vendor payments recorded</p>
-          </div>
-          <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-        </div>
+      <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-3 my-4">
+        <SummaryKpiCard
+          title="Total AP Liability"
+          value={formatIndianCurrency(totalNetPayable)}
+          subtitle={`${activeScopeAPs.length} AP Records`}
+          icon={CreditCard}
+          variant="gold"
+        />
+        <SummaryKpiCard
+          title="Pending Approval"
+          value={pendingApprovalCount}
+          subtitle="Awaiting finance approval"
+          icon={Clock}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Outstanding Payable"
+          value={formatIndianCurrency(totalOutstanding)}
+          subtitle={`${approvedCountWithBalance} approved APs with balance`}
+          icon={AlertCircle}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Total Paid"
+          value={formatIndianCurrency(totalPaid)}
+          subtitle="Vendor disbursements recorded"
+          icon={CheckCircle2}
+          variant="active"
+        />
       </div>
 
       <FilterToolbar

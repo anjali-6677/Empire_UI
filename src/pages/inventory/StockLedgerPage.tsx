@@ -5,7 +5,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { useERPStore } from '../../store/ERPStoreContext';
-import { Button } from '../../components/ui/Button';
+import { ListPageLayout } from '../../components/common/ListPageLayout';
+import { PageHeader } from '../../components/common/PageHeader';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
 import {
   Boxes,
   MapPin,
@@ -111,75 +113,63 @@ export const StockLedgerPage: React.FC = () => {
   const lowStockCount = locationBalances.filter((item) => item.availableStock <= 10).length;
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 font-sans text-xs">
-      {/* Header Banner */}
-      <div className="bg-stone-900 p-5 rounded-xl border border-stone-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-3">
-          <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-            <Boxes className="w-6 h-6 text-amber-400" />
+    <ListPageLayout>
+      <PageHeader
+        title="Stock Ledger & Location Balances"
+        subtitle="Immutable material stock movements, location balances, and perpetual inventory audit trail."
+        breadcrumbs={[
+          { label: 'Inventory & Execution' },
+          { label: 'Stock Ledger' }
+        ]}
+        actions={
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setViewMode('balances')}
+              className={`inline-flex items-center px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${
+                viewMode === 'balances'
+                  ? 'bg-[#C5A059] text-white border-[#C5A059]'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 mr-1.5" /> Location Balances
+            </button>
+            <button
+              onClick={() => setViewMode('ledger')}
+              className={`inline-flex items-center px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${
+                viewMode === 'ledger'
+                  ? 'bg-[#C5A059] text-white border-[#C5A059]'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <History className="w-3.5 h-3.5 mr-1.5" /> Movement History
+            </button>
           </div>
-          <div>
-            <h1 className="text-base font-bold text-stone-100">Stock Ledger & Location Balances</h1>
-            <p className="text-stone-400 text-xs mt-0.5">
-              Immutable material stock movements, location balances, and perpetual inventory audit trail.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === 'balances' ? 'primary' : 'secondary'}
-            onClick={() => setViewMode('balances')}
-            className={viewMode === 'balances' ? 'bg-amber-500 text-stone-950 font-bold' : ''}
-          >
-            <Layers className="w-3.5 h-3.5 mr-1" />
-            Location Balances
-          </Button>
-          <Button
-            variant={viewMode === 'ledger' ? 'primary' : 'secondary'}
-            onClick={() => setViewMode('ledger')}
-            className={viewMode === 'ledger' ? 'bg-amber-500 text-stone-950 font-bold' : ''}
-          >
-            <History className="w-3.5 h-3.5 mr-1" />
-            Movement History
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-stone-500 font-semibold text-[11px]">
-            <span>Total Inventory Value</span>
-            <Boxes className="w-4 h-4 text-amber-600" />
-          </div>
-          <div className="text-lg font-extrabold text-stone-900 font-mono">
-            ₹{totalStockValue.toLocaleString('en-IN')}
-          </div>
-          <p className="text-[10px] text-stone-400">Across {totalItemCount} location product record(s)</p>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-stone-500 font-semibold text-[11px]">
-            <span>Monitored Locations</span>
-            <MapPin className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="text-lg font-extrabold text-stone-900 font-mono">
-            {locations.length} Stores / Sites
-          </div>
-          <p className="text-[10px] text-stone-400">Central store & project work packages</p>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-stone-500 font-semibold text-[11px]">
-            <span>Low Stock Alerts</span>
-            <RefreshCw className="w-4 h-4 text-rose-600" />
-          </div>
-          <div className="text-lg font-extrabold text-rose-700 font-mono">
-            {lowStockCount} Item(s)
-          </div>
-          <p className="text-[10px] text-stone-400">Stock &lt;= 10 units at current location</p>
-        </div>
+      <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <SummaryKpiCard
+          title="Total Inventory Value"
+          value={`₹${totalStockValue.toLocaleString('en-IN')}`}
+          subtitle={`Across ${totalItemCount} stock line(s)`}
+          icon={Boxes}
+          variant="gold"
+        />
+        <SummaryKpiCard
+          title="Monitored Locations"
+          value={`${locations.length} Stores / Sites`}
+          subtitle="Central store & project work packages"
+          icon={MapPin}
+          variant="blue"
+        />
+        <SummaryKpiCard
+          title="Low Stock Alerts"
+          value={`${lowStockCount} Item(s)`}
+          subtitle="Stock ≤ 10 units at current location"
+          icon={RefreshCw}
+          variant="pending"
+        />
       </div>
 
       {/* Filters Bar */}
@@ -395,6 +385,6 @@ export const StockLedgerPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </ListPageLayout>
   );
 };

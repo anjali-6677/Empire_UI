@@ -27,7 +27,6 @@ import { ViewWIPHistoryModal } from '../../components/subcontractor/ViewWIPHisto
 import { WorkOrderDetailsModal } from '../../components/subcontractor/WorkOrderDetailsModal';
 
 import {
-  Plus,
   Hammer,
   Clock,
   CheckCircle2,
@@ -46,6 +45,9 @@ import {
   Ban,
   MoreVertical,
 } from 'lucide-react';
+
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
 
 export const SubcontractWorkOrdersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -197,103 +199,62 @@ export const SubcontractWorkOrdersPage: React.FC = () => {
       <PageHeader
         title="Subcontract Work Orders & WIP Register"
         subtitle="Track subcontractor contracts, site measurements, verification approvals, and execution progress in real-time."
+        breadcrumbs={[
+          { label: 'Procurement' },
+          { label: 'Subcontract Work Orders' }
+        ]}
         actions={
-          <button
+          <PrimaryActionButton
+            label="Create Work Order"
             onClick={() => navigate('/procurement/work-orders/new')}
-            className="inline-flex items-center px-4 py-2 text-xs font-bold text-slate-950 bg-[#AB9570] hover:bg-[#927D5E] rounded-lg shadow-sm transition-colors"
-          >
-            <Plus className="w-4 h-4 mr-1.5" /> Create Work Order
-          </button>
+          />
         }
       />
 
       {/* 6 Real-Data Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 my-4">
-        {/* Card 1: Total WOs */}
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Work Orders</span>
-            <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
-              <Hammer className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-xl font-extrabold text-slate-900">{kpi.totalWorkOrders}</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">Across all projects</div>
-          </div>
-        </div>
-
-        {/* Card 2: Approval Pending */}
-        <div className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider">Approval Pending</span>
-            <div className="p-2 bg-amber-50 text-amber-700 rounded-lg">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-xl font-extrabold text-amber-800">{kpi.approvalPending}</div>
-            <div className="text-[11px] text-amber-600 mt-0.5">Awaiting WO sign-off</div>
-          </div>
-        </div>
-
-        {/* Card 3: Active Work */}
-        <div className="bg-white p-3.5 rounded-xl border border-blue-200 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-blue-700 uppercase tracking-wider">Active Work</span>
-            <div className="p-2 bg-blue-50 text-blue-700 rounded-lg">
-              <Award className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-xl font-extrabold text-blue-800">{kpi.activeWork}</div>
-            <div className="text-[11px] text-blue-600 mt-0.5">Under execution on site</div>
-          </div>
-        </div>
-
-        {/* Card 4: WIP Pending Approval */}
-        <div className="bg-white p-3.5 rounded-xl border border-amber-300 bg-amber-50/30 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-amber-900 uppercase tracking-wider">WIP Verification</span>
-            <div className="p-2 bg-amber-100 text-amber-800 rounded-lg">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-xl font-extrabold text-amber-900">{kpi.wipPendingApproval}</div>
-            <div className="text-[11px] text-amber-700 font-medium mt-0.5">Claims awaiting review</div>
-          </div>
-        </div>
-
-        {/* Card 5: Completed */}
-        <div className="bg-white p-3.5 rounded-xl border border-emerald-200 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">Completed</span>
-            <div className="p-2 bg-emerald-50 text-emerald-700 rounded-lg">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-xl font-extrabold text-emerald-800">{kpi.completed}</div>
-            <div className="text-[11px] text-emerald-600 mt-0.5">100% verified scopes</div>
-          </div>
-        </div>
-
-        {/* Card 6: Total WO Value */}
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total WO Value</span>
-            <div className="p-2 bg-amber-50 text-amber-700 rounded-lg">
-              <DollarSign className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-base font-extrabold text-slate-900 font-mono">
-              ₹{kpi.totalWOValue.toLocaleString('en-IN')}
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">Cumulative contract sum</div>
-          </div>
-        </div>
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-3">
+        <SummaryKpiCard
+          title="Total Work Orders"
+          value={kpi.totalWorkOrders}
+          subtitle="Across all projects"
+          icon={Hammer}
+          variant="gold"
+        />
+        <SummaryKpiCard
+          title="Approval Pending"
+          value={kpi.approvalPending}
+          subtitle="Awaiting WO sign-off"
+          icon={Clock}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Active Work"
+          value={kpi.activeWork}
+          subtitle="Under execution on site"
+          icon={Award}
+          variant="blue"
+        />
+        <SummaryKpiCard
+          title="WIP Verification"
+          value={kpi.wipPendingApproval}
+          subtitle="Claims awaiting review"
+          icon={AlertTriangle}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Completed"
+          value={kpi.completed}
+          subtitle="100% verified scopes"
+          icon={CheckCircle2}
+          variant="active"
+        />
+        <SummaryKpiCard
+          title="Total WO Value"
+          value={`₹${kpi.totalWOValue.toLocaleString('en-IN')}`}
+          subtitle="Cumulative contract sum"
+          icon={DollarSign}
+          variant="gold"
+        />
       </div>
 
       {/* Reference-Style Advanced Filter Panel */}

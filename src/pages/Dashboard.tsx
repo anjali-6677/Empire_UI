@@ -162,10 +162,10 @@ const sectionNavLinks = [
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { sites, selectedSiteId } = useSites();
+  const { selectedSite } = useSites();
 
   // Active site for site-specific dashboard sections (null when 'all' is selected)
-  const activeSite = selectedSiteId === 'all' ? null : (sites.find((s) => s.id === selectedSiteId) || null);
+  const activeSite = selectedSite;
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);

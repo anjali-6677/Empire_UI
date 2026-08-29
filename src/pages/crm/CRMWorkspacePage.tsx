@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Plus,
   Shield,
   Calculator,
   ExternalLink,
@@ -19,6 +18,7 @@ import { getClientDisplayDetails, normalizeEnquiryRequirement, normalizeEstimato
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
 import { FilterToolbar } from '../../components/common/FilterToolbar';
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
 
 export const CRMWorkspacePage: React.FC = () => {
   const { state, addItem, updateItem, logAudit } = useERPStore();
@@ -287,12 +287,10 @@ export const CRMWorkspacePage: React.FC = () => {
               <Calculator className="h-4 w-4 text-[#AB9570]" /> Prepare Estimate
             </button>
 
-            <Link
+            <PrimaryActionButton
+              label="Add New Enquiry"
               to="/crm/enquiries/new"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#AB9570] hover:bg-[#927D5E] text-slate-950 font-bold rounded-xl shadow-xs transition-all text-xs"
-            >
-              <Plus className="h-4 w-4 stroke-[3]" /> Add New Enquiry
-            </Link>
+            />
           </div>
         }
       />

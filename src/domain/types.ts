@@ -754,6 +754,8 @@ export interface Project {
   clientGstin?: string;
   clientAddress?: string;
 
+  siteId?: string;
+  siteCode?: string;
   siteAddress?: string;
   city: string;
   state?: string;

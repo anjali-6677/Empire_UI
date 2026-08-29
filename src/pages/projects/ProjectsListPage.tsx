@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
 import { useERPStore } from '../../store/ERPStoreContext';
 import { Project } from '../../domain/types';
 
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
 import { ProjectSummaryCards } from '../../components/projects/list/ProjectSummaryCards';
 import { ProjectFiltersBar } from '../../components/projects/list/ProjectFiltersBar';
 import { ProjectsTable } from '../../components/projects/list/ProjectsTable';
@@ -105,13 +105,10 @@ export const ProjectsListPage: React.FC = () => {
           { label: 'Projects Directory' }
         ]}
         actions={
-          <button
-            type="button"
+          <PrimaryActionButton
+            label="Create Project"
             onClick={() => setIsSelectModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#AB9570] hover:bg-[#927D5E] text-slate-950 font-bold rounded-xl shadow-xs transition-all text-xs cursor-pointer"
-          >
-            <Plus className="h-4 w-4 stroke-[3]" /> Create Project
-          </button>
+          />
         }
       />
 

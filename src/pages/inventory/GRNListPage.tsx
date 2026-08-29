@@ -6,6 +6,7 @@ import { resolveTokenNumber, resolvePONumber, resolveGRNNumber } from '../../dom
 import { getGRNNetPayable, getGRNPaidAmount, getGRNOutstanding, getGRNPaymentStatus } from '../../domain/selectors';
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
 import { RowActionMenu, RowActionMenuItem, RowActionMenuDivider } from '../../components/common/RowActionMenu';
 import {
   MoreVertical,
@@ -492,33 +493,42 @@ export const GRNListPage: React.FC = () => {
       <PageHeader
         title="Goods Receipt Notes (GRN) Register"
         subtitle="Final verified inventory receipts generated automatically following Quality Control clearance."
+        breadcrumbs={[
+          { label: 'Finance, Billing & Payments' },
+          { label: 'Goods Receipt Notes (GRN)' }
+        ]}
       />
 
       {/* 1. FOUR REAL-DATA KPI CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-4">
-        {/* CARD 1: TOTAL GRNS */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 flex flex-col justify-between h-[115px]">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">TOTAL GRNS</span>
-          <span className="text-2xl font-bold text-gray-900">{totalGRNsCount}</span>
-        </div>
-
-        {/* CARD 2: OPEN GRNS */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 flex flex-col justify-between h-[115px]">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">OPEN GRNS</span>
-          <span className="text-2xl font-bold text-gray-900">{openGRNsCount}</span>
-        </div>
-
-        {/* CARD 3: NET PAYABLE */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 flex flex-col justify-between h-[115px]">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">NET PAYABLE</span>
-          <span className="text-2xl font-bold text-gray-900">{formatIndianCurrency(totalNetPayableSum)}</span>
-        </div>
-
-        {/* CARD 4: OUTSTANDING */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 flex flex-col justify-between h-[115px]">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">OUTSTANDING</span>
-          <span className="text-2xl font-bold text-gray-900">{formatIndianCurrency(totalOutstandingSum)}</span>
-        </div>
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <SummaryKpiCard
+          title="Total GRNs"
+          value={totalGRNsCount}
+          subtitle="Cumulative verified GRNs"
+          icon={FileText}
+          variant="gold"
+        />
+        <SummaryKpiCard
+          title="Open GRNs"
+          value={openGRNsCount}
+          subtitle="Awaiting full AP settlement"
+          icon={Clock}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Net Payable"
+          value={formatIndianCurrency(totalNetPayableSum)}
+          subtitle="Total verified goods value"
+          icon={CreditCard}
+          variant="blue"
+        />
+        <SummaryKpiCard
+          title="Outstanding"
+          value={formatIndianCurrency(totalOutstandingSum)}
+          subtitle="Pending vendor disbursements"
+          icon={AlertCircle}
+          variant="pending"
+        />
       </div>
 
       {/* 2. ADVANCED REFERENCE-STYLE 2-ROW FILTER PANEL */}

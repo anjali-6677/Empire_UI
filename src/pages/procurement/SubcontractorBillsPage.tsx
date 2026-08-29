@@ -6,6 +6,7 @@ import {
 } from '../../domain/types';
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
 import { FilterToolbar } from '../../components/common/FilterToolbar';
 import { RowActionMenu, RowActionMenuItem, RowActionMenuDivider } from '../../components/common/RowActionMenu';
 import { formatIndianCurrency } from '../../utils/format';
@@ -15,7 +16,6 @@ import {
   Clock,
   AlertTriangle,
   FileCheck2,
-  DollarSign,
   X,
   FileText,
   CreditCard,
@@ -533,87 +533,42 @@ export const SubcontractorBillsPage: React.FC = () => {
       <PageHeader
         title="Subcontractor Bills"
         subtitle="Review certified subcontractor work, approve payable bills and track subcontractor payments."
+        breadcrumbs={[
+          { label: 'Finance, Billing & Payments' },
+          { label: 'Subcontractor Bills' }
+        ]}
       />
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 my-4">
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Total Bills</span>
-            <div className="p-2 bg-slate-100 rounded-lg text-slate-700">
-              <FileCheck2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <h3 className="text-xl font-bold text-slate-900">{totalBillsCount}</h3>
-            <p className="text-[11px] text-gray-400 mt-0.5">WIP Certified</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Pending Approval</span>
-            <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <h3 className="text-xl font-bold text-amber-700">{pendingApprovalCount}</h3>
-            <p className="text-[11px] text-amber-600 mt-0.5">Finance Sign-off</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Approved Outstanding</span>
-            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-              <Receipt className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <h3 className="text-xl font-bold text-blue-800">{formatIndianCurrency(approvedOutstandingAmount)}</h3>
-            <p className="text-[11px] text-blue-600 mt-0.5">Approved Payable</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Total Payable</span>
-            <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
-              <DollarSign className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <h3 className="text-xl font-bold text-purple-900">{formatIndianCurrency(totalPayableAmount)}</h3>
-            <p className="text-[11px] text-purple-600 mt-0.5">Net Billed Value</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Total Paid</span>
-            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <h3 className="text-xl font-bold text-emerald-700">{formatIndianCurrency(totalPaidAmount)}</h3>
-            <p className="text-[11px] text-emerald-600 mt-0.5">Settled Payments</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Overdue</span>
-            <div className="p-2 bg-rose-50 rounded-lg text-rose-600">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <h3 className="text-xl font-bold text-rose-700">{overdueCount}</h3>
-            <p className="text-[11px] text-rose-600 mt-0.5">Past Due Date</p>
-          </div>
-        </div>
+      <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
+        <SummaryKpiCard
+          title="Total Bills"
+          value={totalBillsCount}
+          subtitle={`Net Billed: ${formatIndianCurrency(totalPayableAmount)}`}
+          icon={FileCheck2}
+          variant="gold"
+        />
+        <SummaryKpiCard
+          title="Pending Approval"
+          value={pendingApprovalCount}
+          subtitle="Finance sign-off pending"
+          icon={Clock}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Approved Outstanding"
+          value={formatIndianCurrency(approvedOutstandingAmount)}
+          subtitle={`${overdueCount} bill(s) past due date`}
+          icon={Receipt}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Total Paid"
+          value={formatIndianCurrency(totalPaidAmount)}
+          subtitle="Settled subcontractor payments"
+          icon={CheckCircle2}
+          variant="active"
+        />
       </div>
 
       {/* Filter Toolbar */}

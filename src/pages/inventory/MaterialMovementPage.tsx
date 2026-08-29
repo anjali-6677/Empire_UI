@@ -6,7 +6,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
-import { Button } from '../../components/ui/Button';
 import { getMaterialIssueStatusBadge } from '../../utils/statusStyles';
 import {
   normalizeMaterialIssue,
@@ -24,9 +23,7 @@ import { ViewIssueConsumptionsModal } from '../../components/inventory/ViewIssue
 import { RowActionMenu, RowActionMenuItem, RowActionMenuDivider } from '../../components/common/RowActionMenu';
 import { MaterialIssue } from '../../domain/types';
 import {
-  ArrowRightLeft,
   Search,
-  Plus,
   Truck,
   RotateCcw,
   Flame,
@@ -41,6 +38,11 @@ import {
   CheckCircle2,
   TrendingUp,
 } from 'lucide-react';
+
+import { ListPageLayout } from '../../components/common/ListPageLayout';
+import { PageHeader } from '../../components/common/PageHeader';
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
 
 export const MaterialMovementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -164,112 +166,67 @@ export const MaterialMovementPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 font-sans text-xs">
+    <ListPageLayout>
       {/* Header Banner */}
-      <div className="bg-stone-900 p-5 rounded-xl border border-stone-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
-        <div className="flex items-center space-x-3">
-          <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-            <ArrowRightLeft className="w-6 h-6 text-amber-400" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-stone-100">Material Movement & Site Consumption</h1>
-            <p className="text-stone-400 text-xs mt-0.5">
-              Track material issued from stores to project sites, site receipt, consumption, returns and closing balance.
-            </p>
-          </div>
-        </div>
-
-        <div>
-          <Button
-            variant="primary"
+      <PageHeader
+        title="Material Movement & Site Consumption"
+        subtitle="Track material issued from stores to project sites, site receipt, consumption, returns and closing balance."
+        breadcrumbs={[
+          { label: 'Inventory & Execution' },
+          { label: 'Material Movement' }
+        ]}
+        actions={
+          <PrimaryActionButton
+            label="Issue Material"
             onClick={() => navigate('/inventory/material-issues/new')}
-            className="bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold px-4 py-2 flex items-center gap-1.5 shadow-md"
-          >
-            <Plus className="w-4 h-4" />
-            Issue Material
-          </Button>
-        </div>
-      </div>
+          />
+        }
+      />
 
       {/* Real-Data KPI Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {/* Card 1: TOTAL ISSUES */}
-        <div className="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-stone-500">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Total Issues</span>
-            <Truck className="w-4 h-4 text-stone-400" />
-          </div>
-          <div className="mt-2">
-            <div className="text-lg font-bold text-stone-900 font-mono">{kpiStats.totalIssues}</div>
-            <div className="text-[10px] text-stone-500 mt-0.5">Valid Issue Notes</div>
-          </div>
-        </div>
-
-        {/* Card 2: IN TRANSIT */}
-        <div className="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-stone-500">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">In Transit</span>
-            <Clock className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="mt-2">
-            <div className="text-lg font-bold text-amber-700 font-mono">{kpiStats.inTransit}</div>
-            <div className="text-[10px] text-stone-500 mt-0.5">Dispatched to site</div>
-          </div>
-        </div>
-
-        {/* Card 3: RECEIVED AT SITE */}
-        <div className="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-stone-500">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Received Site</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          </div>
-          <div className="mt-2">
-            <div className="text-lg font-bold text-emerald-700 font-mono">{kpiStats.receivedAtSite}</div>
-            <div className="text-[10px] text-stone-500 mt-0.5">Delivered & verified</div>
-          </div>
-        </div>
-
-        {/* Card 4: ISSUED VALUE */}
-        <div className="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-stone-500">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-700">Issued Value</span>
-            <TrendingUp className="w-4 h-4 text-stone-600" />
-          </div>
-          <div className="mt-2">
-            <div className="text-sm font-bold text-stone-900 font-mono truncate">
-              ₹{kpiStats.totalIssuedValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </div>
-            <div className="text-[10px] text-stone-500 mt-0.5">Total material issued</div>
-          </div>
-        </div>
-
-        {/* Card 5: RETURNED VALUE */}
-        <div className="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-stone-500">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-800">Returned Value</span>
-            <RotateCcw className="w-4 h-4 text-cyan-600" />
-          </div>
-          <div className="mt-2">
-            <div className="text-sm font-bold text-cyan-700 font-mono truncate">
-              ₹{kpiStats.totalReturnedValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </div>
-            <div className="text-[10px] text-stone-500 mt-0.5">Returned to stores</div>
-          </div>
-        </div>
-
-        {/* Card 6: CONSUMED VALUE */}
-        <div className="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-stone-500">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-orange-800">Consumed Value</span>
-            <Flame className="w-4 h-4 text-orange-500" />
-          </div>
-          <div className="mt-2">
-            <div className="text-sm font-bold text-orange-700 font-mono truncate">
-              ₹{kpiStats.totalConsumedValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </div>
-            <div className="text-[10px] text-stone-500 mt-0.5">Consumed on work</div>
-          </div>
-        </div>
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-3">
+        <SummaryKpiCard
+          title="Total Issues"
+          value={kpiStats.totalIssues}
+          subtitle="Valid Issue Notes"
+          icon={Truck}
+          variant="gold"
+        />
+        <SummaryKpiCard
+          title="In Transit"
+          value={kpiStats.inTransit}
+          subtitle="Dispatched to site"
+          icon={Clock}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Received Site"
+          value={kpiStats.receivedAtSite}
+          subtitle="Delivered & verified"
+          icon={CheckCircle2}
+          variant="active"
+        />
+        <SummaryKpiCard
+          title="Issued Value"
+          value={`₹${kpiStats.totalIssuedValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+          subtitle="Total material issued"
+          icon={TrendingUp}
+          variant="gold"
+        />
+        <SummaryKpiCard
+          title="Returned Value"
+          value={`₹${kpiStats.totalReturnedValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+          subtitle="Returned to stores"
+          icon={RotateCcw}
+          variant="blue"
+        />
+        <SummaryKpiCard
+          title="Consumed Value"
+          value={`₹${kpiStats.totalConsumedValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+          subtitle="Consumed on work"
+          icon={Flame}
+          variant="purple"
+        />
       </div>
 
       {/* Advanced Filter Toolbar */}
@@ -661,6 +618,6 @@ export const MaterialMovementPage: React.FC = () => {
           onClose={() => setSelectedIssueForViewConsumptions(null)}
         />
       )}
-    </div>
+    </ListPageLayout>
   );
 };

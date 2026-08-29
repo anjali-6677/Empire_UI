@@ -8,10 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
 import { Vendor } from '../../domain/types';
 import { MasterRowActionsMenu, MasterActionItem } from '../../components/masters/MasterRowActionsMenu';
-import { Button } from '../../components/ui/Button';
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
 import {
   Store,
-  Plus,
   Search,
   Eye,
   Edit,
@@ -70,12 +69,10 @@ export const VendorListPage: React.FC = () => {
             Manage supplier details, categories, contacts and payment terms.
           </p>
         </div>
-        <Button
+        <PrimaryActionButton
+          label="Add Vendor"
           onClick={() => navigate('/masters/vendors/new')}
-          className="bg-[#c3a267] hover:bg-[#b58b20] active:bg-[#a67c14] text-[#18181b] font-bold border border-[#a8821d]/40 shadow-sm focus:ring-[#c3a267]/60 h-10 px-4 text-xs rounded-lg gap-1.5 whitespace-nowrap shrink-0"
-        >
-          <Plus className="h-4 w-4" /> Add Vendor
-        </Button>
+        />
       </div>
 
       {/* Filters & Search */}

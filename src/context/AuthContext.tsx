@@ -79,8 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Dev mode fallback
           if (isMounted) {
             setUser({
-              email: 'rajesh.sharma@empireinterior.com',
-              name: 'Rajesh Sharma',
+              email: 'admin@flutebyte.com',
+              name: 'Flutebyte Admin',
               role: 'Project Director',
             });
             setToken(storedToken || 'mock_demo_token_123');
@@ -94,8 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isMounted) {
           if (import.meta.env.DEV) {
             setUser({
-              email: 'rajesh.sharma@empireinterior.com',
-              name: 'Rajesh Sharma',
+              email: 'admin@flutebyte.com',
+              name: 'Flutebyte Admin',
               role: 'Project Director',
             });
             setToken(storedToken || 'mock_demo_token_123');
@@ -145,8 +145,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Dev mode / fallback login
       const mockToken = 'mock_demo_token_123';
       const mockUser = {
-        email: email || 'rajesh.sharma@empireinterior.com',
-        name: 'Rajesh Sharma',
+        email: email || 'admin@flutebyte.com',
+        name: 'Flutebyte Admin',
         role: 'Project Director',
       };
       localStorage.setItem(AUTH_TOKEN_KEY, mockToken);
@@ -157,8 +157,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       const mockToken = 'mock_demo_token_123';
       const mockUser = {
-        email: email || 'rajesh.sharma@empireinterior.com',
-        name: 'Rajesh Sharma',
+        email: email || 'admin@flutebyte.com',
+        name: 'Flutebyte Admin',
         role: 'Project Director',
       };
       localStorage.setItem(AUTH_TOKEN_KEY, mockToken);

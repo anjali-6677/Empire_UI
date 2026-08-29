@@ -22,8 +22,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [selectedProjectId, setSelectedProjectId] = useState<string>('PRJ-2026-001');
 
   const selectedProject = useMemo(() => {
-    if (selectedProjectId === 'all') return null;
-    return state.projects.find((p) => p.id === selectedProjectId || p.projectCode === selectedProjectId) || state.projects[0] || null;
+    if (!selectedProjectId || selectedProjectId === 'all' || selectedProjectId === 'ALL') return null;
+    return state.projects.find((p) => p.id === selectedProjectId || p.projectCode === selectedProjectId || p.siteId === selectedProjectId) || null;
   }, [state.projects, selectedProjectId]);
 
   const activeProjectCode = selectedProject ? selectedProject.projectCode : 'All Projects';

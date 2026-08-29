@@ -4,6 +4,7 @@ import { QCChecklistTemplate, QCChecklistParameter } from '../../domain/types';
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
 import { FilterToolbar } from '../../components/common/FilterToolbar';
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
 import { DEFAULT_QC_TEMPLATES } from '../../data/defaultQCTemplates';
 import {
   ClipboardCheck,
@@ -116,12 +117,10 @@ export const QCChecklistTemplatesPage: React.FC = () => {
         title="Quality Control Checklist Templates"
         subtitle="Configure material category inspection templates, parameters, expected standards, and tolerance limits."
         actions={
-          <button
+          <PrimaryActionButton
+            label="Create QC Template"
             onClick={handleOpenCreate}
-            className="inline-flex items-center px-4 py-2 text-xs font-bold text-slate-950 bg-[#AB9570] hover:bg-[#927D5E] rounded-lg shadow-sm"
-          >
-            <Plus className="w-4 h-4 mr-1.5" /> Create QC Template
-          </button>
+          />
         }
       />
 

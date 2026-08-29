@@ -4,13 +4,13 @@ import { useERPStore } from '../../store/ERPStoreContext';
 import { Category, PricingFactor, ParentGroup } from '../../domain/types';
 import { generateNextCategoryCode, getProductsForCategory } from '../../domain/selectors';
 import { MasterRowActionsMenu, MasterActionItem } from '../../components/masters/MasterRowActionsMenu';
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
 import { Button } from '../../components/ui/Button';
 import { CreatableCombobox } from '../../components/ui/CreatableCombobox';
 import { ControlledSelect } from '../../components/ui/ControlledSelect';
 import { QuickCreateParentGroupModal } from '../../components/masters/QuickCreateParentGroupModal';
 import {
   FolderTree,
-  Plus,
   Edit,
   Percent,
   DollarSign,
@@ -276,19 +276,15 @@ export const CategoriesFactorsPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {activeTab === 'categories' ? (
-            <Button
+            <PrimaryActionButton
+              label="Add Category"
               onClick={() => handleOpenCatModal()}
-              className="bg-[#c3a267] hover:bg-[#b58b20] active:bg-[#a67c14] text-[#18181b] font-bold border border-[#a8821d]/40 shadow-sm focus:ring-[#c3a267]/60 h-10 px-4 text-xs rounded-lg gap-1.5 whitespace-nowrap"
-            >
-              <Plus className="h-4 w-4" /> Add Category
-            </Button>
+            />
           ) : (
-            <Button
+            <PrimaryActionButton
+              label="Add Pricing Factor"
               onClick={() => handleOpenFactorModal()}
-              className="bg-[#c3a267] hover:bg-[#b58b20] active:bg-[#a67c14] text-[#18181b] font-bold border border-[#a8821d]/40 shadow-sm focus:ring-[#c3a267]/60 h-10 px-4 text-xs rounded-lg gap-1.5 whitespace-nowrap"
-            >
-              <Plus className="h-4 w-4" /> Add Pricing Factor
-            </Button>
+            />
           )}
         </div>
       </div>

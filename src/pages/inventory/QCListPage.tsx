@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Eye,
-  Plus,
   ShieldCheck,
   Sliders,
   X,
@@ -19,6 +18,9 @@ import {
   Package,
   Layers,
 } from 'lucide-react';
+
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
 
 export const QCListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -133,21 +135,23 @@ export const QCListPage: React.FC = () => {
       <PageHeader
         title="Quality Control (QC) Inspections Register"
         subtitle="Mandatory Gate-Token QC stage: Perform parameter inspection by Token #, approve dispositions, and trigger auto-GRN."
+        breadcrumbs={[
+          { label: 'Inventory & Execution' },
+          { label: 'Quality Control (QC)' }
+        ]}
         actions={
           <div className="flex items-center space-x-2">
             <button
               onClick={() => navigate('/master-data/qc-templates')}
-              className="inline-flex items-center px-3 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="inline-flex items-center px-3 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Sliders className="w-4 h-4 mr-1.5 text-[#C5A059]" /> QC Templates
             </button>
 
-            <button
+            <PrimaryActionButton
+              label="Execute QC by Token #"
               onClick={() => navigate('/inventory/qc/new')}
-              className="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-[#C5A059] hover:bg-[#b08d48] rounded-lg shadow-sm"
-            >
-              <Plus className="w-4 h-4 mr-1.5" /> Execute QC by Token #
-            </button>
+            />
           </div>
         }
       />
@@ -183,36 +187,28 @@ export const QCListPage: React.FC = () => {
         ]}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Completed QC Inspections</p>
-            <h3 className="text-xl font-bold text-gray-900 mt-1">{completedInspectionsCount}</h3>
-          </div>
-          <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Admin Approval Required</p>
-            <h3 className="text-xl font-bold text-rose-700 mt-1">{adminApprovalReqCount}</h3>
-          </div>
-          <div className="p-3 bg-rose-50 rounded-lg text-rose-600">
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">QC Pass Ratio</p>
-            <h3 className="text-xl font-bold text-emerald-700 mt-1">{passRatioStr}</h3>
-          </div>
-          <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-        </div>
+      <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-3">
+        <SummaryKpiCard
+          title="Completed QC Inspections"
+          value={completedInspectionsCount}
+          subtitle="Finalized inspection records"
+          icon={ShieldCheck}
+          variant="active"
+        />
+        <SummaryKpiCard
+          title="Admin Approval Required"
+          value={adminApprovalReqCount}
+          subtitle="Awaiting management review"
+          icon={AlertTriangle}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="QC Pass Ratio"
+          value={passRatioStr}
+          subtitle="Quality compliance rate"
+          icon={CheckCircle2}
+          variant="gold"
+        />
       </div>
 
       {/* QC Inspections Register Table */}

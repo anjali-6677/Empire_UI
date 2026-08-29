@@ -15,6 +15,9 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
+import { ListPageLayout } from '../../components/common/ListPageLayout';
+import { PageHeader } from '../../components/common/PageHeader';
+
 export const MaterialReceivingCheckPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const tokenParam = searchParams.get('token');
@@ -140,19 +143,16 @@ export const MaterialReceivingCheckPage: React.FC = () => {
   }, [tokenParam]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <ListPageLayout>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
-            <ClipboardCheck className="w-7 h-7 text-[#C5A059]" />
-            Initial Material Receiving Check
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Stage 1 Receipt Verification: Link Gate Token to Purchase Order, record quantities, damages, and set status to QC Pending.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Initial Material Receiving Check"
+        subtitle="Stage 1 Receipt Verification: Link Gate Token to Purchase Order, record quantities, damages, and set status to QC Pending."
+        breadcrumbs={[
+          { label: 'Inventory & Execution' },
+          { label: 'Initial Receiving Check' }
+        ]}
+      />
 
       {/* Process Flow Alert Banner */}
       <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-start gap-3 text-purple-900 text-sm">
@@ -485,7 +485,7 @@ export const MaterialReceivingCheckPage: React.FC = () => {
           handleResolveToken(scannedToken);
         }}
       />
-    </div>
+    </ListPageLayout>
   );
 };
 

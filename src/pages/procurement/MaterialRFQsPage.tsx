@@ -19,12 +19,14 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { FilterToolbar } from '../../components/common/FilterToolbar';
 import {
   FileText,
-  Plus,
   Users,
   Calendar,
   Clock,
   CheckCircle2,
 } from 'lucide-react';
+
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
 
 export const MaterialRFQsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -104,76 +106,50 @@ export const MaterialRFQsPage: React.FC = () => {
           { label: 'Requests for Quotation' }
         ]}
         actions={
-          <button
-            type="button"
+          <PrimaryActionButton
+            label="Create RFQ"
             onClick={() => navigate('/procurement/rfqs/new')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#AB9570] hover:bg-[#927D5E] text-slate-950 font-bold rounded-xl shadow-xs transition-all text-xs cursor-pointer"
-          >
-            <Plus className="h-4 w-4 stroke-[3]" /> Create RFQ
-          </button>
+          />
         }
       />
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div
-          onClick={() => setStatusFilter('all')}
-          className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-            statusFilter === 'all'
-              ? 'bg-[#AB9570]/10 border-[#AB9570] shadow-2xs'
-              : 'bg-white border-[#E2E6EC] hover:border-slate-300'
-          }`}
-        >
-          <div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase">Total RFQs</div>
-            <div className="text-xl font-black text-slate-900 mt-0.5">{totalRFQs}</div>
-          </div>
-          <FileText className={`h-5 w-5 ${statusFilter === 'all' ? 'text-[#AB9570]' : 'text-slate-400'}`} />
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div onClick={() => setStatusFilter('all')} className="cursor-pointer">
+          <SummaryKpiCard
+            title="Total RFQs"
+            value={totalRFQs}
+            subtitle="All Quotation Requests"
+            icon={FileText}
+            variant={statusFilter === 'all' ? 'gold' : 'neutral'}
+          />
         </div>
-
-        <div
-          onClick={() => setStatusFilter('draft')}
-          className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-            statusFilter === 'draft'
-              ? 'bg-[#AB9570]/10 border-[#AB9570] shadow-2xs'
-              : 'bg-white border-[#E2E6EC] hover:border-slate-300'
-          }`}
-        >
-          <div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase">Draft</div>
-            <div className="text-xl font-black text-slate-900 mt-0.5">{draftRFQs}</div>
-          </div>
-          <Clock className={`h-5 w-5 ${statusFilter === 'draft' ? 'text-[#AB9570]' : 'text-slate-400'}`} />
+        <div onClick={() => setStatusFilter('draft')} className="cursor-pointer">
+          <SummaryKpiCard
+            title="Draft RFQs"
+            value={draftRFQs}
+            subtitle="In Preparation"
+            icon={Clock}
+            variant={statusFilter === 'draft' ? 'gold' : 'neutral'}
+          />
         </div>
-
-        <div
-          onClick={() => setStatusFilter('issued')}
-          className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-            statusFilter === 'issued'
-              ? 'bg-[#AB9570]/10 border-[#AB9570] shadow-2xs'
-              : 'bg-white border-[#E2E6EC] hover:border-slate-300'
-          }`}
-        >
-          <div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase">Awaiting Quotes</div>
-            <div className="text-xl font-black text-slate-900 mt-0.5">{awaitingQuotes}</div>
-          </div>
-          <Users className={`h-5 w-5 ${statusFilter === 'issued' ? 'text-[#AB9570]' : 'text-slate-400'}`} />
+        <div onClick={() => setStatusFilter('issued')} className="cursor-pointer">
+          <SummaryKpiCard
+            title="Awaiting Quotes"
+            value={awaitingQuotes}
+            subtitle="Issued to Vendors"
+            icon={Users}
+            variant={statusFilter === 'issued' ? 'pending' : 'neutral'}
+          />
         </div>
-
-        <div
-          onClick={() => setStatusFilter('quotes_received')}
-          className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-            statusFilter === 'quotes_received'
-              ? 'bg-[#AB9570]/10 border-[#AB9570] shadow-2xs'
-              : 'bg-white border-[#E2E6EC] hover:border-slate-300'
-          }`}
-        >
-          <div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase">Quotes Received</div>
-            <div className="text-xl font-black text-slate-900 mt-0.5">{quotesReceived}</div>
-          </div>
-          <CheckCircle2 className={`h-5 w-5 ${statusFilter === 'quotes_received' ? 'text-[#AB9570]' : 'text-slate-400'}`} />
+        <div onClick={() => setStatusFilter('quotes_received')} className="cursor-pointer">
+          <SummaryKpiCard
+            title="Quotes Received"
+            value={quotesReceived}
+            subtitle="Ready for Evaluation"
+            icon={CheckCircle2}
+            variant={statusFilter === 'quotes_received' ? 'active' : 'neutral'}
+          />
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { SiteSchema, SiteApprovalRole, ApprovalDecisionStatus } from '../types';
 import { useERPStore } from '../store/ERPStoreContext';
 import { Project } from '../domain/types';
+import { useProjectContext } from './ProjectContext';
 
 // Helper to convert unified Project model to legacy SiteSchema for backward compatibility
 export function projectToSiteSchema(project: Project): SiteSchema {
@@ -69,16 +70,41 @@ const SitesContext = React.createContext<SitesContextValue | undefined>(undefine
 
 export const SitesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { state, addItem, updateItem } = useERPStore();
-  const [selectedSiteId, setSelectedSiteId] = React.useState<string>('site-1');
+  const { selectedProjectId, selectedProject, setSelectedProjectId } = useProjectContext();
 
   const sites = React.useMemo(() => {
     return state.projects.map(projectToSiteSchema);
   }, [state.projects]);
 
   const selectedSite = React.useMemo(() => {
-    if (selectedSiteId === 'all') return null;
-    return sites.find((s) => s.id === selectedSiteId) || sites[0] || null;
-  }, [sites, selectedSiteId]);
+    if (!selectedProjectId || selectedProjectId === 'all' || selectedProjectId === 'ALL') {
+      return null;
+    }
+    if (selectedProject) {
+      return sites.find((s) => s.id === selectedProject.id || s.code === selectedProject.projectCode) || projectToSiteSchema(selectedProject);
+    }
+    return sites.find((s) => s.id === selectedProjectId || s.code === selectedProjectId) || null;
+  }, [sites, selectedProjectId, selectedProject]);
+
+  const selectedSiteId = React.useMemo(() => {
+    if (!selectedProjectId || selectedProjectId === 'all' || selectedProjectId === 'ALL') {
+      return 'all';
+    }
+    return selectedSite ? selectedSite.id : selectedProjectId;
+  }, [selectedProjectId, selectedSite]);
+
+  const handleSetSelectedSiteId = React.useCallback((siteId: string) => {
+    if (siteId === 'all' || siteId === 'ALL') {
+      setSelectedProjectId('all');
+      return;
+    }
+    const targetSite = sites.find((s) => s.id === siteId || s.code === siteId);
+    if (targetSite) {
+      setSelectedProjectId(targetSite.id);
+    } else {
+      setSelectedProjectId(siteId);
+    }
+  }, [sites, setSelectedProjectId]);
 
   const addSite = (site: SiteSchema) => {
     const newProject: Project = {
@@ -182,7 +208,7 @@ export const SitesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         sites,
         selectedSiteId,
         selectedSite,
-        setSelectedSiteId,
+        setSelectedSiteId: handleSetSelectedSiteId,
         addSite,
         duplicateSite,
         moveToDeleted,

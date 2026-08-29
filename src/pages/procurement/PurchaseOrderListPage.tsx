@@ -8,13 +8,13 @@ import { PORowActionsMenu } from '../../components/procurement/PORowActionsMenu'
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
 import { FilterToolbar } from '../../components/common/FilterToolbar';
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
 import { formatIndianCurrency } from '../../utils/format';
 import { PODetailsModal } from '../../components/procurement/po/PODetailsModal';
 import { POApprovalModal } from '../../components/procurement/po/POApprovalModal';
 import { PODeliveryModal } from '../../components/procurement/po/PODeliveryModal';
 import { downloadPurchaseOrderPDF } from '../../utils/poPdfGenerator';
 import {
-  Plus,
   CheckCircle2,
   Clock,
   FileText,
@@ -115,13 +115,10 @@ export const PurchaseOrderListPage: React.FC = () => {
           { label: 'Purchase Orders' }
         ]}
         actions={
-          <button
-            type="button"
+          <PrimaryActionButton
+            label="Create Purchase Order"
             onClick={() => navigate('/procurement/purchase-orders/new')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#AB9570] hover:bg-[#927D5E] text-slate-950 font-bold rounded-xl shadow-xs transition-all text-xs cursor-pointer"
-          >
-            <Plus className="h-4 w-4 stroke-[3]" /> Create Purchase Order
-          </button>
+          />
         }
       />
 

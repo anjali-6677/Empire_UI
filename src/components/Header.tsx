@@ -511,7 +511,7 @@ export const UserMenu: React.FC = () => {
               {user?.name || 'Flutebyte Admin'}
             </span>
             <span className="text-[9.5px] text-gray-450 block font-semibold mt-0.5 truncate">
-              {user?.email || 'flutebyte@example.com'}
+              {user?.email || 'admin@flutebyte.com'}
             </span>
           </div>
 

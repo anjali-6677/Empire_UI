@@ -179,15 +179,6 @@ export function getPORowActions(
       });
     }
 
-    if (callbacks.onViewDeliveryHistory) {
-      actions.push({
-        id: 'delivery_history',
-        label: 'Delivery History',
-        icon: History,
-        onClick: callbacks.onViewDeliveryHistory,
-      });
-    }
-
     if (callbacks.onViewComparison && (po.rfqId || po.sourceRFQId)) {
       actions.push({
         id: 'view_comparison',
@@ -226,15 +217,6 @@ export function getPORowActions(
         onClick: callbacks.onRecordDelivery,
       });
     }
-
-    if (callbacks.onViewDeliveryHistory) {
-      actions.push({
-        id: 'delivery_history',
-        label: 'Delivery History',
-        icon: History,
-        onClick: callbacks.onViewDeliveryHistory,
-      });
-    }
   }
 
   // Status: Fully Delivered / Received / Completed
@@ -245,15 +227,6 @@ export function getPORowActions(
       icon: Download,
       onClick: callbacks.onDownload,
     });
-
-    if (callbacks.onViewDeliveryHistory) {
-      actions.push({
-        id: 'delivery_history',
-        label: 'Delivery History',
-        icon: History,
-        onClick: callbacks.onViewDeliveryHistory,
-      });
-    }
 
     if (callbacks.onClosePO) {
       actions.push({

@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
-import { Plus, ShieldAlert, XCircle, AlertTriangle, ExternalLink } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, ExternalLink } from 'lucide-react';
 import { formatIndianCurrency } from '../../utils/format';
 import { ListPageLayout } from '../../components/common/ListPageLayout';
 import { PageHeader } from '../../components/common/PageHeader';
 import { FilterToolbar } from '../../components/common/FilterToolbar';
 import { CreateMaterialIndentModal } from '../../components/procurement/CreateMaterialIndentModal';
+
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
+import { FileText, Clock, CheckCircle2, RotateCcw, XCircle, TrendingUp } from 'lucide-react';
 
 interface MaterialIndentListPageProps {
   initialCreateModalOpen?: boolean;
@@ -158,13 +162,10 @@ export const MaterialIndentListPage: React.FC<MaterialIndentListPageProps> = ({
           { label: 'Material Indents' }
         ]}
         actions={
-          <button
-            type="button"
+          <PrimaryActionButton
+            label="Create Material Indent"
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold rounded-xl shadow-xs transition-all text-xs cursor-pointer"
-          >
-            <Plus className="h-4 w-4 stroke-[3]" /> Create Material Indent
-          </button>
+          />
         }
       />
 
@@ -179,38 +180,49 @@ export const MaterialIndentListPage: React.FC<MaterialIndentListPageProps> = ({
       />
 
       {/* KPI Metric Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-[#E2E6EC] shadow-2xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Indents</span>
-          <div className="text-xl font-black text-slate-900 font-mono mt-0.5">{totalIndentsCount}</div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-[#E2E6EC] shadow-2xs">
-          <span className="text-[10px] font-bold text-amber-600 uppercase block">Pending Approval</span>
-          <div className="text-xl font-black text-amber-700 font-mono mt-0.5">{pendingCount}</div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-[#E2E6EC] shadow-2xs">
-          <span className="text-[10px] font-bold text-emerald-600 uppercase block">Approved</span>
-          <div className="text-xl font-black text-emerald-700 font-mono mt-0.5">{approvedCount}</div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-[#E2E6EC] shadow-2xs">
-          <span className="text-[10px] font-bold text-purple-600 uppercase block">Sent Back</span>
-          <div className="text-xl font-black text-purple-700 font-mono mt-0.5">{returnedCount}</div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-[#E2E6EC] shadow-2xs">
-          <span className="text-[10px] font-bold text-rose-600 uppercase block">Rejected</span>
-          <div className="text-xl font-black text-rose-700 font-mono mt-0.5">{rejectedCount}</div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-[#E2E6EC] shadow-2xs col-span-2 sm:col-span-1">
-          <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Est. Value</span>
-          <div className="text-sm font-black text-slate-900 font-mono mt-0.5">
-            {formatIndianCurrency(totalEstimatedValue)}
-          </div>
-        </div>
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-3">
+        <SummaryKpiCard
+          title="Total Indents"
+          value={totalIndentsCount}
+          subtitle="Site Requisitions"
+          icon={FileText}
+          variant="gold"
+        />
+        <SummaryKpiCard
+          title="Pending Approval"
+          value={pendingCount}
+          subtitle="Awaiting Review"
+          icon={Clock}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Approved"
+          value={approvedCount}
+          subtitle="Ready for PO/RFQ"
+          icon={CheckCircle2}
+          variant="active"
+        />
+        <SummaryKpiCard
+          title="Sent Back"
+          value={returnedCount}
+          subtitle="Revision Requested"
+          icon={RotateCcw}
+          variant="purple"
+        />
+        <SummaryKpiCard
+          title="Rejected"
+          value={rejectedCount}
+          subtitle="Declined Requisitions"
+          icon={XCircle}
+          variant="danger"
+        />
+        <SummaryKpiCard
+          title="Total Est. Value"
+          value={formatIndianCurrency(totalEstimatedValue)}
+          subtitle="Estimated Material Value"
+          icon={TrendingUp}
+          variant="gold"
+        />
       </div>
 
       {/* Filter Toolbar */}

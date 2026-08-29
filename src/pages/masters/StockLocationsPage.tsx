@@ -5,8 +5,9 @@
 
 import React, { useState } from 'react';
 import { MasterRowActionsMenu, MasterActionItem } from '../../components/masters/MasterRowActionsMenu';
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
 import { Button } from '../../components/ui/Button';
-import { Warehouse, Plus, Search, Edit, CheckCircle, XCircle } from 'lucide-react';
+import { Warehouse, Search, Edit, CheckCircle, XCircle } from 'lucide-react';
 
 interface StockLocation {
   id: string;
@@ -148,12 +149,10 @@ export const StockLocationsPage: React.FC = () => {
             Manage central stores, regional yards and site locations.
           </p>
         </div>
-        <Button
+        <PrimaryActionButton
+          label="Add Location"
           onClick={() => handleOpenModal()}
-          className="bg-[#c3a267] hover:bg-[#b58b20] active:bg-[#a67c14] text-[#18181b] font-bold border border-[#a8821d]/40 shadow-sm focus:ring-[#c3a267]/60 h-10 px-4 text-xs rounded-lg gap-1.5 whitespace-nowrap shrink-0"
-        >
-          <Plus className="h-4 w-4" /> Add Location
-        </Button>
+        />
       </div>
 
       {/* Search */}

@@ -8,10 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
 import { Client } from '../../domain/types';
 import { MasterRowActionsMenu, MasterActionItem } from '../../components/masters/MasterRowActionsMenu';
-import { Button } from '../../components/ui/Button';
+import { PrimaryActionButton } from '../../components/common/PrimaryActionButton';
 import {
   Building2,
-  Plus,
   Search,
   Eye,
   Edit,
@@ -62,12 +61,10 @@ export const ClientListPage: React.FC = () => {
             Manage client details, contacts, billing information and payment terms.
           </p>
         </div>
-        <Button
+        <PrimaryActionButton
+          label="Add Client"
           onClick={() => navigate('/masters/clients/new')}
-          className="bg-[#c3a267] hover:bg-[#b58b20] active:bg-[#a67c14] text-[#18181b] font-bold border border-[#a8821d]/40 shadow-sm focus:ring-[#c3a267]/60 h-10 px-4 text-xs rounded-lg gap-1.5 whitespace-nowrap shrink-0"
-        >
-          <Plus className="h-4 w-4" /> Add Client
-        </Button>
+        />
       </div>
 
       {/* Filters & Search */}

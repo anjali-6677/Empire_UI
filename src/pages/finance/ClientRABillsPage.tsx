@@ -4,10 +4,13 @@ import { useERPStore } from '../../store/ERPStoreContext';
 import { ClientRABill, ClientRABillStatus, ClientRABillPaymentStatus } from '../../domain/types';
 import { formatIndianCurrency } from '../../utils/format';
 import { printClientRABillDocument } from '../../utils/clientRABillPdfGenerator';
+import { ListPageLayout } from '../../components/common/ListPageLayout';
+import { PageHeader } from '../../components/common/PageHeader';
+import { SummaryKpiCard } from '../../components/common/SummaryKpiCard';
+import { FilterToolbar } from '../../components/common/FilterToolbar';
 import {
   FileText,
   Plus,
-  Search,
   CheckCircle2,
   XCircle,
   Clock,
@@ -346,146 +349,114 @@ export const ClientRABillsPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6">
+    <ListPageLayout>
       {/* 1. Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Receipt className="w-7 h-7 text-blue-600" />
-            Client RA Bills
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Manage running account billing linked to project milestones, track internal approvals, issue bills, and record accounts receivable payment receipts.
-          </p>
-        </div>
+      <PageHeader
+        title="Client RA Bills"
+        subtitle="Manage running account billing linked to project milestones, track internal approvals, issue bills, and record accounts receivable payment receipts."
+        breadcrumbs={[
+          { label: 'Finance, Billing & Payments' },
+          { label: 'Client RA Bills' }
+        ]}
+        actions={
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center justify-center px-3.5 py-2 bg-[#1E293B] hover:bg-[#0F172A] text-white font-medium text-xs rounded-lg shadow-sm transition-all gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            Create RA Bill
+          </button>
+        }
+      />
 
-        <button
-          onClick={handleOpenCreate}
-          className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg shadow-sm transition-all gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Create RA Bill
-        </button>
+      {/* 2. KPI Cards Grid */}
+      <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
+        <SummaryKpiCard
+          title="Total Billed"
+          value={formatIndianCurrency(kpis.totalBilled)}
+          subtitle="Net receivable billed"
+          icon={FileCheck2}
+          variant="gold"
+        />
+        <SummaryKpiCard
+          title="Outstanding Receivable"
+          value={formatIndianCurrency(kpis.outstanding)}
+          subtitle="Pending client collection"
+          icon={TrendingUp}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Overdue Balance"
+          value={formatIndianCurrency(kpis.overdue)}
+          subtitle="Past payment due date"
+          icon={AlertCircle}
+          variant="pending"
+        />
+        <SummaryKpiCard
+          title="Total Received"
+          value={formatIndianCurrency(kpis.totalReceived)}
+          subtitle="Cleared in bank"
+          icon={DollarSign}
+          variant="active"
+        />
       </div>
 
-      {/* 2. KPI Cards Grid (Placed ABOVE Search & Filters) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Billed</span>
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-              <FileCheck2 className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 mt-3">{formatIndianCurrency(kpis.totalBilled)}</div>
-          <div className="text-xs text-slate-500 mt-1">Net receivable billed</div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Outstanding Receivable</span>
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-amber-700 mt-3">{formatIndianCurrency(kpis.outstanding)}</div>
-          <div className="text-xs text-amber-600 font-medium mt-1">Pending client collection</div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Overdue Balance</span>
-            <div className="p-2 bg-rose-50 text-rose-600 rounded-lg">
-              <AlertCircle className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-rose-700 mt-3">{formatIndianCurrency(kpis.overdue)}</div>
-          <div className="text-xs text-rose-600 font-medium mt-1">Past payment due date</div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Received</span>
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-              <DollarSign className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-emerald-700 mt-3">{formatIndianCurrency(kpis.totalReceived)}</div>
-          <div className="text-xs text-emerald-600 font-medium mt-1">Cleared in bank</div>
-        </div>
-      </div>
-
-      {/* 3. Search & Filters */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <div className="relative md:col-span-1">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search RA #, client, project..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
-          </div>
-
-          <div>
-            <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              <option value="ALL">All Projects</option>
-              {projects.map((p: any) => (
-                <option key={p.id} value={p.id}>{p.projectName || p.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <select
-              value={selectedClientId}
-              onChange={(e) => setSelectedClientId(e.target.value)}
-              className="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              <option value="ALL">All Clients</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <select
-              value={selectedBillStatus}
-              onChange={(e) => setSelectedBillStatus(e.target.value)}
-              className="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              <option value="ALL">All Bill Statuses</option>
-              <option value="Draft">Draft</option>
-              <option value="Pending Approval">Pending Approval</option>
-              <option value="Approved">Approved</option>
-              <option value="Sent to Client">Sent to Client</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
-
-          <div>
-            <select
-              value={selectedPaymentStatus}
-              onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-              className="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              <option value="ALL">All Payment Statuses</option>
-              <option value="Not Started">Not Started</option>
-              <option value="Payment Pending">Payment Pending</option>
-              <option value="Partially Paid">Partially Paid</option>
-              <option value="Paid">Paid</option>
-              <option value="Overdue">Overdue</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      {/* 3. Filter Toolbar */}
+      <FilterToolbar
+        searchQuery={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search RA #, client, project..."
+        selectFilters={[
+          {
+            id: 'project-filter',
+            label: 'Project',
+            value: selectedProjectId,
+            onChange: setSelectedProjectId,
+            options: [
+              { value: 'ALL', label: 'All Projects' },
+              ...projects.map((p: any) => ({ value: p.id, label: p.projectName || p.name })),
+            ],
+          },
+          {
+            id: 'client-filter',
+            label: 'Client',
+            value: selectedClientId,
+            onChange: setSelectedClientId,
+            options: [
+              { value: 'ALL', label: 'All Clients' },
+              ...clients.map((c) => ({ value: c.id, label: c.name })),
+            ],
+          },
+          {
+            id: 'bill-status-filter',
+            label: 'Bill Status',
+            value: selectedBillStatus,
+            onChange: setSelectedBillStatus,
+            options: [
+              { value: 'ALL', label: 'All Bill Statuses' },
+              { value: 'Draft', label: 'Draft' },
+              { value: 'Pending Approval', label: 'Pending Approval' },
+              { value: 'Approved', label: 'Approved' },
+              { value: 'Sent to Client', label: 'Sent to Client' },
+              { value: 'Rejected', label: 'Rejected' },
+            ],
+          },
+          {
+            id: 'payment-status-filter',
+            label: 'Payment Status',
+            value: selectedPaymentStatus,
+            onChange: setSelectedPaymentStatus,
+            options: [
+              { value: 'ALL', label: 'All Payment Statuses' },
+              { value: 'Not Started', label: 'Not Started' },
+              { value: 'Payment Pending', label: 'Payment Pending' },
+              { value: 'Partially Paid', label: 'Partially Paid' },
+              { value: 'Paid', label: 'Paid' },
+              { value: 'Overdue', label: 'Overdue' },
+            ],
+          },
+        ]}
+      />
 
       {/* 4. Client RA Bills Register Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1362,7 +1333,7 @@ export const ClientRABillsPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </ListPageLayout>
   );
 };
 

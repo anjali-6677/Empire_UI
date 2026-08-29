@@ -277,7 +277,6 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
       { id: 'inv-gate', label: 'Material Gate Tokens', path: ROUTES.INVENTORY_GATE_ENTRY, icon: Truck, projectContext: 'required' },
       { id: 'inv-rcv', label: 'Initial Receiving Check', path: ROUTES.INVENTORY_RECEIVING_CHECK, icon: PackageCheck, projectContext: 'required' },
       { id: 'inv-qc', label: 'Quality Control (QC)', path: '/inventory/qc', icon: ShieldCheck, projectContext: 'required' },
-      { id: 'inv-grn', label: 'Goods Receipt Notes (GRN)', path: '/inventory/grn', icon: PackageCheck, projectContext: 'required' },
       // { id: 'inv-quar', label: 'Material Quarantine & NCR', path: '/inventory/quarantine', icon: AlertTriangle, projectContext: 'required' },
       { id: 'inv-stk', label: 'Stock Ledger', path: ROUTES.INVENTORY_STOCK_LEDGER, icon: Boxes, projectContext: 'required' },
       { id: 'inv-isu', label: 'Material Issues to Site', path: ROUTES.INVENTORY_MATERIAL_ISSUES, icon: Truck, projectContext: 'required' },
@@ -287,6 +286,7 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
     id: 'finance-group',
     label: '5. Finance, Billing & Payments',
     items: [
+      { id: 'inv-grn', label: 'Goods Receipt Notes (GRN)', path: '/inventory/grn', icon: PackageCheck, projectContext: 'required' },
       { id: 'fin-ap', label: 'Vendor AP', path: ROUTES.FINANCE_VENDOR_AP, icon: CreditCard, projectContext: 'required' },
       { id: 'fin-sbil', label: 'Subcontractor Bills', path: ROUTES.FINANCE_SUBCONTRACTOR_BILLS, icon: FileCheck2, projectContext: 'required' },
       { id: 'fin-rab', label: 'Client RA Bills', path: ROUTES.FINANCE_CLIENT_RA_BILLS, icon: ReceiptText, projectContext: 'required' },
