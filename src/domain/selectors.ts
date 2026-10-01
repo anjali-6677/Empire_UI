@@ -1,5 +1,5 @@
 /**
- * Domain Selectors & Validation Engine for Empire Interior ERP
+ * Domain Selectors & Validation Engine for Flutebyte ERP
  * Location: src/domain/selectors.ts
  */
 

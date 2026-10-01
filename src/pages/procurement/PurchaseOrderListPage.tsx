@@ -343,7 +343,7 @@ export const PurchaseOrderListPage: React.FC = () => {
                 filteredPOs.map((po) => {
                   const totals = calculatePurchaseOrderTotals(po);
                   const vendor = state.vendors.find((v) => v.id === po.vendorId);
-                  const sourceRef = po.rfqDocumentNumber || po.sourceIndentNumber || (po.originType === 'direct_po' ? 'Direct PO' : 'RFQ-2026-001');
+                  const isDirect = po.originType === 'direct_po' || (po as any).purchaseType === 'direct_po' || (po as any).sourceType === 'DIRECT_PO' || (!(po as any).indentId && !po.rfqId);
                   const validUntil = po.validUntil || po.rateValidityDate || '31 Aug 2026';
                   const deliveryDue = po.expectedDeliveryDate || po.deliveryDueDate || '05 Sep 2026';
                   const poDate = po.orderDate || (po.createdAt ? po.createdAt.split('T')[0] : '10 Aug 2026');
@@ -359,7 +359,15 @@ export const PurchaseOrderListPage: React.FC = () => {
                           {po.documentNumber || po.poNumber || po.id}
                         </button>
                       </td>
-                      <td className="p-3.5 align-middle font-mono text-slate-700 font-medium">{sourceRef}</td>
+                      <td className="p-3.5 align-middle font-mono text-slate-700 font-medium">
+                        {isDirect ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 font-sans">
+                            Direct PO
+                          </span>
+                        ) : (
+                          po.rfqDocumentNumber || po.sourceIndentNumber || 'RFQ Award'
+                        )}
+                      </td>
                       <td className="p-3.5 align-middle font-bold text-slate-900">{po.vendorName || 'Selected Vendor'}</td>
                       <td className="p-3.5 align-middle text-slate-700 font-medium">{po.projectName || 'Active Project'}</td>
                       <td className="p-3.5 align-middle text-right font-mono font-bold text-slate-900">

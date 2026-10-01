@@ -12,7 +12,7 @@ import { X, Plus, Trash2, ShieldAlert, AlertTriangle, Send, Save } from 'lucide-
 import { ActiveProjectSelect } from './ActiveProjectSelect';
 import { CompactMaterialBOQSelect, extractMaterialPills } from './CompactMaterialBOQSelect';
 
-const DRAFT_STORAGE_KEY = 'empire_create_indent_draft_v1';
+const DRAFT_STORAGE_KEY = 'flutebyte_create_indent_draft_v1';
 
 export interface CreateMaterialIndentModalProps {
   isOpen: boolean;

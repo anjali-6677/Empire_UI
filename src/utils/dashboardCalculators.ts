@@ -948,7 +948,7 @@ export function computeExecutiveDashboardData(
   ];
 
   const topVendorsList: TopVendorItem[] = [
-    { vendor: 'Empire Timber & Plywood Traders', poCount: pos.length || 3, orderedValue: posValue * 0.45 || 1280000, receivedValue: posValue * 0.40 || 1150000, outstanding: 130000 },
+    { vendor: 'Flutebyte Timber & Plywood Traders', poCount: pos.length || 3, orderedValue: posValue * 0.45 || 1280000, receivedValue: posValue * 0.40 || 1150000, outstanding: 130000 },
     { vendor: 'Apex Electricals & Lighting', poCount: 2, orderedValue: 840000, receivedValue: 780000, outstanding: 60000 },
     { vendor: 'Global Ceramics & Tiles', poCount: 2, orderedValue: 670000, receivedValue: 620000, outstanding: 50000 },
     { vendor: 'Asian Paints Authorized Dealer', poCount: 1, orderedValue: 420000, receivedValue: 400000, outstanding: 20000 },
@@ -995,7 +995,7 @@ export function computeExecutiveDashboardData(
   ];
 
   const vendorQualityPerformance: VendorQualityPerformanceItem[] = [
-    { vendor: 'Empire Timber & Plywood', acceptedPct: 94, rejectedPct: 4, qcExceptionPct: 2 },
+    { vendor: 'Flutebyte Timber & Plywood', acceptedPct: 94, rejectedPct: 4, qcExceptionPct: 2 },
     { vendor: 'Apex Electricals', acceptedPct: 98, rejectedPct: 0, qcExceptionPct: 2 },
     { vendor: 'Global Ceramics', acceptedPct: 91, rejectedPct: 6, qcExceptionPct: 3 },
     { vendor: 'Hettich Hardware', acceptedPct: 96, rejectedPct: 2, qcExceptionPct: 2 },
@@ -1109,7 +1109,7 @@ export function computeExecutiveDashboardData(
     { id: 't-4', subject: 'Follow up on pending GRN for Plywood Delivery', relatedSite: 'PRJ-2026-001 Nouveau Penthouse', assignedBy: 'Amit Verma', dueDate: '04 Oct 2026', priority: 'Medium', status: 'In Progress', module: 'Inventory' },
     { id: 't-5', subject: 'Verify QC Inspection Report for Vitrified Tiles', relatedSite: 'PRJ-2026-011 HDFC Regional Office', assignedBy: 'Ramesh Sawant', dueDate: '03 Oct 2026', priority: 'High', status: 'Pending', module: 'Quality Control' },
     { id: 't-6', subject: 'Review Budget Variation Request (VO-04)', relatedSite: 'PRJ-2026-012 Manipal VIP Lounge', assignedBy: 'Priya Nair', dueDate: '05 Oct 2026', priority: 'Medium', status: 'In Progress', module: 'Commercial' },
-    { id: 't-7', subject: 'Release Vendor Payment Request for Empire Timber', relatedSite: 'PRJ-2026-001 Nouveau Penthouse', assignedBy: 'Shweta Rao', dueDate: '01 Oct 2026', priority: 'Critical', status: 'Overdue', module: 'Finance AP' },
+    { id: 't-7', subject: 'Release Vendor Payment Request for Flutebyte Timber', relatedSite: 'PRJ-2026-001 Nouveau Penthouse', assignedBy: 'Shweta Rao', dueDate: '01 Oct 2026', priority: 'Critical', status: 'Overdue', module: 'Finance AP' },
     { id: 't-8', subject: 'Check Subcontractor Billing Certification (SUB-08)', relatedSite: 'PRJ-2026-013 BITS Library', assignedBy: 'Aslam Khan', dueDate: '04 Oct 2026', priority: 'Medium', status: 'Pending', module: 'Subcontracting' },
     { id: 't-9', subject: 'Approve Gate Entry Token for Marble Dispatch', relatedSite: 'PRJ-2026-014 Vertex Business Park', assignedBy: 'Anand Kulkarni', dueDate: '05 Oct 2026', priority: 'Low', status: 'Pending', module: 'Logistics' },
     { id: 't-10', subject: 'Finalize Handover Snaglist & Client Signoff', relatedSite: 'PRJ-2026-001 Nouveau Penthouse', assignedBy: 'Rajesh Sharma', dueDate: '06 Oct 2026', priority: 'High', status: 'In Progress', module: 'Execution' },
@@ -1118,7 +1118,7 @@ export function computeExecutiveDashboardData(
   const defaultNotifications: DashboardNotificationItem[] = [
     { id: 'notif-1', title: 'Material Indent Submitted', message: 'IND/2026/048 submitted for 18mm BWP Plywood at Nouveau Penthouse.', alertDate: '10 mins ago', readStatus: 'unread', severity: 'info' },
     { id: 'notif-2', title: 'RFQ Issued to Vendors', message: 'RFQ-2026-089 sent to 3 empanelled suppliers for LED Fixtures.', alertDate: '25 mins ago', readStatus: 'unread', severity: 'info' },
-    { id: 'notif-3', title: 'Vendor Quotation Received', message: 'Empire Timber submitted quotation of ₹4.85L for Joinery Lot.', alertDate: '1 hr ago', readStatus: 'read', severity: 'success' },
+    { id: 'notif-3', title: 'Vendor Quotation Received', message: 'Flutebyte Timber submitted quotation of ₹4.85L for Joinery Lot.', alertDate: '1 hr ago', readStatus: 'read', severity: 'success' },
     { id: 'notif-4', title: 'Purchase Order Approved', message: 'PO/2026/088 approved by Project Director Rajesh Sharma.', alertDate: '2 hrs ago', readStatus: 'read', severity: 'success' },
     { id: 'notif-5', title: 'Goods Receipt Note (GRN) Logged', message: 'GRN/2026/032 posted for 450 sheets of Veneer at Bhiwandi Hub.', alertDate: '3 hrs ago', readStatus: 'read', severity: 'info' },
     { id: 'notif-6', title: 'Client RA Bill Submitted', message: 'RA/2026/014 for ₹37.10L submitted to Nouveau Luxury Residences.', alertDate: '4 hrs ago', readStatus: 'read', severity: 'success' },

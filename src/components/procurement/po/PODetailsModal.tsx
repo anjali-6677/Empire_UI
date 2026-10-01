@@ -82,9 +82,20 @@ export const PODetailsModal: React.FC<PODetailsModalProps> = ({
                   {po.status}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium">
-                Intent ID: {po.sourceIndentNumber || 'IND-2026-001'} | RFQ ID: {po.rfqDocumentNumber || (po.originType === 'direct_po' ? 'Direct PO' : 'RFQ-2026-001')}
-              </p>
+              {(() => {
+                const isDirect = po.originType === 'direct_po' || (po as any).purchaseType === 'direct_po' || (po as any).sourceType === 'DIRECT_PO' || (!(po as any).indentId && !po.rfqId);
+                return isDirect ? (
+                  <p className="text-[11px] text-amber-800 font-semibold flex items-center gap-1">
+                    <span className="px-2 py-0.5 bg-amber-100 border border-amber-300 rounded text-[10px]">
+                      Direct Purchase Order Route (No Indent/RFQ)
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Indent: {po.sourceIndentNumber || 'IND-2026-001'} | RFQ: {po.rfqDocumentNumber || 'RFQ-2026-001'}
+                  </p>
+                );
+              })()}
             </div>
           </div>
 

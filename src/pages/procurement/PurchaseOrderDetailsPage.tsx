@@ -116,32 +116,65 @@ export const PurchaseOrderDetailsPage: React.FC = () => {
         </div>
 
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1 text-slate-700">
-          <div>
-            <div className="text-slate-500 font-semibold">Selected Vendor</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">{po.vendorName}</div>
-          </div>
+        {(() => {
+          const poAny = po as any;
+          const isDirect = po.originType === 'direct_po' || poAny.purchaseType === 'direct_po' || poAny.sourceType === 'DIRECT_PO' || (!poAny.indentId && !po.rfqId);
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1 text-slate-700">
+              <div>
+                <div className="text-slate-500 font-semibold">Selected Vendor</div>
+                <div className="text-sm font-bold text-slate-900 mt-0.5">{po.vendorName}</div>
+              </div>
 
-          <div>
-            <div className="text-slate-500 font-semibold">Source RFQ</div>
-            <div className="text-xs font-bold font-mono text-slate-900 mt-0.5">{po.rfqDocumentNumber || 'RFQ-2026-001'}</div>
-          </div>
+              <div>
+                <div className="text-slate-500 font-semibold">Procurement Route</div>
+                <div className="text-xs font-bold font-mono mt-0.5">
+                  {isDirect ? (
+                    <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-sans">
+                      Direct Purchase Order
+                    </span>
+                  ) : (
+                    <span className="text-slate-900">{po.rfqDocumentNumber || 'RFQ Award'}</span>
+                  )}
+                </div>
+              </div>
 
-          <div>
-            <div className="text-slate-500 font-semibold">Source Material Indent</div>
-            <div className="text-xs font-bold font-mono text-slate-900 mt-0.5">{po.sourceIndentNumber || 'IND-2026-001'}</div>
-          </div>
+              <div>
+                <div className="text-slate-500 font-semibold">Source Material Indent</div>
+                <div className="text-xs font-bold font-mono text-slate-900 mt-0.5">
+                  {isDirect ? 'N/A (Direct PO)' : po.sourceIndentNumber || 'IND-2026-001'}
+                </div>
+              </div>
 
-          <div>
-            <div className="text-slate-500 font-semibold">Total Landed Amount</div>
-            <div className="text-sm font-bold font-mono text-emerald-800 mt-0.5">
-              ₹{po.totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+              <div>
+                <div className="text-slate-500 font-semibold">Total Landed Amount</div>
+                <div className="text-sm font-bold font-mono text-emerald-800 mt-0.5">
+                  ₹{po.totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
 
-      {/* Justifications if present */}
+      {/* Direct PO Justification & Reason */}
+      {(po.directPurchaseReason || (po as any).directPOReason || (po as any).justification) && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 text-xs space-y-1">
+          <div className="font-bold text-amber-950 flex items-center gap-1.5 uppercase tracking-wider">
+            <ShieldCheck className="h-4 w-4 text-amber-700" /> Direct PO Audit Trail & Justification
+          </div>
+          <div className="text-amber-900 font-semibold">
+            Reason: <span className="font-bold">{po.directPurchaseReason || (po as any).directPOReason}</span>
+          </div>
+          {(po as any).justification && (
+            <div className="text-amber-900 font-medium">
+              Justification: {(po as any).justification}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Non-L1 Justifications if present */}
       {po.nonL1Justification && (
         <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 text-xs space-y-1">
           <div className="font-bold text-amber-950 flex items-center gap-1.5">

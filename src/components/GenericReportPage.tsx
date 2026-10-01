@@ -576,7 +576,7 @@ export const GenericReportPage: React.FC<GenericReportPageProps> = ({ schema }) 
 
     const targetSiteObj = sites.find(s => s.id === selectedSite);
     const metadataHeader = [
-      `# Empire ERP Report Export: ${activeTab.title || schema.title}`,
+      `# Flutebyte ERP Report Export: ${activeTab.title || schema.title}`,
       `# Export Date: ${new Date().toISOString()}`,
       `# Filter Site: ${selectedSite === 'all' ? 'All Project Sites' : targetSiteObj ? targetSiteObj.name : selectedSite}`,
       `# Date Range: ${filterConfig.supportsDateFilter ? `${fromDate} to ${toDate}` : 'N/A (All Periods)'}`,

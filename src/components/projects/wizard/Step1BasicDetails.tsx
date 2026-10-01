@@ -113,9 +113,9 @@ export const Step1BasicDetails: React.FC<Step1BasicDetailsProps> = ({ data, onCh
             onChange={(e) => onChange('companyName', e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:border-[#AB9570]"
           >
-            <option value="Empire Interior Pvt Ltd">Empire Interior Pvt Ltd</option>
-            <option value="Empire Construction Ltd">Empire Construction Ltd</option>
-            <option value="Empire Design & Projects">Empire Design & Projects</option>
+            <option value="Flutebyte Technologies Pvt Ltd">Flutebyte Technologies Pvt Ltd</option>
+            <option value="Flutebyte Construction Ltd">Flutebyte Construction Ltd</option>
+            <option value="Flutebyte Design & Projects">Flutebyte Design & Projects</option>
           </select>
         </div>
 

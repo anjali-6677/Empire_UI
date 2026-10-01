@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useERPStore } from '../../store/ERPStoreContext';
-import { ArrowLeft, ShoppingBag, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ShoppingBag } from 'lucide-react';
 import { ApprovedIndentSelect } from '../../components/procurement/ApprovedIndentSelect';
 import { PurchaseOrderSourceSummary } from '../../components/procurement/PurchaseOrderSourceSummary';
 import { VendorQuotationCards } from '../../components/procurement/VendorQuotationCards';
@@ -9,19 +9,21 @@ import { VendorComparisonPanel } from '../../components/procurement/VendorCompar
 import { VendorSelectionJustification } from '../../components/procurement/VendorSelectionJustification';
 import { PurchaseOrderItemsTable, POItemRow } from '../../components/procurement/PurchaseOrderItemsTable';
 import { PurchaseOrderCommercialSummary } from '../../components/procurement/PurchaseOrderCommercialSummary';
+import { DirectPurchaseOrderWorkspace } from '../../components/procurement/DirectPurchaseOrderWorkspace';
 import {
   getCanonicalRFQIds,
   getQuotationRFQIds,
   getQuotationLandedAmount,
   isValidReceivedQuotation,
 } from '../../utils/procurementSelectors';
-
+import { formatIndianCurrency } from '../../utils/format';
 
 export const CreatePurchaseOrderPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rfqParamId = searchParams.get('rfqId');
   const indentParamId = searchParams.get('indentId');
+  const modeParam = searchParams.get('mode');
 
   const { state, addItem, updateItem, logAudit } = useERPStore();
 
@@ -30,6 +32,12 @@ export const CreatePurchaseOrderPage: React.FC = () => {
   const rfqs = state.rfqs || [];
   const vendorQuotations = state.vendorQuotations || [];
   const vendors = state.vendors || [];
+  const products = state.products || [];
+  const categories = state.categories || [];
+  const units = state.units || [];
+  const stockLocations = state.stockLocations || [];
+  const companyEntities = state.companyEntities || [];
+  const purchaseOrders = state.purchaseOrders || [];
 
   // Determine RFQ source context if provided using canonical ID matching
   const targetRFQ = rfqParamId
@@ -68,16 +76,23 @@ export const CreatePurchaseOrderPage: React.FC = () => {
     : null;
 
   // Determine mode (RFQ route vs Direct PO route)
-  const isIndentDirectPO = Boolean((selectedIndent as any)?.purchaseType === 'direct_po' || (selectedIndent as any)?.isDirectPO || (indentParamId && !rfqParamId));
+  const isIndentDirectPO = Boolean(
+    modeParam === 'direct' ||
+      (selectedIndent as any)?.purchaseType === 'direct_po' ||
+      (selectedIndent as any)?.isDirectPO ||
+      (indentParamId && !rfqParamId)
+  );
   const [mode, setMode] = useState<'rfq' | 'direct'>(isIndentDirectPO ? 'direct' : 'rfq');
 
   useEffect(() => {
-    if (selectedIndent && !targetRFQ) {
+    if (modeParam === 'direct') {
+      setMode('direct');
+    } else if (selectedIndent && !targetRFQ) {
       if ((selectedIndent as any)?.purchaseType === 'direct_po' || (selectedIndent as any)?.isDirectPO) {
         setMode('direct');
       }
     }
-  }, [selectedIndent, targetRFQ]);
+  }, [selectedIndent, targetRFQ, modeParam]);
 
   // RFQ selection logic: fetch quotes for targetRFQ or for any linked RFQs of the selected indent
   const linkedRFQs = targetRFQ
@@ -103,14 +118,10 @@ export const CreatePurchaseOrderPage: React.FC = () => {
   const [nonL1CommercialNotes, setNonL1CommercialNotes] = useState<string>('');
   const [nonL1TechnicalNotes, setNonL1TechnicalNotes] = useState<string>('');
 
-  // Direct PO Vendor & Reason state
-  const [directVendorId, setDirectVendorId] = useState<string>(vendors[0]?.id || '');
-  const [directPOReason, setDirectPOReason] = useState<string>('');
-
-  // Line items state
+  // Line items state for RFQ Route
   const [poItems, setPoItems] = useState<POItemRow[]>([]);
 
-  // Commercial & Terms state
+  // Commercial & Terms state for RFQ Route
   const todayStr = new Date().toISOString().split('T')[0];
   const nextWeekStr = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
 
@@ -134,9 +145,9 @@ export const CreatePurchaseOrderPage: React.FC = () => {
     }
   }, [linkedQuotes, selectedQuotationId]);
 
-  // Sync PO line items whenever selected indent or quotation changes
+  // Sync PO line items whenever selected indent or quotation changes (RFQ mode)
   useEffect(() => {
-    if (!selectedIndent) {
+    if (mode === 'direct' || !selectedIndent) {
       setPoItems([]);
       return;
     }
@@ -150,7 +161,7 @@ export const CreatePurchaseOrderPage: React.FC = () => {
       const remQty = Math.max(0, appQty - prevQty);
 
       let rate = line.estimatedRate || line.rate || 100;
-      if (mode === 'rfq' && selQuote) {
+      if (selQuote) {
         rate = (selQuote as any).unitRate || ((selQuote as any).basicAmount ? (selQuote as any).basicAmount / Math.max(1, appQty) : rate);
       }
 
@@ -205,16 +216,14 @@ export const CreatePurchaseOrderPage: React.FC = () => {
     });
   };
 
-  // Financial Calculations
+  // Financial Calculations for RFQ Route
   const itemsSubtotal = poItems.reduce((sum, item) => sum + item.lineSubtotal, 0);
   const totalTaxAmount = poItems.reduce((sum, item) => sum + item.lineTaxAmount, 0);
   const grandTotal = Math.max(0, itemsSubtotal - discount + freight + totalTaxAmount);
 
-  // Vendor resolution
+  // Vendor resolution for RFQ Route
   const selectedQuoteObj = vendorQuotations.find((q) => q.id === selectedQuotationId);
-  const selectedVendorObj: any = mode === 'rfq'
-    ? vendors.find((v) => v.id === (selectedQuoteObj as any)?.vendorId) || { id: `v-${Date.now()}`, name: (selectedQuoteObj as any)?.vendorName || 'Vendor' }
-    : vendors.find((v) => v.id === directVendorId) || { id: directVendorId || `v-${Date.now()}`, name: 'Direct Vendor' };
+  const selectedVendorObj: any = vendors.find((v) => v.id === (selectedQuoteObj as any)?.vendorId) || { id: `v-${Date.now()}`, name: (selectedQuoteObj as any)?.vendorName || 'Vendor' };
 
   // Check if non-L1 selected
   let isNonL1Selected = false;
@@ -227,8 +236,27 @@ export const CreatePurchaseOrderPage: React.FC = () => {
     }
   }
 
-  // Handle PO Submission
-  const handleProcessPO = (status: 'Draft' | 'Pending Approval' | 'Issued') => {
+  // Handle Direct PO Save Handler
+  const handleDirectPOSave = (poPayload: any, targetStatus: 'draft' | 'pending_approval' | 'issued') => {
+    setIsSubmitting(true);
+    addItem('purchaseOrders', poPayload);
+
+    logAudit({
+      documentType: 'purchase_order',
+      documentId: poPayload.id,
+      documentNumber: poPayload.documentNumber,
+      action: targetStatus === 'issued' ? 'PO_ISSUED' : 'PO_CREATED',
+      performedBy: 'Current User',
+      newStatus: targetStatus,
+      details: `Direct Purchase Order ${poPayload.documentNumber} created for ${poPayload.vendorName}. Total: ₹${formatIndianCurrency(poPayload.grandTotal)}`,
+    });
+
+    setIsSubmitting(false);
+    navigate('/procurement/purchase-orders');
+  };
+
+  // Handle RFQ-based PO Submission
+  const handleProcessRFQPOMode = (status: 'Draft' | 'Pending Approval' | 'Issued') => {
     setFormError('');
 
     if (!selectedIndent) {
@@ -254,18 +282,13 @@ export const CreatePurchaseOrderPage: React.FC = () => {
       return;
     }
 
-    if (mode === 'rfq' && !selectedQuotationId && linkedQuotes.length > 0) {
+    if (!selectedQuotationId && linkedQuotes.length > 0) {
       setFormError('Please select a received vendor quotation.');
       return;
     }
 
-    if (mode === 'rfq' && isNonL1Selected && (!nonL1Reason || !nonL1CommercialNotes)) {
+    if (isNonL1Selected && (!nonL1Reason || !nonL1CommercialNotes)) {
       setFormError('Selecting a non-lowest vendor requires a mandatory Selection Reason and Commercial Justification.');
-      return;
-    }
-
-    if (mode === 'direct' && !directPOReason) {
-      setFormError('Mandatory Direct Purchase Order reason is required.');
       return;
     }
 
@@ -294,19 +317,27 @@ export const CreatePurchaseOrderPage: React.FC = () => {
     const newPO: any = {
       id: poId,
       poNumber,
+      documentNumber: poNumber,
       projectId: selectedIndent.projectId,
       projectName: selectedProject?.projectName || selectedIndent.projectName,
       indentId: selectedIndent.id,
       indentNumber: selectedIndent.indentNumber,
+      sourceIndentId: selectedIndent.id,
+      sourceIndentNumber: selectedIndent.indentNumber,
       rfqId: (selectedQuoteObj as any)?.rfqId || (linkedRFQs[0] ? linkedRFQs[0].id : undefined),
+      rfqDocumentNumber: (selectedQuoteObj as any)?.rfqDocumentNumber || (linkedRFQs[0] ? linkedRFQs[0].documentNumber : undefined),
       vendorQuotationId: selectedQuotationId || undefined,
       vendorId: selectedVendorObj.id,
       vendorName: selectedVendorObj.name || (selectedQuoteObj as any)?.vendorName || 'Selected Vendor',
       
-      purchaseType: mode,
+      purchaseType: 'rfq',
+      originType: 'rfq',
+      sourceType: 'RFQ_AWARD',
       status: status,
       poDate,
+      orderDate: poDate,
       deliveryDate,
+      deliveryDueDate: deliveryDate,
       paymentTerms,
       deliveryInstructions,
       notes: generalNotes,
@@ -323,8 +354,6 @@ export const CreatePurchaseOrderPage: React.FC = () => {
       nonL1Justification: isNonL1Selected
         ? `${nonL1Reason}: ${nonL1CommercialNotes}`
         : undefined,
-
-      directPOReason: mode === 'direct' ? directPOReason : undefined,
 
       lines: poLines,
       items: poLines,
@@ -408,7 +437,9 @@ export const CreatePurchaseOrderPage: React.FC = () => {
               <h1 className="text-lg font-bold text-slate-900 tracking-tight">Create Purchase Order</h1>
             </div>
             <p className="text-[11px] text-slate-500">
-              Single-page PO workspace auto-filled from Approved Material Indent & Vendor Quotations.
+              {mode === 'direct'
+                ? 'Direct Procurement Route — Create Purchase Order directly without preceding Indent or RFQ.'
+                : 'RFQ Award Route — Purchase Order creation auto-filled from Approved Material Indent & Vendor Quotations.'}
             </p>
           </div>
         </div>
@@ -418,7 +449,7 @@ export const CreatePurchaseOrderPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setMode('rfq')}
-            className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${
+            className={`px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
               mode === 'rfq'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -429,7 +460,7 @@ export const CreatePurchaseOrderPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setMode('direct')}
-            className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${
+            className={`px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
               mode === 'direct'
                 ? 'bg-amber-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -440,76 +471,92 @@ export const CreatePurchaseOrderPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Form Error Banner */}
-      {formError && (
-        <div className="p-4 bg-rose-50 border-2 border-rose-300 text-rose-900 rounded-2xl font-semibold text-xs flex items-center justify-between animate-in fade-in">
-          <span>{formError}</span>
-          <button onClick={() => setFormError('')} className="text-rose-500 hover:text-rose-800 font-bold">
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {/* SECTION 1: Select Approved Material Indent or Display Locked Source RFQ Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-        {lockedFromRFQ && targetRFQ ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="p-1 bg-[#AB9570]/20 text-[#AB9570] rounded-md font-mono font-black text-xs">
-                  RFQ SOURCE LOCKED
-                </span>
-                <span className="font-mono font-black text-slate-900 text-sm">
-                  {targetRFQ.documentNumber || (targetRFQ as any).rfqNo}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setLockedFromRFQ(false)}
-                className="text-xs font-bold text-amber-700 hover:text-amber-900 underline"
-              >
-                Change Source
+      {/* RENDER DIRECT PO WORKSPACE WHEN MODE IS DIRECT */}
+      {mode === 'direct' ? (
+        <DirectPurchaseOrderWorkspace
+          projects={projects}
+          companyEntities={companyEntities}
+          vendors={vendors}
+          products={products}
+          categories={categories}
+          units={units}
+          stockLocations={stockLocations}
+          purchaseOrders={purchaseOrders}
+          onSave={handleDirectPOSave}
+          onCancel={() => navigate('/procurement/purchase-orders')}
+          addItem={addItem}
+        />
+      ) : (
+        /* RENDER RFQ AWARD ROUTE WORKSPACE WHEN MODE IS RFQ */
+        <div className="space-y-6">
+          {/* Form Error Banner */}
+          {formError && (
+            <div className="p-4 bg-rose-50 border-2 border-rose-300 text-rose-900 rounded-2xl font-semibold text-xs flex items-center justify-between animate-in fade-in">
+              <span>{formError}</span>
+              <button onClick={() => setFormError('')} className="text-rose-500 hover:text-rose-800 font-bold">
+                Dismiss
               </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-              <div>
-                <span className="text-slate-400 font-medium block">Source Indent</span>
-                <span className="font-mono font-bold text-slate-900">{selectedIndent?.indentNumber || targetRFQ.sourceIndentNumber || 'IND-2026-001'}</span>
+          )}
+
+          {/* SECTION 1: Select Approved Material Indent or Display Locked Source RFQ Banner */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+            {lockedFromRFQ && targetRFQ ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1 bg-[#AB9570]/20 text-[#AB9570] rounded-md font-mono font-black text-xs">
+                      RFQ SOURCE LOCKED
+                    </span>
+                    <span className="font-mono font-black text-slate-900 text-sm">
+                      {targetRFQ.documentNumber || (targetRFQ as any).rfqNo}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLockedFromRFQ(false)}
+                    className="text-xs font-bold text-amber-700 hover:text-amber-900 underline"
+                  >
+                    Change Source
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-400 font-medium block">Source Indent</span>
+                    <span className="font-mono font-bold text-slate-900">{selectedIndent?.indentNumber || targetRFQ.sourceIndentNumber || 'IND-2026-001'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium block">Project</span>
+                    <span className="font-bold text-slate-900">{selectedProject?.projectName || targetRFQ.projectName}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium block">Received Quotations</span>
+                    <span className="font-mono font-bold text-emerald-700">{linkedQuotes.length} Quotes Available</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium block">Status</span>
+                    <span className="font-bold text-slate-800 uppercase">{targetRFQ.status.replace(/_/g, ' ')}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="text-slate-400 font-medium block">Project</span>
-                <span className="font-bold text-slate-900">{selectedProject?.projectName || targetRFQ.projectName}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-medium block">Received Quotations</span>
-                <span className="font-mono font-bold text-emerald-700">{linkedQuotes.length} Quotes Available</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-medium block">Status</span>
-                <span className="font-bold text-slate-800 uppercase">{targetRFQ.status.replace(/_/g, ' ')}</span>
-              </div>
-            </div>
+            ) : (
+              <ApprovedIndentSelect
+                indents={indents}
+                projects={projects}
+                selectedIndentId={selectedIndentId}
+                onSelectIndent={(ind) => setSelectedIndentId(ind.id)}
+              />
+            )}
           </div>
-        ) : (
-          <ApprovedIndentSelect
-            indents={indents}
-            projects={projects}
-            selectedIndentId={selectedIndentId}
-            onSelectIndent={(ind) => setSelectedIndentId(ind.id)}
-          />
-        )}
-      </div>
 
-      {/* SECTION 2: Auto-Filled Read-Only Project & Indent Details */}
-      {selectedIndent && (
-        <PurchaseOrderSourceSummary indent={selectedIndent} project={selectedProject} />
-      )}
+          {/* SECTION 2: Auto-Filled Read-Only Project & Indent Details */}
+          {selectedIndent && (
+            <PurchaseOrderSourceSummary indent={selectedIndent} project={selectedProject} />
+          )}
 
-      {/* SECTION 3: Vendor Quotation Selection / Direct PO Vendor Setup */}
-      {selectedIndent && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-          {mode === 'rfq' ? (
-            <>
+          {/* SECTION 3: Vendor Quotation Selection */}
+          {selectedIndent && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
               <VendorQuotationCards
                 rfqs={linkedRFQs}
                 vendorQuotations={linkedQuotes}
@@ -540,76 +587,50 @@ export const CreatePurchaseOrderPage: React.FC = () => {
                   selectedVendorName={selectedVendorObj.name}
                 />
               )}
-            </>
-          ) : (
-            /* Direct PO Mode Vendor Selector */
-            <div className="space-y-4">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-amber-600" /> Direct Purchase Order Vendor Setup
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block font-bold text-slate-800 text-xs">Select Vendor Master <span className="text-rose-500">*</span></label>
-                  <select
-                    value={directVendorId}
-                    onChange={(e) => setDirectVendorId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:border-[#AB9570]"
-                  >
-                    {vendors.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name} ({v.vendorCode || 'V-CODE'}) - {v.city || 'India'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
             </div>
           )}
-        </div>
-      )}
 
-      {/* SECTION 4: Line Items Table & Partial Quantity Controls */}
-      {selectedIndent && poItems.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-          <PurchaseOrderItemsTable
-            items={poItems}
-            onItemQtyChange={handleItemQtyChange}
-            onItemRateChange={handleItemRateChange}
-            isDirectPO={mode === 'direct'}
-          />
-        </div>
-      )}
+          {/* SECTION 4: Line Items Table & Partial Quantity Controls */}
+          {selectedIndent && poItems.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+              <PurchaseOrderItemsTable
+                items={poItems}
+                onItemQtyChange={handleItemQtyChange}
+                onItemRateChange={handleItemRateChange}
+                isDirectPO={false}
+              />
+            </div>
+          )}
 
-      {/* SECTION 5: Commercial Summary & Approval Action Buttons */}
-      {selectedIndent && (
-        <PurchaseOrderCommercialSummary
-          subtotal={itemsSubtotal}
-          discount={discount}
-          onDiscountChange={setDiscount}
-          freight={freight}
-          onFreightChange={setFreight}
-          taxAmount={totalTaxAmount}
-          grandTotal={grandTotal}
-          poDate={poDate}
-          onPoDateChange={setPoDate}
-          deliveryDate={deliveryDate}
-          onDeliveryDateChange={setDeliveryDate}
-          paymentTerms={paymentTerms}
-          onPaymentTermsChange={setPaymentTerms}
-          deliveryInstructions={deliveryInstructions}
-          onDeliveryInstructionsChange={setDeliveryInstructions}
-          generalNotes={generalNotes}
-          onGeneralNotesChange={setGeneralNotes}
-          isDirectPO={mode === 'direct'}
-          directPOReason={directPOReason}
-          onDirectPOReasonChange={setDirectPOReason}
-          onSaveDraft={() => handleProcessPO('Draft')}
-          onSubmitApproval={() => handleProcessPO('Pending Approval')}
-          onIssuePO={() => handleProcessPO('Issued')}
-          onCancel={() => navigate('/procurement/purchase-orders')}
-          isSubmitting={isSubmitting}
-        />
+          {/* SECTION 5: Commercial Summary & Approval Action Buttons */}
+          {selectedIndent && (
+            <PurchaseOrderCommercialSummary
+              subtotal={itemsSubtotal}
+              discount={discount}
+              onDiscountChange={setDiscount}
+              freight={freight}
+              onFreightChange={setFreight}
+              taxAmount={totalTaxAmount}
+              grandTotal={grandTotal}
+              poDate={poDate}
+              onPoDateChange={setPoDate}
+              deliveryDate={deliveryDate}
+              onDeliveryDateChange={setDeliveryDate}
+              paymentTerms={paymentTerms}
+              onPaymentTermsChange={setPaymentTerms}
+              deliveryInstructions={deliveryInstructions}
+              onDeliveryInstructionsChange={setDeliveryInstructions}
+              generalNotes={generalNotes}
+              onGeneralNotesChange={setGeneralNotes}
+              isDirectPO={false}
+              onSaveDraft={() => handleProcessRFQPOMode('Draft')}
+              onSubmitApproval={() => handleProcessRFQPOMode('Pending Approval')}
+              onIssuePO={() => handleProcessRFQPOMode('Issued')}
+              onCancel={() => navigate('/procurement/purchase-orders')}
+              isSubmitting={isSubmitting}
+            />
+          )}
+        </div>
       )}
     </div>
   );

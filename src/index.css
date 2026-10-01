@@ -17,12 +17,12 @@
   --color-warning: #d97706;
   --color-danger: #dc2626;
 
-  /* Empire Gold & Black Theme System */
-  --empire-gold: #AB9570;
-  --empire-gold-dark: #927D5E;
-  --empire-gold-light: #EFE9DE;
-  --empire-black: #121214;
-  --empire-white: #FFFFFF;
+  /* Flutebyte Gold & Black Theme System */
+  --flutebyte-gold: #AB9570;
+  --flutebyte-gold-dark: #927D5E;
+  --flutebyte-gold-light: #EFE9DE;
+  --flutebyte-black: #121214;
+  --flutebyte-white: #FFFFFF;
 }
 
 @layer base {

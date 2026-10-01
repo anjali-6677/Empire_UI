@@ -1,5 +1,5 @@
 /**
- * Domain Calculation Engine for Empire Interior ERP
+ * Domain Calculation Engine for Flutebyte ERP
  * Location: src/domain/calculations.ts
  */
 

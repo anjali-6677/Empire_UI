@@ -68,6 +68,7 @@ import {
   Department,
   DepartmentActivityLog,
   Designation,
+  DirectInvoice,
 } from '../domain/types';
 
 export interface ERPCollections {
@@ -140,6 +141,7 @@ export interface ERPCollections {
   propertyTypes?: string[];
   grnPayments?: GRNPayment[];
   vendorAPs?: VendorAP[];
+  directInvoices?: DirectInvoice[];
 }
 
 export interface GRNPayment {
@@ -164,7 +166,7 @@ export interface IERPRepository {
   resetToDefaults(seedData: ERPCollections): Promise<void>;
 }
 
-const STORAGE_KEY_PREFIX = 'empire_erp_';
+const STORAGE_KEY_PREFIX = 'flutebyte_erp_';
 
 export class LocalStorageERPRepository implements IERPRepository {
   async loadAll(): Promise<ERPCollections> {

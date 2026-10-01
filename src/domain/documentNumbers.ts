@@ -1,5 +1,5 @@
 /**
- * Canonical Document Numbering Generator & Selectors for Empire Interior ERP
+ * Canonical Document Numbering Generator & Selectors for Flutebyte ERP
  * Location: src/domain/documentNumbers.ts
  */
 

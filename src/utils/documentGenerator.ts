@@ -263,7 +263,7 @@ export { buildRFQDocumentHtml, printRFQPdf, downloadRFQPdf } from './rfqPdfGener
 // =========================================
 export function buildPODocumentHtml(po: any, vendor?: any): string {
   const documentNumber = po.documentNumber || po.poNumber || po.id;
-  const vendorName = po.vendorName || vendor?.companyName || 'Empire Timber & Plywood Traders';
+  const vendorName = po.vendorName || vendor?.companyName || 'Flutebyte Timber & Plywood Traders';
   const vendorAddress = vendor?.officeAddress || 'Mumbai, Maharashtra';
   const vendorGst = vendor?.gstin || '27BBBBA1111B1Z2';
   const lines = Array.isArray(po.lines) ? po.lines : [];
@@ -378,7 +378,7 @@ export function buildPODocumentHtml(po: any, vendor?: any): string {
 // 3. Client Proposal Document Builder
 // =========================================
 export function buildProposalDocumentHtml(estimate: any, enquiry: any, client: any): string {
-  const quotationNumber = estimate.quotationNumber || 'EMP-QUOTE-2026-001-R0';
+  const quotationNumber = estimate.quotationNumber || 'FBT-QUOTE-2026-001-R0';
   const revisionLabel = estimate.revisionLabel || 'R0';
   const clientName = client?.companyName || estimate.clientName || enquiry?.clientName || 'Nouveau Luxury Residences';
   const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });

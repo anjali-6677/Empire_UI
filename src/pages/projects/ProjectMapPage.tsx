@@ -1,5 +1,5 @@
 /**
- * Empire Interior ERP - Project Map Page
+ * Flutebyte ERP - Project Map Page
  * Location: src/pages/projects/ProjectMapPage.tsx
  * Comprehensive portfolio matrix mapping General details, CRM Tender baseline, Progress, Procurement & Budget.
  * Uses ONLY real ERPStore values.

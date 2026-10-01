@@ -275,7 +275,7 @@ export function getAcceptedEstimateRevision(enquiryId: string, estimates: Estima
 
 /**
  * Migrates incomplete legacy project records into projectSetupDrafts.
- * Creates a backup in localStorage['empire_migration_backup_project_setup_v3'].
+ * Creates a backup in localStorage['flutebyte_migration_backup_project_setup_v3'].
  * Keeps actual finalized projects in `projects` collection (projectStatus === 'active' | 'on_hold' | 'completed' | 'cancelled').
  */
 export function migrateIncompleteProjectsToDrafts({
@@ -290,7 +290,7 @@ export function migrateIncompleteProjectsToDrafts({
   estimates: any[];
 }): { finalizedProjects: any[]; updatedSetupDrafts: any[] } {
   if (typeof window !== 'undefined' && window.localStorage) {
-    window.localStorage.setItem('empire_migration_backup_project_setup_v3', JSON.stringify(projects));
+    window.localStorage.setItem('flutebyte_migration_backup_project_setup_v3', JSON.stringify(projects));
   }
 
   const finalizedProjects: any[] = [];

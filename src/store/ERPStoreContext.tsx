@@ -1,5 +1,5 @@
 /**
- * Empire Interior ERP Central Store Context
+ * Flutebyte ERP Central Store Context
  * Location: src/store/ERPStoreContext.tsx
  */
 
@@ -348,7 +348,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
 
         // Schema version check & normalization
         const CURRENT_SCHEMA_VERSION = '2';
-        const storedSchemaVersion = localStorage.getItem('empire_erp_schema_version');
+        const storedSchemaVersion = localStorage.getItem('flutebyte_erp_schema_version');
 
         if (Array.isArray(merged.estimates)) {
           const normalized = merged.estimates.map(normalizeEstimate);
@@ -363,7 +363,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
 
         if (storedSchemaVersion !== CURRENT_SCHEMA_VERSION) {
-          localStorage.setItem('empire_erp_schema_version', CURRENT_SCHEMA_VERSION);
+          localStorage.setItem('flutebyte_erp_schema_version', CURRENT_SCHEMA_VERSION);
         }
 
         // Run legacy incomplete projects migration to projectSetupDrafts
@@ -634,7 +634,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         setState(merged);
 
         // Single-pass idempotent CRM-to-Project link reconciliation
-        const MIGRATION_KEY = 'empire_erp_crm_project_link_v2';
+        const MIGRATION_KEY = 'flutebyte_erp_crm_project_link_v2';
         const hasReconciled = localStorage.getItem(MIGRATION_KEY);
         if (!hasReconciled && merged.enquiries && merged.estimates && merged.projects) {
           reconcileCRMProjectLinks({
@@ -4419,7 +4419,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
       ];
       if (list.some((c) => c.toLowerCase() === trimmed.toLowerCase())) return prev;
       const updated = [...list, trimmed];
-      localStorage.setItem('empire_erp_project_categories', JSON.stringify(updated));
+      localStorage.setItem('flutebyte_erp_project_categories', JSON.stringify(updated));
       return { ...prev, projectCategories: updated };
     });
   };
@@ -4441,7 +4441,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
       ];
       if (list.some((t) => t.toLowerCase() === trimmed.toLowerCase())) return prev;
       const updated = [...list, trimmed];
-      localStorage.setItem('empire_erp_property_types', JSON.stringify(updated));
+      localStorage.setItem('flutebyte_erp_property_types', JSON.stringify(updated));
       return { ...prev, propertyTypes: updated };
     });
   };

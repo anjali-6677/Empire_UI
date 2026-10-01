@@ -1,5 +1,5 @@
 /**
- * Canonical Seed Data for Empire Interior ERP
+ * Canonical Seed Data for Flutebyte Technologies ERP
  * Location: src/data/canonicalSeedData.ts
  */
 
@@ -30,9 +30,11 @@ import {
   DEMO_SUBCONTRACT_WIPS,
   DEMO_SUBCONTRACTOR_BILLS,
   DEMO_CLIENT_RA_BILLS,
+  DEMO_DIRECT_INVOICES,
 } from './demoData';
 
 export const CANONICAL_SEED_DATA: any = {
+  directInvoices: DEMO_DIRECT_INVOICES,
   categories: [
     { id: 'cat-1', code: 'CAT-WOOD', shortCode: 'WJM', name: 'Wooden Joinery & Millwork', description: 'Doors, wall panelling, wardrobes', isActive: true, defaultFactorIds: ['fact-1', 'fact-2', 'fact-3'] },
     { id: 'cat-2', code: 'CAT-ELEC', shortCode: 'EL', name: 'Electrical & Lighting', description: 'Wiring, fixtures, conduits', isActive: true, defaultFactorIds: ['fact-1', 'fact-2'] },
@@ -61,7 +63,7 @@ export const CANONICAL_SEED_DATA: any = {
     { id: 'unit-kg', code: 'KG', name: 'Kilograms', symbol: 'kg', isActive: true },
   ],
   vendors: [
-    { id: 'ven-1', code: 'VND-001', vendorCode: 'VND-001', name: 'Empire Timber & Plywood Traders', category: 'Wooden Joinery & Millwork', approvedCategoryIds: ['cat-1'], gstin: '27AAAAA0000A1Z5', city: 'Mumbai', contactPerson: 'Ramesh Patel', phone: '+91 98200 12345', email: 'sales@empiretimber.com', rating: 'A+', paymentTermsDays: 30, status: 'empanelled', active: true },
+    { id: 'ven-1', code: 'VND-001', vendorCode: 'VND-001', name: 'Flutebyte Timber & Plywood Traders', category: 'Wooden Joinery & Millwork', approvedCategoryIds: ['cat-1'], gstin: '27AAAAA0000A1Z5', city: 'Mumbai', contactPerson: 'Ramesh Patel', phone: '+91 98200 12345', email: 'sales@flutebytetimber.com', rating: 'A+', paymentTermsDays: 30, status: 'empanelled', active: true },
     { id: 'ven-2', code: 'VND-002', vendorCode: 'VND-002', name: 'Apex Electricals Pvt Ltd', category: 'Electrical & Lighting', approvedCategoryIds: ['cat-2'], gstin: '27BBBBB1111B1Z2', city: 'Mumbai', contactPerson: 'Suresh Shah', phone: '+91 98201 54321', email: 'orders@apexelectricals.com', rating: 'A', paymentTermsDays: 45, status: 'empanelled', active: true },
     { id: 'ven-3', code: 'VND-003', vendorCode: 'VND-003', name: 'Global Ceramics & Tiles', category: 'Civil & Tiling', approvedCategoryIds: ['cat-3'], gstin: '27CCCCC2222C1Z9', city: 'Thane', contactPerson: 'Vikas Jain', phone: '+91 98202 98765', email: 'info@globalceramics.com', rating: 'B+', paymentTermsDays: 30, status: 'empanelled', active: true },
   ],
@@ -70,10 +72,10 @@ export const CANONICAL_SEED_DATA: any = {
     { id: 'sub-2', code: 'SUB-002', name: 'Shree Electrical Contractors', tradeCategory: 'Electrical', gstin: '27EEEEE4444E1Z1', contactPerson: 'Mahesh Shinde', phone: '+91 98331 44556', email: 'shreeelec@gmail.com', rating: 'A', retentionPercentage: 5, status: 'active' },
   ],
   employees: [
-    { id: 'emp-1', code: 'EMP-001', name: 'Rajesh Sharma', departmentId: 'dept-eng', designationId: 'desig-dir', email: 'rajesh.sharma@empireinterior.com', phone: '+91 98210 11111', roleId: 'ROLE-DIRECTOR', joiningDate: '2020-01-15', status: 'active' },
-    { id: 'emp-2', code: 'EMP-002', name: 'Amit Verma', departmentId: 'dept-eng', designationId: 'desig-sup', email: 'amit.verma@empireinterior.com', phone: '+91 98210 22222', roleId: 'ROLE-SUPERVISOR', joiningDate: '2021-03-01', status: 'active' },
-    { id: 'emp-3', code: 'EMP-003', name: 'Priya Nair', departmentId: 'dept-est', designationId: 'desig-est', email: 'priya.nair@empireinterior.com', phone: '+91 98210 33333', roleId: 'ROLE-ESTIMATOR', joiningDate: '2022-06-10', status: 'active' },
-    { id: 'emp-4', code: 'EMP-004', name: 'Sunil Mehta', departmentId: 'dept-proc', designationId: 'desig-proc', email: 'sunil.mehta@empireinterior.com', phone: '+91 98210 44444', roleId: 'ROLE-PROCUREMENT', joiningDate: '2021-09-01', status: 'active' },
+    { id: 'emp-1', code: 'EMP-001', name: 'Rajesh Sharma', departmentId: 'dept-eng', designationId: 'desig-dir', email: 'rajesh.sharma@flutebyte.com', phone: '+91 98210 11111', roleId: 'ROLE-DIRECTOR', joiningDate: '2020-01-15', status: 'active' },
+    { id: 'emp-2', code: 'EMP-002', name: 'Amit Verma', departmentId: 'dept-eng', designationId: 'desig-sup', email: 'amit.verma@flutebyte.com', phone: '+91 98210 22222', roleId: 'ROLE-SUPERVISOR', joiningDate: '2021-03-01', status: 'active' },
+    { id: 'emp-3', code: 'EMP-003', name: 'Priya Nair', departmentId: 'dept-est', designationId: 'desig-est', email: 'priya.nair@flutebyte.com', phone: '+91 98210 33333', roleId: 'ROLE-ESTIMATOR', joiningDate: '2022-06-10', status: 'active' },
+    { id: 'emp-4', code: 'EMP-004', name: 'Sunil Mehta', departmentId: 'dept-proc', designationId: 'desig-proc', email: 'sunil.mehta@flutebyte.com', phone: '+91 98210 44444', roleId: 'ROLE-PROCUREMENT', joiningDate: '2021-09-01', status: 'active' },
   ],
   roles: [
     { id: 'role-dir', roleId: 'ROLE-DIRECTOR', name: 'Project Director', description: 'Overall project approval and exception signoff', permissions: ['*'] },

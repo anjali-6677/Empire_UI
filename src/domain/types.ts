@@ -1,5 +1,5 @@
 /**
- * Canonical Domain Model Types for Empire Interior ERP
+ * Canonical Domain Model Types for Flutebyte ERP
  * Location: src/domain/types.ts
  */
 
@@ -2771,6 +2771,148 @@ export interface ClientRABill {
   createdAt: string;
   createdBy: string;
 }
+
+// ==========================================
+// DIRECT BUSINESS INVOICES MODULE TYPES
+// ==========================================
+
+export type InvoiceDirection = 'Payable' | 'Receivable';
+
+export type InvoiceType =
+  | 'Vendor Invoice'
+  | 'Service Invoice'
+  | 'Consultant Invoice'
+  | 'Other Expense Invoice'
+  | 'Client Invoice'
+  | 'Other Receivable Invoice';
+
+export type DirectInvoiceStatus = 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected' | 'Cancelled';
+
+export type DirectInvoicePaymentStatus =
+  | 'Not Started'
+  | 'Payment Pending'
+  | 'Collection Pending'
+  | 'Partially Paid'
+  | 'Partially Received'
+  | 'Paid'
+  | 'Received';
+
+export interface InvoiceLineItem {
+  id: string;
+  description: string;
+  category?: string;
+  qty: number;
+  unit: string;
+  rate: number;
+  discount: number;
+  taxPercent: number;
+  taxAmount: number;
+  lineTotal: number;
+}
+
+export interface InvoiceAdditionalCharge {
+  id: string;
+  description: string;
+  amount: number;
+  taxPercent: number;
+  taxAmount: number;
+  total: number;
+}
+
+export interface InvoiceAttachment {
+  id: string;
+  documentTitle: string;
+  fileName: string;
+  fileType: string;
+  fileUrl?: string;
+  uploadDate: string;
+  remarks?: string;
+}
+
+export interface InvoicePaymentRecord {
+  id: string;
+  invoiceId: string;
+  paymentDate: string;
+  amount: number;
+  paymentMode: 'Bank Transfer (NEFT/RTGS)' | 'UPI' | 'Cheque' | 'Credit Card' | 'Cash' | 'Other' | string;
+  referenceNumber: string;
+  bankAccount: string;
+  remarks?: string;
+  recordedBy?: string;
+  createdAt: string;
+}
+
+export interface CreditDebitNote {
+  id: string;
+  noteNumber: string;
+  type: 'Credit Note' | 'Debit Note';
+  invoiceId: string;
+  invoiceNumber: string;
+  issueDate: string;
+  partyName: string;
+  amount: number;
+  reason: string;
+  remarks?: string;
+  status: 'Issued' | 'Applied';
+  createdAt: string;
+}
+
+export interface DirectInvoice {
+  id: string;
+  invoiceNumber: string;
+  supplierInvoiceNumber?: string;
+  direction: InvoiceDirection;
+  invoiceType: InvoiceType;
+  projectId?: string;
+  projectName?: string;
+  legalEntity: string;
+  partyType: 'Vendor' | 'Subcontractor' | 'Client' | 'Other Payee' | 'Other Customer';
+  partyId?: string;
+  partyName: string;
+  invoiceDate: string;
+  dueDate: string;
+  referenceType: 'Direct' | 'Purchase Order' | 'GRN' | 'Work Order' | 'Other';
+  referenceNumber?: string;
+  grnId?: string;
+  poId?: string;
+  workOrderId?: string;
+  paymentTerms?: string;
+  notes?: string;
+
+  subtotal: number;
+  discountTotal: number;
+  additionalChargesTotal: number;
+  taxTotal: number;
+  grandTotal: number;
+  roundOff: number;
+  finalInvoiceValue: number;
+
+  paidAmount: number;
+  outstandingAmount: number;
+
+  invoiceStatus: DirectInvoiceStatus;
+  paymentStatus: DirectInvoicePaymentStatus;
+
+  reopenedBy?: string;
+  reopenedAt?: string;
+  reopenReason?: string;
+  rejectionReason?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+
+  lineItems: InvoiceLineItem[];
+  additionalCharges: InvoiceAdditionalCharge[];
+  attachments: InvoiceAttachment[];
+  paymentHistory: InvoicePaymentRecord[];
+  notesHistory?: CreditDebitNote[];
+
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+}
+
 
 
 

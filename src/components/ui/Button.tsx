@@ -35,7 +35,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       'inline-flex items-center justify-center font-sans transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed select-none cursor-pointer shrink-0 whitespace-nowrap font-semibold text-[13px]';
 
     const variantStyles: Record<ButtonVariant, string> = {
-      // Primary: Empire Brand Taupe/Gold (#BCA174) with dark contrast text (#172033) and border (#95794D)
+      // Primary: Flutebyte Brand Taupe/Gold (#BCA174) with dark contrast text (#172033) and border (#95794D)
       primary:
         'bg-[#BCA174] hover:bg-[#AA8D5C] active:bg-[#95794D] text-[#172033] border border-[#95794D] shadow-xs focus:ring-[#BCA174]/60',
       // Secondary: Clean surface with subtle border

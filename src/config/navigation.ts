@@ -1,5 +1,5 @@
 /**
- * Empire Interior ERP Target Navigation Configuration & Backward-Compatible Route Aliases
+ * Flutebyte ERP Target Navigation Configuration & Backward-Compatible Route Aliases
  * Location: src/config/navigation.ts
  */
 
@@ -120,6 +120,8 @@ export const ROUTES = {
   FINANCE_SUBCONTRACTOR_PAYMENTS: '/finance/subcontractor-payments',
   FINANCE_CLIENT_RA_BILLS: '/finance/client-ra-bills',
   FINANCE_CLIENT_RECEIPTS: '/finance/client-receipts',
+  FINANCE_DIRECT_INVOICES: '/finance/invoices',
+  FINANCE_DIRECT_INVOICES_NEW: '/finance/invoices/new',
 
   // Masters
   CLIENTS: '/masters/clients',
@@ -298,6 +300,8 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
       { id: 'fin-ap', label: 'Vendor AP', path: ROUTES.FINANCE_VENDOR_AP, icon: CreditCard, projectContext: 'required' },
       { id: 'fin-sbil', label: 'Subcontractor Bills', path: ROUTES.FINANCE_SUBCONTRACTOR_BILLS, icon: FileCheck2, projectContext: 'required' },
       { id: 'fin-rab', label: 'Client RA Bills', path: ROUTES.FINANCE_CLIENT_RA_BILLS, icon: ReceiptText, projectContext: 'required' },
+      { id: 'fin-util', label: 'Utility Bills', path: ROUTES.UTILITY_BILLS, icon: Receipt, projectContext: 'required' },
+      { id: 'fin-inv', label: 'Invoices', path: '/finance/invoices', icon: FileText, projectContext: 'optional' },
     ],
   },
   {

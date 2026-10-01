@@ -35,7 +35,7 @@ export const generatePurchaseOrderPDF = (po: PurchaseOrder, vendor?: Vendor): js
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor('#94A3B8');
-  doc.text('Empire Interior & Construction Division | Procurement Dept', 14, 21);
+  doc.text('Flutebyte Technologies | Procurement Dept', 14, 21);
 
   // Document Title (Right Header)
   doc.setTextColor(goldAccent);

@@ -99,7 +99,8 @@ import { ProjectsCommercialReportsPage } from './pages/reports/ProjectsCommercia
 import { ProcurementReportsPage } from './pages/reports/ProcurementReportsPage';
 import { InventoryQualityReportsPage } from './pages/reports/InventoryQualityReportsPage';
 import { FinanceReportsPage } from './pages/reports/FinanceReportsPage';
-
+import { InvoiceRegisterPage } from './pages/finance/InvoiceRegisterPage';
+import { CreateInvoicePage } from './pages/finance/CreateInvoicePage';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -187,6 +188,12 @@ export const AppRouter: React.FC = () => {
             <Route path="finance/client-ra-bills" element={<ClientRABillsPage />} />
             <Route path="client-ra-bills" element={<ClientRABillsPage />} />
             <Route path="finance/client-receipts" element={<Navigate to="/finance/client-ra-bills" replace />} />
+
+            {/* Unified Direct Invoices Module Routes */}
+            <Route path="finance/invoices" element={<InvoiceRegisterPage />} />
+            <Route path="finance/invoices/new" element={<CreateInvoicePage />} />
+            <Route path="finance/invoices/:id/edit" element={<CreateInvoicePage />} />
+            <Route path="finance/invoices/:id" element={<InvoiceRegisterPage />} />
 
             {/* Goods Received Notes (GRN) Routes */}
             <Route path="inventory/gate-tokens" element={<MaterialEntryTokensPage />} />

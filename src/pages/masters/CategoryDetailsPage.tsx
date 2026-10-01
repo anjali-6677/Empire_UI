@@ -81,7 +81,7 @@ export const CategoryDetailsPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* KPI Cards (Muted Empire palette) */}
+      {/* KPI Cards (Muted Flutebyte palette) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-[#D9DEE7] rounded-lg p-4 shadow-sm">
           <div className="text-xs text-[#6E7889] font-medium flex items-center justify-between">

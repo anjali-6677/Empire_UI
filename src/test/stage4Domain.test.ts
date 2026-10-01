@@ -1,5 +1,5 @@
 /**
- * Empire ERP Stage 4 Domain Test Suite
+ * Flutebyte ERP Stage 4 Domain Test Suite
  * Validates GRN workflow, idempotent stock posting, material movements, and WIP certification limits.
  */
 

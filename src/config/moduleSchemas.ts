@@ -183,7 +183,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       { name: 'teamGroup', label: 'Project Team', type: 'text', required: true, defaultValue: 'Nexus Tech Park Team' },
       { name: 'role', label: 'Designation Role', type: 'text', required: true, placeholder: 'e.g. Site Engineer' },
       { name: 'department', label: 'Department', type: 'select', required: true, options: [{ label: 'Project Execution', value: 'Project Execution' }, { label: 'Civil & Joinery', value: 'Civil & Joinery' }] },
-      { name: 'email', label: 'Contact Email', type: 'text', required: true, placeholder: 'name@empireinterior.in' },
+      { name: 'email', label: 'Contact Email', type: 'text', required: true, placeholder: 'name@flutebyte.com' },
       { name: 'phone', label: 'Phone Number', type: 'text', required: true, placeholder: '+91 98000 00000' },
       { name: 'assignedDate', label: 'Assigned Date', type: 'date', required: true, defaultValue: '2026-07-24' }
     ],
@@ -199,9 +199,9 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       { key: 'status', label: 'Status', type: 'badge' }
     ],
     mockRows: [
-      { id: 'tm-1', empCode: 'EMP-104', employee: 'Rajesh Kumar', teamGroup: 'Nexus Tech Park Team', role: 'Project Head', department: 'Project Execution', email: 'rajesh.k@empireinterior.in', phone: '+91 98450 12345', assignedDate: '2026-02-01', status: 'active' },
-      { id: 'tm-2', empCode: 'EMP-108', employee: 'Anita Rao', teamGroup: 'Hyatt Goa Team', role: 'Project Manager', department: 'Project Execution', email: 'anita.r@empireinterior.in', phone: '+91 98220 54321', assignedDate: '2026-01-15', status: 'active' },
-      { id: 'tm-3', empCode: 'EMP-112', employee: 'Karan Sharma', teamGroup: 'Imperial Heights Team', role: 'Site Engineer', department: 'Civil & Joinery', email: 'karan.s@empireinterior.in', phone: '+91 98110 99887', assignedDate: '2026-03-10', status: 'active' }
+      { id: 'tm-1', empCode: 'EMP-104', employee: 'Rajesh Kumar', teamGroup: 'Nexus Tech Park Team', role: 'Project Head', department: 'Project Execution', email: 'rajesh.k@flutebyte.com', phone: '+91 98450 12345', assignedDate: '2026-02-01', status: 'active' },
+      { id: 'tm-2', empCode: 'EMP-108', employee: 'Anita Rao', teamGroup: 'Hyatt Goa Team', role: 'Project Manager', department: 'Project Execution', email: 'anita.r@flutebyte.com', phone: '+91 98220 54321', assignedDate: '2026-01-15', status: 'active' },
+      { id: 'tm-3', empCode: 'EMP-112', employee: 'Karan Sharma', teamGroup: 'Imperial Heights Team', role: 'Site Engineer', department: 'Civil & Joinery', email: 'karan.s@flutebyte.com', phone: '+91 98110 99887', assignedDate: '2026-03-10', status: 'active' }
     ]
   },
   [ROUTES.TENDER_DETAILS]: {
@@ -780,7 +780,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     createFields: [
       { name: 'clientCode', label: 'Client Code', type: 'text', required: true, defaultValue: 'CLI-2026-004' },
       { name: 'clientName', label: 'Client Organization', type: 'text', required: true, placeholder: 'e.g. Prestige Group Pvt Ltd' },
-      { name: 'company', label: 'Company Entity', type: 'text', required: true, defaultValue: 'Empire Interior Contracting Pvt Ltd' },
+      { name: 'company', label: 'Company Entity', type: 'text', required: true, defaultValue: 'Flutebyte Technologies Pvt Ltd' },
       { name: 'contactPerson', label: 'Contact Person', type: 'text', required: true, placeholder: 'e.g. Ramesh Chandra' },
       { name: 'phone', label: 'Phone Number', type: 'text', required: true, placeholder: '+91 98000 00000' },
       { name: 'email', label: 'Email Address', type: 'text', required: true, placeholder: 'contact@prestige.com' },
@@ -800,9 +800,9 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       { key: 'status', label: 'Status', type: 'badge' }
     ],
     mockRows: [
-      { id: 'cl-1', clientCode: 'CLI-2026-001', clientName: 'Nexus Realty Group', company: 'Empire Interior Contracting', contactPerson: 'Vikram Shah (VP Projects)', phone: '+91 98200 11223', email: 'v.shah@nexusrealty.in', gstin: '29AAACN1234F1Z1', city: 'Bengaluru', status: 'active' },
-      { id: 'cl-2', clientCode: 'CLI-2026-002', clientName: 'Hyatt Hospitality India', company: 'Empire Joinery & Furniture', contactPerson: 'Meera Patel (Director Ops)', phone: '+91 98190 44556', email: 'm.patel@hyatt.com', gstin: '30AAACH5678G2Z3', city: 'Goa', status: 'active' },
-      { id: 'cl-3', clientCode: 'CLI-2026-003', clientName: 'Imperial Realty Holdings', company: 'Empire Interior Contracting', contactPerson: 'Suresh Raina (Asset Mgr)', phone: '+91 98330 99881', email: 's.raina@imperialholdings.com', gstin: '27AAACI9911H3Z5', city: 'Mumbai', status: 'active' }
+      { id: 'cl-1', clientCode: 'CLI-2026-001', clientName: 'Nexus Realty Group', company: 'Flutebyte Construction', contactPerson: 'Vikram Shah (VP Projects)', phone: '+91 98200 11223', email: 'v.shah@nexusrealty.in', gstin: '29AAACN1234F1Z1', city: 'Bengaluru', status: 'active' },
+      { id: 'cl-2', clientCode: 'CLI-2026-002', clientName: 'Hyatt Hospitality India', company: 'Flutebyte Interiors & Joinery', contactPerson: 'Meera Patel (Director Ops)', phone: '+91 98190 44556', email: 'm.patel@hyatt.com', gstin: '30AAACH5678G2Z3', city: 'Goa', status: 'active' },
+      { id: 'cl-3', clientCode: 'CLI-2026-003', clientName: 'Imperial Realty Holdings', company: 'Flutebyte Construction', contactPerson: 'Suresh Raina (Asset Mgr)', phone: '+91 98330 99881', email: 's.raina@imperialholdings.com', gstin: '27AAACI9911H3Z5', city: 'Mumbai', status: 'active' }
     ]
   },
   [ROUTES.VENDORS]: {
@@ -854,7 +854,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       { name: 'name', label: 'Staff Name', type: 'text', required: true, placeholder: 'e.g. Priya Nair' },
       { name: 'department', label: 'Department', type: 'select', required: true, options: [{ label: 'Project Execution', value: 'Project Execution' }, { label: 'Procurement & Stores', value: 'Procurement & Stores' }, { label: 'Finance & Accounts', value: 'Finance & Accounts' }] },
       { name: 'designation', label: 'Designation', type: 'text', required: true, placeholder: 'e.g. Quality Engineer' },
-      { name: 'email', label: 'Corporate Email', type: 'text', required: true, placeholder: 'name@empireinterior.in' },
+      { name: 'email', label: 'Corporate Email', type: 'text', required: true, placeholder: 'name@flutebyte.com' },
       { name: 'phone', label: 'Phone Number', type: 'text', required: true, placeholder: '+91 98000 00000' },
       { name: 'joiningDate', label: 'Joining Date', type: 'date', required: true, defaultValue: '2026-07-24' },
       { name: 'status', label: 'Employment Status', type: 'select', required: true, options: [{ label: 'Active', value: 'active' }, { label: 'On Leave', value: 'on_leave' }, { label: 'Inactive', value: 'inactive' }] }
@@ -870,9 +870,9 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       { key: 'status', label: 'Status', type: 'badge' }
     ],
     mockRows: [
-      { id: 'emp-1', empCode: 'EMP-101', name: 'Rajesh Kumar', department: 'Project Execution', designation: 'Project Head', email: 'rajesh.k@empireinterior.in', phone: '+91 98450 12345', joiningDate: '2022-04-15', status: 'active' },
-      { id: 'emp-2', empCode: 'EMP-102', name: 'Anita Rao', department: 'Project Execution', designation: 'Project Manager', email: 'anita.r@empireinterior.in', phone: '+91 98220 54321', joiningDate: '2023-01-10', status: 'active' },
-      { id: 'emp-3', empCode: 'EMP-103', name: 'Sanjay Mehta', department: 'Board Management', designation: 'Chairman', email: 'sanjay.m@empireinterior.in', phone: '+91 98100 88776', joiningDate: '2020-01-01', status: 'active' }
+      { id: 'emp-1', empCode: 'EMP-101', name: 'Rajesh Kumar', department: 'Project Execution', designation: 'Project Head', email: 'rajesh.k@flutebyte.com', phone: '+91 98450 12345', joiningDate: '2022-04-15', status: 'active' },
+      { id: 'emp-2', empCode: 'EMP-102', name: 'Anita Rao', department: 'Project Execution', designation: 'Project Manager', email: 'anita.r@flutebyte.com', phone: '+91 98220 54321', joiningDate: '2023-01-10', status: 'active' },
+      { id: 'emp-3', empCode: 'EMP-103', name: 'Sanjay Mehta', department: 'Board Management', designation: 'Chairman', email: 'sanjay.m@flutebyte.com', phone: '+91 98100 88776', joiningDate: '2020-01-01', status: 'active' }
     ]
   },
   [ROUTES.ITEMS]: {
@@ -964,13 +964,13 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     id: 'masters-companies',
     route: ROUTES.COMPANIES,
     pageType: 'list',
-    title: 'Empire Group Corporate Entities',
+    title: 'Flutebyte Corporate Entities',
     description: 'Operating corporate legal entities and contracting company profiles.',
     breadcrumbs: ['Masters', 'Companies'],
     primaryAction: { label: 'Add Company Entity' },
     createFields: [
       { name: 'code', label: 'Entity Code', type: 'text', required: true, defaultValue: 'CMP-03' },
-      { name: 'name', label: 'Company Entity Name', type: 'text', required: true, placeholder: 'e.g. Empire MEP Services India' },
+      { name: 'name', label: 'Company Entity Name', type: 'text', required: true, placeholder: 'e.g. Flutebyte MEP Services' },
       { name: 'gstin', label: 'Corporate GSTIN', type: 'text', required: true, placeholder: '29AAACE9911C1Z3' },
       { name: 'city', label: 'Headquarters', type: 'text', required: true, defaultValue: 'Bengaluru' },
       { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }] }
@@ -985,8 +985,8 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     ],
 
     mockRows: [
-      { id: 'cmp-1', code: 'CMP-01', name: 'Empire Interior Contracting Pvt Ltd', gstin: '29AAACE1234A1Z5', city: 'Bengaluru', status: 'active' },
-      { id: 'cmp-2', code: 'CMP-02', name: 'Empire Joinery & Furniture Works', gstin: '29AAACE5678B2Z4', city: 'Bengaluru', status: 'active' }
+      { id: 'cmp-1', code: 'CMP-01', name: 'Flutebyte Technologies Pvt Ltd', gstin: '29AAACE1234A1Z5', city: 'Bengaluru', status: 'active' },
+      { id: 'cmp-2', code: 'CMP-02', name: 'Flutebyte Joinery & Furniture', gstin: '29AAACE5678B2Z4', city: 'Bengaluru', status: 'active' }
     ]
   },
   [ROUTES.BANKS]: {
@@ -1647,7 +1647,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     createFields: [
       { name: 'empCode', label: 'Employee ID', type: 'text', required: true, defaultValue: 'EMP-116' },
       { name: 'name', label: 'User Name', type: 'text', required: true, placeholder: 'e.g. Rahul Verma' },
-      { name: 'email', label: 'Corporate Email', type: 'text', required: true, placeholder: 'rahul.v@empireinterior.in' },
+      { name: 'email', label: 'Corporate Email', type: 'text', required: true, placeholder: 'rahul.v@flutebyte.com' },
       { name: 'department', label: 'Department', type: 'select', required: true, options: [{ label: 'Project Execution', value: 'Project Execution' }, { label: 'Finance & Accounts', value: 'Finance & Accounts' }] },
       { name: 'designation', label: 'Designation', type: 'text', required: true, placeholder: 'e.g. Site Billing Engineer' },
       { name: 'status', label: 'Account Status', type: 'select', required: true, options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }] }
@@ -1661,8 +1661,8 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       { key: 'status', label: 'Account Status', type: 'badge' }
     ],
     mockRows: [
-      { id: 'u-1', empCode: 'EMP-101', name: 'Rajesh Kumar', email: 'rajesh.k@empireinterior.in', department: 'Project Execution', designation: 'Project Head', status: 'active' },
-      { id: 'u-2', empCode: 'EMP-102', name: 'Anita Rao', email: 'anita.r@empireinterior.in', department: 'Project Execution', designation: 'Project Manager', status: 'active' }
+      { id: 'u-1', empCode: 'EMP-101', name: 'Rajesh Kumar', email: 'rajesh.k@flutebyte.com', department: 'Project Execution', designation: 'Project Head', status: 'active' },
+      { id: 'u-2', empCode: 'EMP-102', name: 'Anita Rao', email: 'anita.r@flutebyte.com', department: 'Project Execution', designation: 'Project Manager', status: 'active' }
     ]
   },
   [ROUTES.ROLES]: {
@@ -1713,9 +1713,9 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
     sections: [
       {
         id: 'group-info',
-        title: 'Empire Group Corporate Entity Information',
+        title: 'Flutebyte Corporate Entity Information',
         fields: [
-          { name: 'groupName', label: 'Corporate Group Name', type: 'text', defaultValue: 'Empire Interior Contracting Pvt Ltd' },
+          { name: 'groupName', label: 'Corporate Group Name', type: 'text', defaultValue: 'Flutebyte Technologies Pvt Ltd' },
           { name: 'gstin', label: 'Corporate GSTIN', type: 'text', defaultValue: '29AAACE1234A1Z5' },
           { name: 'currency', label: 'Base Currency', type: 'text', defaultValue: 'INR (₹)' },
           { name: 'fiscalYear', label: 'Fiscal Year Period', type: 'text', defaultValue: 'Apr 2026 - Mar 2027' }
@@ -1809,7 +1809,7 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
         title: '4. Delivery & Billing Addresses',
         fields: [
           { name: 'deliveryAddress', label: 'Delivery Address', type: 'textarea', defaultValue: 'Nexus Tech Park, Mahadevapura, Bengaluru - 560048', colSpan: 1 },
-          { name: 'billingAddress', label: 'Billing Address (GSTIN: 29AAACE1234A1Z5)', type: 'textarea', defaultValue: 'Empire Interior Contracting Pvt Ltd, Indiranagar, Bengaluru', colSpan: 1 }
+          { name: 'billingAddress', label: 'Billing Address (GSTIN: 29AAACE1234A1Z5)', type: 'textarea', defaultValue: 'Flutebyte Technologies Pvt Ltd, Indiranagar, Bengaluru', colSpan: 1 }
         ]
       },
       {

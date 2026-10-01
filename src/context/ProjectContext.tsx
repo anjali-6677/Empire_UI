@@ -1,5 +1,5 @@
 /**
- * Global Active Project Context for Empire Interior ERP
+ * Global Active Project Context for Flutebyte ERP
  * Location: src/context/ProjectContext.tsx
  */
 

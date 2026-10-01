@@ -1,5 +1,5 @@
 /**
- * Central Status Styles and Label Engine for Empire Interior ERP
+ * Central Status Styles and Label Engine for Flutebyte ERP
  * Location: src/utils/statusStyles.tsx
  */
 
