@@ -14,6 +14,14 @@ import {
   Employee,
   Role,
   ApprovalRule,
+  Brand,
+  MeasurementConversion,
+  BankAccount,
+  LocationMaster,
+  StockLocation,
+  PMCMaster,
+  ArchitectMaster,
+  CompanyEntity,
   Enquiry,
   Estimate,
   TenderDecision,
@@ -57,9 +65,23 @@ import {
   AuditEvent,
   WarehouseLocation,
   VendorAP,
+  Department,
+  DepartmentActivityLog,
+  Designation,
 } from '../domain/types';
 
 export interface ERPCollections {
+  brands?: Brand[];
+  measurementConversions?: MeasurementConversion[];
+  bankAccounts?: BankAccount[];
+  locations?: LocationMaster[];
+  stockLocations?: StockLocation[];
+  pmcs?: PMCMaster[];
+  architects?: ArchitectMaster[];
+  companyEntities?: CompanyEntity[];
+  departments?: Department[];
+  departmentActivityLogs?: DepartmentActivityLog[];
+  designations?: Designation[];
   categories: Category[];
   factors: PricingFactor[];
   products: Product[];
@@ -201,6 +223,9 @@ export class LocalStorageERPRepository implements IERPRepository {
       'projectCategories',
       'propertyTypes',
       'vendorAPs',
+      'departments',
+      'departmentActivityLogs',
+      'designations',
     ];
 
     for (const key of keys) {

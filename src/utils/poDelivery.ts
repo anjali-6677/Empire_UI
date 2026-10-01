@@ -3,7 +3,7 @@
  * Location: src/utils/poDelivery.ts
  */
 
-import { PurchaseOrder, PODeliveryRecord, PurchaseOrderLine } from '../domain/types';
+import { PurchaseOrder, PurchaseOrderLine } from '../domain/types';
 import { getPOItemDisplayName } from './poHelpers';
 
 export interface PODeliveryLineSummary {
@@ -27,45 +27,62 @@ export interface PODeliverySummaryResult {
   totalRemaining: number;
   deliveryStatus: 'not_received' | 'partial' | 'received';
   deliveryCount: number;
-  deliveries: PODeliveryRecord[];
+  deliveries: any[];
 }
 
 /**
- * Gets all delivery records belonging to a Purchase Order, with automatic deduplication.
+ * Calculates aggregated received (accepted) quantity for a specific PO line item from connected GRNs.
+ * Ignores QC rejected quantities.
  */
-export function getDeliveriesForPO(poId: string, deliveries: PODeliveryRecord[] = []): PODeliveryRecord[] {
-  if (!deliveries || deliveries.length === 0) return [];
-  
-  const poDeliveries = deliveries.filter((d) => d.poId === poId || (d as any).purchaseOrderId === poId);
+export function getReceivedQtyForPOItemFromGRNs(
+  line: PurchaseOrderLine | any,
+  po: PurchaseOrder,
+  grns: any[] = []
+): number {
+  if (!grns || grns.length === 0) return 0;
 
-  // Safely deduplicate records generated accidentally within close execution windows or duplicate seed logic
-  const seenKeys = new Set<string>();
-  const deduplicated: PODeliveryRecord[] = [];
+  const poId = po.id;
+  const poDocNo = (po.documentNumber || po.poNumber || '').toLowerCase();
 
-  for (const del of poDeliveries) {
-    const inv = (del.invoiceNumber || (del as any).invoiceNo || '').trim().toLowerCase();
-    const date = del.deliveryDate || (del.recordedAt ? del.recordedAt.split('T')[0] : '');
-    const itemsSummary = (del.items || [])
-      .map((i: any) => `${i.poLineId || i.productId || i.boqLineId}:${i.qtyReceived || i.quantity || 0}`)
-      .sort()
-      .join('|');
+  const matchingGRNs = grns.filter((g) => {
+    if (g.status === 'cancelled' || g.status === 'Cancelled') return false;
+    const gPoId = g.poId || g.purchaseOrderId;
+    const gPoNum = (g.poNumber || '').toLowerCase();
+    return gPoId === poId || (poDocNo && gPoNum === poDocNo);
+  });
 
-    const key = del.id ? `id:${del.id}` : `inv:${inv}_date:${date}_items:${itemsSummary}`;
-    if (!seenKeys.has(key)) {
-      seenKeys.add(key);
-      deduplicated.push(del);
-    }
-  }
+  if (matchingGRNs.length === 0) return 0;
 
-  return deduplicated;
+  const lineId = line.id || line.poLineId;
+  const boqId = line.boqLineId;
+  const prodId = line.productId;
+  const lineDesc = (line.productName || line.description || '').toLowerCase().trim();
+
+  let totalAccepted = 0;
+
+  matchingGRNs.forEach((grn) => {
+    const items = grn.items || grn.lines || [];
+    items.forEach((item: any) => {
+      const matchPoLine = (item.poLineId && lineId && item.poLineId === lineId) || (item.poLineId && boqId && item.poLineId === boqId);
+      const matchProd = prodId && item.productId && item.productId === prodId;
+      const itemDesc = (item.description || item.productDescription || item.productName || '').toLowerCase().trim();
+      const matchDesc = lineDesc && itemDesc && (lineDesc.includes(itemDesc) || itemDesc.includes(lineDesc));
+
+      if (matchPoLine || matchProd || matchDesc) {
+        totalAccepted += Number(item.qcApprovedQty ?? item.acceptedQty ?? item.qtyReceived ?? 0);
+      }
+    });
+  });
+
+  return totalAccepted;
 }
 
 /**
- * Calculates aggregated received quantity for a specific PO line item across all delivery history.
+ * Legacy/Fallback helper to calculate aggregated received quantity for a specific PO line item from manual delivery records.
  */
 export function getReceivedQtyForPOItem(
   line: PurchaseOrderLine,
-  deliveries: PODeliveryRecord[]
+  deliveries: any[]
 ): number {
   if (!deliveries || deliveries.length === 0) return 0;
   
@@ -83,7 +100,7 @@ export function getReceivedQtyForPOItem(
         (boqId && item.boqLineId && item.boqLineId === boqId) ||
         (prodId && item.productId && item.productId === prodId)
       ) {
-        totalReceived += Number(item.qtyReceived ?? item.receivedNowQty ?? item.quantity ?? 0);
+        totalReceived += Number(item.qcApprovedQty ?? item.acceptedQty ?? item.qtyReceived ?? item.receivedNowQty ?? item.quantity ?? 0);
       }
     });
   });
@@ -93,14 +110,16 @@ export function getReceivedQtyForPOItem(
 
 /**
  * Canonical calculation of PO delivery status and quantities across line items.
+ * Accepts connected GRNs (or custom delivery records) as input.
  */
 export function getCanonicalPODeliverySummary(
   po: PurchaseOrder,
-  customDeliveries?: PODeliveryRecord[]
+  records: any[] = []
 ): PODeliverySummaryResult {
   const lines = po?.lines || (po as any)?.items || [];
-  const rawDeliveries = customDeliveries || po?.deliveries || [];
-  const deliveries = getDeliveriesForPO(po.id, rawDeliveries);
+
+  // Check if records array contains GRNs or legacy delivery objects
+  const isGRNList = records.some((r) => r.grnNumber || r.qcInspectionId || r.receivingCheckId || r.acceptedQty !== undefined);
 
   const orderedQtyByLine: Record<string, number> = {};
   const receivedQtyByLine: Record<string, number> = {};
@@ -116,8 +135,11 @@ export function getCanonicalPODeliverySummary(
     const description = getPOItemDisplayName(line);
     const unit = line.unitSymbol || line.unit || 'sqft';
 
-    // Calculate aggregated received from delivery history
-    const received = getReceivedQtyForPOItem(line, deliveries);
+    // Calculate aggregated received quantity from GRNs (or legacy deliveries fallback)
+    const received = isGRNList
+      ? getReceivedQtyForPOItemFromGRNs(line, po, records)
+      : getReceivedQtyForPOItem(line, records);
+
     const remaining = Math.max(0, ordered - received);
 
     orderedQtyByLine[lineKey] = ordered;
@@ -148,6 +170,13 @@ export function getCanonicalPODeliverySummary(
     deliveryStatus = 'received';
   }
 
+  const matchingRecords = records.filter((r) => {
+    const rPoId = r.poId || r.purchaseOrderId;
+    const rPoNum = (r.poNumber || '').toLowerCase();
+    const poDocNo = (po.documentNumber || po.poNumber || '').toLowerCase();
+    return rPoId === po.id || (poDocNo && rPoNum === poDocNo);
+  });
+
   return {
     linesSummary,
     orderedQtyByLine,
@@ -157,8 +186,8 @@ export function getCanonicalPODeliverySummary(
     totalReceived,
     totalRemaining,
     deliveryStatus,
-    deliveryCount: deliveries.length,
-    deliveries,
+    deliveryCount: matchingRecords.length,
+    deliveries: matchingRecords,
   };
 }
 
@@ -185,3 +214,4 @@ export function getDeliveryItemDisplayName(item: any, po: PurchaseOrder): string
 
   return matchedLine ? getPOItemDisplayName(matchedLine) : 'Material Item';
 }
+

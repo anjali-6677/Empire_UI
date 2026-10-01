@@ -103,6 +103,8 @@ export interface Product {
   basePrice: number;
   basePriceEffectiveDate: string;
   brand?: string;
+  brandId?: string;
+  brandName?: string;
   specification?: string;
   vendorIds?: string[];
   preferredVendorIds?: string[];
@@ -121,6 +123,132 @@ export interface Unit {
   name: string;
   symbol: string;
   isActive: boolean;
+}
+
+export interface Brand {
+  id: string;
+  code: string;
+  name: string;
+  category?: string;
+  categoryId?: string;
+  description?: string;
+  status: 'Active' | 'Inactive';
+  createdAt?: string;
+}
+
+export interface MeasurementConversion {
+  id: string;
+  conversionCode: string;
+  fromUnitId: string;
+  fromUnitSymbol: string;
+  toUnitId: string;
+  toUnitSymbol: string;
+  conversionFactor: number;
+  notes?: string;
+  status: 'Active' | 'Inactive';
+  createdAt?: string;
+}
+
+export interface BankAccount {
+  id: string;
+  accountName: string;
+  bankName: string;
+  accountNumber: string;
+  maskedAccountNumber?: string;
+  ifsc: string;
+  branch?: string;
+  accountType: 'Current' | 'Savings' | 'Escrow' | 'Overdraft' | 'Credit' | 'OD/CC';
+  companyEntityId?: string;
+  companyEntityName?: string;
+  openingBalance?: number;
+  status: 'Active' | 'Inactive';
+  createdAt?: string;
+}
+
+export interface LocationMaster {
+  id: string;
+  code: string;
+  name: string;
+  type: 'Corporate Office' | 'Warehouse' | 'Project Site' | 'Vendor Location' | 'Client Location' | 'Regional Office' | 'Yard' | 'Other';
+  address?: string;
+  city: string;
+  state?: string;
+  pinCode?: string;
+  country?: string;
+  status: 'Active' | 'Inactive';
+  createdAt?: string;
+}
+
+export interface StockLocation {
+  id: string;
+  code: string;
+  name: string;
+  locationId?: string;
+  locationName?: string;
+  type: 'Central Warehouse' | 'Regional Yard' | 'Project Site Store' | 'Warehouse' | 'Yard' | 'Site Store' | 'Central Store';
+  city?: string;
+  address?: string;
+  managerName?: string;
+  phone?: string;
+  inchargePerson?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  isActive: boolean;
+}
+
+export interface PMCMaster {
+  id: string;
+  code: string;
+  name: string;
+  companyName?: string;
+  contactPerson?: string;
+  mobile?: string;
+  phone?: string;
+  email?: string;
+  gstin?: string;
+  pan?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  status: 'Active' | 'Inactive';
+  createdAt?: string;
+}
+
+export interface ArchitectMaster {
+  id: string;
+  code: string;
+  name: string;
+  firmName?: string;
+  contactPerson?: string;
+  mobile?: string;
+  phone?: string;
+  email?: string;
+  gstin?: string;
+  address?: string;
+  city?: string;
+  specialization?: string;
+  status: 'Active' | 'Inactive';
+  createdAt?: string;
+}
+
+export interface CompanyEntity {
+  id: string;
+  code: string;
+  legalName: string;
+  tradeName?: string;
+  gstin?: string;
+  pan?: string;
+  cin?: string;
+  registeredAddress?: string;
+  billingAddress?: string;
+  state?: string;
+  stateCode?: string;
+  country?: string;
+  primaryEmail?: string;
+  primaryMobile?: string;
+  bankAccountIds?: string[];
+  status: 'Active' | 'Inactive';
+  createdAt?: string;
 }
 
 export interface VendorComplianceStatus {
@@ -204,25 +332,84 @@ export interface Client {
   status: 'active' | 'inactive';
 }
 
+export interface Department {
+  id: string;
+  code: string;
+  name: string;
+  headEmployeeId?: string;
+  headEmployeeName?: string;
+  headDesignationName?: string;
+  description?: string;
+  type?: 'Corporate' | 'Project' | 'Operations' | 'Finance' | 'Administration';
+  status: 'Active' | 'Inactive';
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export interface DepartmentActivityLog {
+  id: string;
+  departmentId: string;
+  timestamp: string;
+  user: string;
+  action: string;
+  oldValue?: string;
+  newValue?: string;
+  details?: string;
+}
+
+export interface Designation {
+  id: string;
+  code: string;
+  name: string;
+  departmentId: string;
+  departmentName?: string;
+  description?: string;
+  status: 'Active' | 'Inactive';
+  createdAt?: string;
+}
+
+export interface Role {
+  id: string;
+  roleId: string; // e.g. PROC_MANAGER or ROLE-ESTIMATOR
+  roleName: string; // e.g. Procurement Manager
+  name?: string;
+  description?: string;
+  permissions?: string[];
+  status?: 'Active' | 'Inactive' | 'active' | 'inactive';
+  userCount?: number;
+  permissionsCount?: number;
+  createdAt?: string;
+  createdBy?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export interface RoleActivityLog {
+  id: string;
+  roleId: string;
+  timestamp: string;
+  user: string;
+  action: string;
+  oldValue?: string;
+  newValue?: string;
+  details?: string;
+}
+
 export interface Employee {
   id: string;
   code: string;
   name: string;
   departmentId: string;
+  departmentName?: string;
   designationId: string;
+  designationName?: string;
   email: string;
   phone: string;
   roleId: string;
   joiningDate: string;
-  status: 'active' | 'inactive';
-}
-
-export interface Role {
-  id: string;
-  roleId: string; // e.g. ROLE-ESTIMATOR
-  name: string; // Estimator, Project Director, Project Supervisor, Procurement Officer, Store Officer, Accounts Officer, Management, Viewer
-  description: string;
-  permissions: string[];
+  status: 'active' | 'inactive' | 'Active' | 'Inactive';
 }
 
 export interface Permission {
@@ -743,7 +930,12 @@ export interface Project {
   id: string;
   projectCode: string;
   projectName: string;
+  code?: string;
+  name?: string;
+  location?: string;
+  boqTotalValue?: number;
   companyName?: string;
+  companyEntityId?: string;
   category?: string;
   projectType?: string;
   clientId: string;
@@ -753,6 +945,11 @@ export interface Project {
   clientEmail?: string;
   clientGstin?: string;
   clientAddress?: string;
+
+  pmcId?: string;
+  pmcName?: string;
+  architectId?: string;
+  architectName?: string;
 
   siteId?: string;
   siteCode?: string;
@@ -2574,6 +2771,7 @@ export interface ClientRABill {
   createdAt: string;
   createdBy: string;
 }
+
 
 
 

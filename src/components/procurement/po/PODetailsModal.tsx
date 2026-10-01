@@ -13,7 +13,6 @@ import {
   XCircle,
   Download,
   Printer,
-  Truck,
   X,
   Tag,
 } from 'lucide-react';
@@ -24,7 +23,6 @@ interface PODetailsModalProps {
   onClose: () => void;
   onApprove?: () => void;
   onReject?: () => void;
-  onRecordDelivery?: () => void;
 }
 
 export const PODetailsModal: React.FC<PODetailsModalProps> = ({
@@ -33,7 +31,6 @@ export const PODetailsModal: React.FC<PODetailsModalProps> = ({
   onClose,
   onApprove,
   onReject,
-  onRecordDelivery,
 }) => {
   const { state } = useERPStore();
 
@@ -123,14 +120,6 @@ export const PODetailsModal: React.FC<PODetailsModalProps> = ({
                 >
                   <Printer className="h-3.5 w-3.5 text-slate-600" /> Print
                 </button>
-                {onRecordDelivery && (
-                  <button
-                    onClick={onRecordDelivery}
-                    className="px-3 py-1.5 bg-[#AB9570] hover:bg-[#927D5E] text-slate-950 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <Truck className="h-3.5 w-3.5 stroke-[2.5]" /> Record Delivery
-                  </button>
-                )}
               </>
             )}
 

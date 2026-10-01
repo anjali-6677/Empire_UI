@@ -16,7 +16,6 @@ import {
   RotateCcw,
   CheckCircle2,
   BarChart2,
-  PackageCheck,
   History,
   Archive,
 } from 'lucide-react';
@@ -31,7 +30,6 @@ export interface PORowActionsMenuProps {
   onWithdraw?: (po: PurchaseOrder) => void;
   onIssuePO?: (po: PurchaseOrder) => void;
   onDownload?: (po: PurchaseOrder) => void;
-  onRecordDelivery?: (po: PurchaseOrder) => void;
   onViewDeliveryHistory?: (po: PurchaseOrder) => void;
   onViewComparison?: (rfqId?: string) => void;
   onViewGRNs?: (poId: string) => void;
@@ -60,7 +58,6 @@ export function getPORowActions(
     onWithdraw?: () => void;
     onIssuePO?: () => void;
     onDownload?: () => void;
-    onRecordDelivery?: () => void;
     onViewDeliveryHistory?: () => void;
     onViewComparison?: () => void;
     onViewGRNs?: () => void;
@@ -71,8 +68,6 @@ export function getPORowActions(
 ): POActionItem[] {
   const actions: POActionItem[] = [];
   const status = (po.status as string)?.toLowerCase();
-  const deliveryStatus = (po.deliveryStatus as string)?.toLowerCase() || 'not_received';
-  const isFullyReceived = deliveryStatus === 'received' || deliveryStatus === 'fully_received';
 
   // Always available: View PO
   actions.push({
@@ -169,16 +164,6 @@ export function getPORowActions(
       onClick: callbacks.onDownload,
     });
 
-    if (!isFullyReceived && callbacks.onRecordDelivery) {
-      actions.push({
-        id: 'record_delivery',
-        label: 'Record Delivery',
-        icon: PackageCheck,
-        variant: 'primary',
-        onClick: callbacks.onRecordDelivery,
-      });
-    }
-
     if (callbacks.onViewComparison && (po.rfqId || po.sourceRFQId)) {
       actions.push({
         id: 'view_comparison',
@@ -200,27 +185,17 @@ export function getPORowActions(
   }
 
   // Status: Partially Delivered / Received
-  else if (status === 'partially_delivered' || status === 'partially_received' || deliveryStatus === 'partial') {
+  else if (status === 'partially_delivered' || status === 'partially_received') {
     actions.push({
       id: 'download',
       label: 'Download PO Document',
       icon: Download,
       onClick: callbacks.onDownload,
     });
-
-    if (!isFullyReceived && callbacks.onRecordDelivery) {
-      actions.push({
-        id: 'record_delivery',
-        label: 'Record Delivery',
-        icon: PackageCheck,
-        variant: 'primary',
-        onClick: callbacks.onRecordDelivery,
-      });
-    }
   }
 
   // Status: Fully Delivered / Received / Completed
-  else if (status === 'fully_delivered' || status === 'fully_received' || status === 'completed' || deliveryStatus === 'received') {
+  else if (status === 'fully_delivered' || status === 'fully_received' || status === 'completed') {
     actions.push({
       id: 'download',
       label: 'Download Completed PO',
@@ -262,7 +237,6 @@ export const PORowActionsMenu: React.FC<PORowActionsMenuProps> = ({
   onWithdraw,
   onIssuePO,
   onDownload,
-  onRecordDelivery,
   onViewDeliveryHistory,
   onViewComparison,
   onViewGRNs,
@@ -278,7 +252,6 @@ export const PORowActionsMenu: React.FC<PORowActionsMenuProps> = ({
     onWithdraw: onWithdraw ? () => onWithdraw(po) : undefined,
     onIssuePO: onIssuePO ? () => onIssuePO(po) : undefined,
     onDownload: onDownload ? () => onDownload(po) : undefined,
-    onRecordDelivery: onRecordDelivery ? () => onRecordDelivery(po) : undefined,
     onViewDeliveryHistory: onViewDeliveryHistory ? () => onViewDeliveryHistory(po) : undefined,
     onViewComparison: onViewComparison ? () => onViewComparison(po.rfqId || po.sourceRFQId) : undefined,
     onViewGRNs: onViewGRNs ? () => onViewGRNs(po.id) : undefined,

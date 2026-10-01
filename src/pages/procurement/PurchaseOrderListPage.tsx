@@ -12,8 +12,8 @@ import { PrimaryActionButton } from '../../components/common/PrimaryActionButton
 import { formatIndianCurrency } from '../../utils/format';
 import { PODetailsModal } from '../../components/procurement/po/PODetailsModal';
 import { POApprovalModal } from '../../components/procurement/po/POApprovalModal';
-import { PODeliveryModal } from '../../components/procurement/po/PODeliveryModal';
 import { downloadPurchaseOrderPDF } from '../../utils/poPdfGenerator';
+import { getCanonicalPODeliverySummary } from '../../utils/poDelivery';
 import {
   CheckCircle2,
   Clock,
@@ -35,10 +35,9 @@ export const PurchaseOrderListPage: React.FC = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState<boolean>(false);
   const [approvalModalOpen, setApprovalModalOpen] = useState<boolean>(false);
   const [approvalMode, setApprovalMode] = useState<'approve' | 'reject'>('approve');
-  const [deliveryModalOpen, setDeliveryModalOpen] = useState<boolean>(false);
-  const [deliveryInitialTab, setDeliveryInitialTab] = useState<'record' | 'history'>('record');
 
   const purchaseOrders = state.purchaseOrders || [];
+  const goodsReceipts = state.goodsReceipts || [];
 
   const filteredPOs = purchaseOrders.filter((po) => {
     const matchesProject = selectedProjectId === 'all' || po.projectId === selectedProjectId;
@@ -62,9 +61,10 @@ export const PurchaseOrderListPage: React.FC = () => {
   const approvedPOs = activeScopePOs.filter(
     (p) => (p.status as string) === 'approved' || (p.status as string) === 'issued'
   ).length;
-  const pendingDelivery = activeScopePOs.filter(
-    (p) => (p.status as string) === 'approved' || (p.status as string) === 'issued' || (p.status as string) === 'partially_delivered'
-  ).length;
+  const pendingDelivery = activeScopePOs.filter((p) => {
+    const delSummary = getCanonicalPODeliverySummary(p, goodsReceipts);
+    return delSummary.deliveryStatus !== 'received' && (p.status === 'approved' || p.status === 'issued');
+  }).length;
 
   const handleOpenDetails = (po: PurchaseOrder) => {
     setSelectedPO(po);
@@ -77,10 +77,9 @@ export const PurchaseOrderListPage: React.FC = () => {
     setApprovalModalOpen(true);
   };
 
-  const handleOpenDelivery = (po: PurchaseOrder, tab: 'record' | 'history' = 'record') => {
-    setSelectedPO(po);
-    setDeliveryInitialTab(tab);
-    setDeliveryModalOpen(true);
+  const handleNavigateToGRNs = (po: PurchaseOrder) => {
+    const docNo = po.documentNumber || po.poNumber || po.id;
+    navigate(`/inventory/grn?search=${encodeURIComponent(docNo)}`);
   };
 
   const activePO = selectedPO
@@ -253,7 +252,7 @@ export const PurchaseOrderListPage: React.FC = () => {
                           onIssuePO={() => handleOpenDetails(po)}
                           onDownload={() => downloadPurchaseOrderPDF(po, state.vendors.find((v) => v.id === po.vendorId))}
                           onViewComparison={(rfqId) => navigate(`/procurement/rfqs/${rfqId || po.rfqId}?tab=vendors`)}
-                          onViewGRNs={() => handleOpenDelivery(po)}
+                          onViewGRNs={() => handleNavigateToGRNs(po)}
                           onViewActivity={() => handleOpenDetails(po)}
                           onCancel={handleCancelPO}
                         />
@@ -348,6 +347,7 @@ export const PurchaseOrderListPage: React.FC = () => {
                   const validUntil = po.validUntil || po.rateValidityDate || '31 Aug 2026';
                   const deliveryDue = po.expectedDeliveryDate || po.deliveryDueDate || '05 Sep 2026';
                   const poDate = po.orderDate || (po.createdAt ? po.createdAt.split('T')[0] : '10 Aug 2026');
+                  const deliverySummary = getCanonicalPODeliverySummary(po, goodsReceipts);
 
                   return (
                     <tr key={po.id} className="hover:bg-slate-50 transition-colors h-14">
@@ -373,7 +373,7 @@ export const PurchaseOrderListPage: React.FC = () => {
                         {po.paymentStatus || 'unpaid'}
                       </td>
                       <td className="p-3.5 align-middle font-mono uppercase text-[10px] font-bold text-slate-700">
-                        {(po.deliveryStatus || 'not_received').replace('_', ' ')}
+                        {deliverySummary.deliveryStatus.replace('_', ' ')}
                       </td>
                       <td className="p-3.5 align-middle text-right">
                         <PORowActionsMenu
@@ -384,10 +384,9 @@ export const PurchaseOrderListPage: React.FC = () => {
                           onReviewApproval={() => handleOpenApproval(po, 'approve')}
                           onIssuePO={() => handleOpenDetails(po)}
                           onDownload={() => downloadPurchaseOrderPDF(po, vendor)}
-                          onRecordDelivery={() => handleOpenDelivery(po, 'record')}
-                          onViewDeliveryHistory={() => handleOpenDelivery(po, 'history')}
+                          onViewDeliveryHistory={() => handleNavigateToGRNs(po)}
                           onViewComparison={(rfqId) => navigate(`/procurement/rfqs/${rfqId || po.rfqId}?tab=vendors`)}
-                          onViewGRNs={() => handleOpenDelivery(po, 'history')}
+                          onViewGRNs={() => handleNavigateToGRNs(po)}
                           onViewActivity={() => handleOpenDetails(po)}
                           onCancel={handleCancelPO}
                         />
@@ -409,7 +408,6 @@ export const PurchaseOrderListPage: React.FC = () => {
           onClose={() => { setDetailsModalOpen(false); setSelectedPO(null); }}
           onApprove={() => { setDetailsModalOpen(false); handleOpenApproval(activePO, 'approve'); }}
           onReject={() => { setDetailsModalOpen(false); handleOpenApproval(activePO, 'reject'); }}
-          onRecordDelivery={() => { setDetailsModalOpen(false); handleOpenDelivery(activePO, 'record'); }}
         />
       )}
 
@@ -422,15 +420,7 @@ export const PurchaseOrderListPage: React.FC = () => {
           onConfirm={handleConfirmApproval}
         />
       )}
-
-      {activePO && deliveryModalOpen && (
-        <PODeliveryModal
-          po={activePO}
-          isOpen={deliveryModalOpen}
-          initialTab={deliveryInitialTab}
-          onClose={() => { setDeliveryModalOpen(false); setSelectedPO(null); }}
-        />
-      )}
     </ListPageLayout>
   );
 };
+

@@ -28,6 +28,17 @@ import PaymentTermsPage from './pages/masters/PaymentTermsPage';
 import TaxesPage from './pages/masters/TaxesPage';
 import StockLocationsPage from './pages/masters/StockLocationsPage';
 import UsersEmployeesPage from './pages/masters/UsersEmployeesPage';
+import DepartmentMasterPage from './pages/admin/DepartmentMasterPage';
+import { RoleMasterPage } from './pages/admin/RoleMasterPage';
+
+import BrandMasterPage from './pages/masters/BrandMasterPage';
+import MeasurementConversionMasterPage from './pages/masters/MeasurementConversionMasterPage';
+import BankAccountMasterPage from './pages/masters/BankAccountMasterPage';
+import LocationMasterPage from './pages/masters/LocationMasterPage';
+import PMCMasterPage from './pages/masters/PMCMasterPage';
+import ArchitectMasterPage from './pages/masters/ArchitectMasterPage';
+import CompanyEntityMasterPage from './pages/masters/CompanyEntityMasterPage';
+import ProjectSiteMasterPage from './pages/masters/ProjectSiteMasterPage';
 
 import { CRMWorkspacePage } from './pages/crm/CRMWorkspacePage';
 import { CreateEnquiryPage } from './pages/crm/CreateEnquiryPage';
@@ -235,6 +246,32 @@ export const AppRouter: React.FC = () => {
             <Route path="masters/employees" element={<UsersEmployeesPage />} />
             <Route path="masters/users" element={<UsersEmployeesPage />} />
             <Route path="masters/categories" element={<CategoriesFactorsPage />} />
+
+            {/* Expanded Canonical Master Data Routes */}
+            <Route path="masters/brands" element={<BrandMasterPage />} />
+            <Route path="masters/conversions" element={<MeasurementConversionMasterPage />} />
+            <Route path="masters/bank-accounts" element={<BankAccountMasterPage />} />
+            <Route path="masters/banks" element={<BankAccountMasterPage />} />
+            <Route path="masters/locations" element={<LocationMasterPage />} />
+            <Route path="masters/pmc" element={<PMCMasterPage />} />
+            <Route path="masters/architects" element={<ArchitectMasterPage />} />
+            <Route path="masters/company-entities" element={<CompanyEntityMasterPage />} />
+            <Route path="masters/companies" element={<CompanyEntityMasterPage />} />
+            <Route path="masters/project-sites" element={<ProjectSiteMasterPage />} />
+            <Route path="masters/sites" element={<ProjectSiteMasterPage />} />
+
+            {/* Access Control & Administration */}
+            <Route path="administration/departments" element={<DepartmentMasterPage />} />
+            <Route path="administration/designations" element={<ModulePageRenderer />} />
+            <Route path="administration/roles" element={<RoleMasterPage />} />
+            <Route path="administration/users" element={<UsersEmployeesPage />} />
+            <Route path="administration/user-salary" element={<Navigate to="/finance/salary" replace />} />
+
+            {/* Legacy Admin Redirect Aliases */}
+            <Route path="admin/departments" element={<Navigate to="/administration/departments" replace />} />
+            <Route path="admin/designations" element={<Navigate to="/administration/designations" replace />} />
+            <Route path="admin/roles" element={<Navigate to="/administration/roles" replace />} />
+            <Route path="admin/users" element={<Navigate to="/administration/users" replace />} />
 
             {/* Reports Module Central & Category Routes */}
             <Route path="reports" element={<ReportsCenterPage />} />

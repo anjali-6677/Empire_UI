@@ -63,6 +63,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     'admin-group': false,
   });
 
+  const [expandedSubGroups, setExpandedSubGroups] = React.useState<Record<string, boolean>>({
+    'access-control-group': true,
+  });
+
   const toggleGroup = (groupId: string) => {
     if (isCollapsed) return;
     setExpandedGroups((prev) => ({
@@ -71,15 +75,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }));
   };
 
-  // Auto-expand group containing active pathname
+  const toggleSubGroup = (subGroupId: string) => {
+    if (isCollapsed) return;
+    setExpandedSubGroups((prev) => ({
+      ...prev,
+      [subGroupId]: !prev[subGroupId],
+    }));
+  };
+
+  // Auto-expand group and sub-groups containing active pathname
   React.useEffect(() => {
     if (isCollapsed) return;
 
     NAVIGATION_CONFIG.forEach((group) => {
-      const hasActiveChild = group.items.some(
-        (item) => item.path && (pathname === item.path || pathname.startsWith(item.path + '/'))
-      );
-      if (hasActiveChild) {
+      let groupHasActive = false;
+      group.items.forEach((item) => {
+        if (item.children) {
+          const childActive = item.children.some(
+            (c) => c.path && (pathname === c.path || pathname.startsWith(c.path + '/'))
+          );
+          if (childActive) {
+            groupHasActive = true;
+            setExpandedSubGroups((prev) => ({ ...prev, [item.id]: true }));
+          }
+        } else if (item.path && (pathname === item.path || pathname.startsWith(item.path + '/'))) {
+          groupHasActive = true;
+        }
+      });
+      if (groupHasActive) {
         setExpandedGroups((prev) => ({ ...prev, [group.id]: true }));
       }
     });
@@ -93,7 +116,96 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return (
       <ul className="space-y-1.5 mt-1.5 px-3">
         {items.map((item) => {
-          const LucideIcon = (Icons as any)[item.icon || 'HelpCircle'];
+          const LucideIcon = typeof item.icon === 'function' ? item.icon : (Icons as any)[item.icon || 'HelpCircle'];
+
+          if (item.children && item.children.length > 0) {
+            const isSubExpanded = expandedSubGroups[item.id] || isCollapsed;
+            const hasActiveChild = item.children.some(
+              (c) => c.path && (pathname === c.path || pathname.startsWith(c.path + '/'))
+            );
+
+            return (
+              <li key={item.id} className="space-y-1">
+                {!isCollapsed ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleSubGroup(item.id)}
+                    className={cn(
+                      'w-full flex items-center justify-between px-3 py-2 rounded text-xs transition-all duration-150 font-sans focus:outline-none cursor-pointer',
+                      hasActiveChild
+                        ? 'text-white font-semibold bg-zinc-800/60'
+                        : 'text-zinc-400 hover:bg-sidebar-hover hover:text-white'
+                    )}
+                  >
+                    <div className="flex items-center gap-3 truncate">
+                      {LucideIcon && (
+                        <LucideIcon
+                          className={cn(
+                            'h-4 w-4 shrink-0 stroke-[1.75]',
+                            hasActiveChild ? 'text-[#AB9570]' : 'text-zinc-400'
+                          )}
+                        />
+                      )}
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    <Icons.ChevronDown
+                      className={cn(
+                        'h-3.5 w-3.5 text-zinc-400 transform transition-transform duration-200 shrink-0',
+                        isSubExpanded ? 'rotate-0' : '-rotate-90'
+                      )}
+                    />
+                  </button>
+                ) : (
+                  <div className="flex justify-center p-2 text-zinc-400" title={item.label}>
+                    {LucideIcon && <LucideIcon className="h-4 w-4 stroke-[1.75]" />}
+                  </div>
+                )}
+
+                {/* Render Child Accordion Links */}
+                {isSubExpanded && (
+                  <ul className={cn('space-y-1', !isCollapsed && 'pl-4 border-l border-zinc-800/80 ml-4')}>
+                    {item.children.map((child) => {
+                      const ChildIcon = typeof child.icon === 'function' ? child.icon : (Icons as any)[child.icon || 'HelpCircle'];
+                      const isChildActive = pathname === child.path;
+
+                      return (
+                        <li key={child.id} className="relative group/child">
+                          <Link
+                            to={child.path || '#'}
+                            onClick={onCloseMobile}
+                            className={cn(
+                              'flex items-center gap-2.5 px-2.5 py-1.5 rounded text-xs transition-all duration-150 font-sans focus:outline-none',
+                              isChildActive
+                                ? 'bg-[#AB9570] text-slate-950 font-bold shadow-xs'
+                                : 'text-zinc-400 hover:bg-sidebar-hover hover:text-white font-medium',
+                              isCollapsed && 'justify-center p-2'
+                            )}
+                          >
+                            {ChildIcon && (
+                              <ChildIcon
+                                className={cn(
+                                  'h-3.5 w-3.5 shrink-0 stroke-[1.75]',
+                                  isChildActive ? 'text-slate-950' : 'text-zinc-400 group-hover/child:text-white'
+                                )}
+                              />
+                            )}
+                            {!isCollapsed && <span className="truncate">{child.label}</span>}
+
+                            {isCollapsed && (
+                              <div className="absolute left-full ml-3 px-2 py-1 bg-zinc-900 border border-zinc-800 text-white text-[10px] font-bold rounded shadow-md pointer-events-none opacity-0 group-hover/child:opacity-100 transition-all duration-150 whitespace-nowrap z-50 translate-x-1 group-hover/child:translate-x-0">
+                                {child.label}
+                              </div>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </li>
+            );
+          }
+
           const isActive = pathname === item.path;
 
           return (

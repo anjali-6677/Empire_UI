@@ -37,7 +37,13 @@ import {
   ShieldCheck,
   Settings,
   Building2,
-  UserPlus,
+  Shield,
+  User,
+  IndianRupee,
+  Tag,
+  ArrowRightLeft,
+  Compass,
+  Landmark,
 } from 'lucide-react';
 
 export const ROUTES = {
@@ -204,9 +210,11 @@ export const ROUTES = {
   REPORTS_SCHEDULE_PERFORMANCE: '/reports/schedule-performance',
 
   // Administration
-  ADMIN_DEPARTMENTS: '/admin/departments',
-  ADMIN_DESIGNATIONS: '/admin/designations',
-  ADMIN_ROLES: '/admin/roles',
+  ADMIN_DEPARTMENTS: '/administration/departments',
+  ADMIN_DESIGNATIONS: '/administration/designations',
+  ADMIN_ROLES: '/administration/roles',
+  ADMIN_USERS: '/administration/users',
+  ADMIN_USER_SALARY: '/administration/user-salary',
   ADMIN_PERMISSIONS: '/admin/permissions',
   ADMIN_APPROVAL_MATRIX: '/admin/approval-matrix',
   ADMIN_SETTINGS: '/admin/settings',
@@ -296,16 +304,58 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
     id: 'masters-group',
     label: '6. Master Data',
     items: [
-      { id: 'mst-cat', label: 'Item Categories', path: ROUTES.MASTERS_CATEGORIES, icon: FolderTree, projectContext: 'none' },
-      { id: 'mst-prd', label: 'Product / Material Master', path: ROUTES.MASTERS_PRODUCTS, icon: Package, projectContext: 'none' },
-      { id: 'mst-ven', label: 'Vendor Master', path: ROUTES.MASTERS_VENDORS, icon: Store, projectContext: 'none' },
-      { id: 'mst-sub', label: 'Subcontractor Master', path: ROUTES.MASTERS_SUBCONTRACTORS, icon: SubcontractorIcon, projectContext: 'none' },
-      { id: 'mst-cli', label: 'Client Master', path: ROUTES.MASTERS_CLIENTS, icon: UserCheck, projectContext: 'none' },
-      { id: 'mst-unt', label: 'Unit Master', path: ROUTES.MASTERS_UOM, icon: Ruler, projectContext: 'none' },
-      { id: 'mst-pay', label: 'Payment Terms', path: ROUTES.MASTERS_PAYMENT_TERMS, icon: Receipt, projectContext: 'none' },
-      { id: 'mst-tax', label: 'Tax Master', path: ROUTES.MASTERS_TAXES, icon: Calculator, projectContext: 'none' },
-      { id: 'mst-loc', label: 'Store Locations', path: ROUTES.MASTERS_STOCK_LOCATIONS, icon: MapPin, projectContext: 'none' },
-      { id: 'mst-emp', label: 'Employee Master', path: ROUTES.MASTERS_USERS_EMPLOYEES, icon: UserGroupIcon, projectContext: 'none' },
+      {
+        id: 'mst-sub-products',
+        label: 'Products & Materials',
+        icon: Package,
+        children: [
+          { id: 'mst-cat', label: 'Item Categories', path: ROUTES.MASTERS_CATEGORIES, icon: FolderTree, projectContext: 'none' },
+          { id: 'mst-prd', label: 'Product / Material Master', path: ROUTES.MASTERS_PRODUCTS, icon: Package, projectContext: 'none' },
+          { id: 'mst-brd', label: 'Brand Master', path: ROUTES.BRANDS, icon: Tag, projectContext: 'none' },
+          { id: 'mst-unt', label: 'Unit Master (UOM)', path: ROUTES.MASTERS_UOM, icon: Ruler, projectContext: 'none' },
+          { id: 'mst-cnv', label: 'Measurement Conversion', path: ROUTES.MEASUREMENT_CONVERSIONS, icon: ArrowRightLeft, projectContext: 'none' },
+        ],
+      },
+      {
+        id: 'mst-sub-business',
+        label: 'Business Parties',
+        icon: Store,
+        children: [
+          { id: 'mst-ven', label: 'Vendor Master', path: ROUTES.MASTERS_VENDORS, icon: Store, projectContext: 'none' },
+          { id: 'mst-sub', label: 'Subcontractor Master', path: ROUTES.MASTERS_SUBCONTRACTORS, icon: SubcontractorIcon, projectContext: 'none' },
+          { id: 'mst-cli', label: 'Client Master', path: ROUTES.MASTERS_CLIENTS, icon: UserCheck, projectContext: 'none' },
+          { id: 'mst-pmc', label: 'PMC Master', path: ROUTES.PMC, icon: Briefcase, projectContext: 'none' },
+          { id: 'mst-arc', label: 'Architect Master', path: ROUTES.ARCHITECTS, icon: Compass, projectContext: 'none' },
+        ],
+      },
+      {
+        id: 'mst-sub-org',
+        label: 'Organization & Locations',
+        icon: Building2,
+        children: [
+          { id: 'mst-cmp', label: 'Company / Business Entity', path: ROUTES.COMPANIES, icon: Building2, projectContext: 'none' },
+          { id: 'mst-loc', label: 'Location Master', path: ROUTES.LOCATIONS, icon: MapPin, projectContext: 'none' },
+          { id: 'mst-stk', label: 'Store Locations', path: ROUTES.MASTERS_STOCK_LOCATIONS, icon: Boxes, projectContext: 'none' },
+        ],
+      },
+      {
+        id: 'mst-sub-comm',
+        label: 'Commercial Masters',
+        icon: Receipt,
+        children: [
+          { id: 'mst-bnk', label: 'Bank Accounts', path: ROUTES.BANKS, icon: Landmark, projectContext: 'none' },
+          { id: 'mst-pay', label: 'Payment Terms', path: ROUTES.MASTERS_PAYMENT_TERMS, icon: Receipt, projectContext: 'none' },
+          { id: 'mst-tax', label: 'Tax Master', path: ROUTES.MASTERS_TAXES, icon: Calculator, projectContext: 'none' },
+        ],
+      },
+      {
+        id: 'mst-sub-people',
+        label: 'People',
+        icon: UserGroupIcon,
+        children: [
+          { id: 'mst-emp', label: 'Employee Master', path: ROUTES.MASTERS_USERS_EMPLOYEES, icon: UserGroupIcon, projectContext: 'none' },
+        ],
+      },
     ],
   },
   {
@@ -323,9 +373,18 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
     id: 'admin-group',
     label: '8. Administration',
     items: [
-      { id: 'adm-dpt', label: 'Departments', path: ROUTES.ADMIN_DEPARTMENTS, icon: Building2, projectContext: 'none' },
-      { id: 'adm-dsg', label: 'Designations', path: ROUTES.ADMIN_DESIGNATIONS, icon: UserPlus, projectContext: 'none' },
-      { id: 'adm-rol', label: 'Roles', path: ROUTES.ADMIN_ROLES, icon: ShieldCheck, projectContext: 'none' },
+      {
+        id: 'access-control-group',
+        label: 'Access Control',
+        icon: ShieldCheck,
+        children: [
+          { id: 'adm-dpt', label: 'Department', path: ROUTES.ADMIN_DEPARTMENTS, icon: Building2, projectContext: 'none' },
+          { id: 'adm-dsg', label: 'Designation', path: ROUTES.ADMIN_DESIGNATIONS, icon: UserCheck, projectContext: 'none' },
+          { id: 'adm-rol', label: 'Role', path: ROUTES.ADMIN_ROLES, icon: Shield, projectContext: 'none' },
+          { id: 'adm-usr', label: 'Users', path: ROUTES.ADMIN_USERS, icon: User, projectContext: 'none' },
+          { id: 'adm-sal', label: 'User Salary', path: ROUTES.ADMIN_USER_SALARY, icon: IndianRupee, projectContext: 'none' },
+        ],
+      },
       { id: 'adm-prm', label: 'Permissions Matrix', path: ROUTES.ADMIN_PERMISSIONS, icon: ShieldCheck, projectContext: 'none' },
       { id: 'adm-app', label: 'Approval Matrix Rules', path: ROUTES.ADMIN_APPROVAL_MATRIX, icon: CheckCircle, projectContext: 'none' },
       { id: 'adm-set', label: 'System Settings', path: ROUTES.ADMIN_SETTINGS, icon: Settings, projectContext: 'none' },

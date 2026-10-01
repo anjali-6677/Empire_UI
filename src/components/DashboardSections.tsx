@@ -1,9 +1,7 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
+import {
   ResponsiveContainer,
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
@@ -15,44 +13,55 @@ import {
   Pie,
   Cell,
   ComposedChart,
+  LineChart,
   Line,
-  LabelList,
-  ReferenceLine
 } from 'recharts';
-import { 
+import {
   ChevronDown,
   ChevronUp,
   Bell,
-  Check,
+  Clock,
+  DollarSign,
+  Wallet,
+  FileText,
+  ShoppingCart,
   Truck,
-  ShieldAlert,
   CheckSquare,
-  Layers,
-  X
+  ShieldAlert,
+  Building2,
+  HardHat,
+  Store,
+  Package,
+  TrendingUp,
+  Calendar,
+  FileCheck2,
+  Activity,
+  AlertTriangle,
+  PieChart as PieChartIcon,
+  BarChart3,
 } from 'lucide-react';
+import { ExecutiveDashboardData } from '../utils/dashboardCalculators';
 import { safeFormatCurrency } from '../utils/formatStatus';
-import { SiteSchema } from '../types';
-import { useWorkflow } from '../context/WorkflowContext';
-import {
-  PORTFOLIO_FINANCIAL_COMPARISON,
-  getSelectedSitePerformanceMatrix,
-  SiteMatrixMetric,
-  getSelectedSiteMonthlyBilling,
-  VENDOR_LIABILITY_DATA,
-  APPROVAL_PIPELINE_DATA,
-  TOTAL_APPROVAL_COUNT,
-  PROCUREMENT_PIPELINE_STAGES,
-  MONTHLY_OPERATIONAL_FLOW_DATA,
-  PAYMENT_MODE_DISTRIBUTION,
-  UPCOMING_RISK_TIMELINE_DATA,
-  formatIndianCurrencyAbbrev
-} from '../data/dashboardAnalyticsData';
+
+export function navigateWithFilter(
+  navigate: (path: string, options?: any) => void,
+  route: string,
+  filterParams?: Record<string, string>
+) {
+  if (!filterParams) {
+    navigate(route);
+    return;
+  }
+  const query = new URLSearchParams(filterParams).toString();
+  navigate(`${route}${query ? `?${query}` : ''}`, { state: filterParams });
+}
 
 interface SectionWrapperProps {
   id: string;
   title: string;
   description?: string;
   defaultOpen?: boolean;
+  badge?: string;
   children: React.ReactNode;
 }
 
@@ -61,735 +70,1332 @@ export const SectionWrapper: React.FC<SectionWrapperProps> = ({
   title,
   description,
   defaultOpen = true,
-  children
+  badge,
+  children,
 }) => {
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
 
   return (
-    <section 
-      id={id} 
-      className="bg-white border border-gray-150 rounded-lg shadow-sm font-sans scroll-mt-20 overflow-hidden"
+    <section
+      id={id}
+      className="bg-white border border-gray-200 rounded-lg shadow-sm font-sans scroll-mt-24 overflow-hidden"
     >
-      <div 
-        className="flex items-center justify-between p-4 border-b border-gray-150 bg-gray-50/50 cursor-pointer select-none"
+      <div
+        className="flex items-center justify-between p-3.5 sm:p-4 border-b border-gray-200 bg-gray-50/70 cursor-pointer select-none hover:bg-gray-100/60 transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div>
-          <h2 className="text-sm font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-xs sm:text-sm font-extrabold text-gray-900 tracking-tight flex items-center gap-2 uppercase">
             {title}
           </h2>
-          {description && <p className="text-[10.5px] text-gray-400 font-medium leading-tight mt-0.5">{description}</p>}
+          {badge && (
+            <span className="text-[9.5px] font-bold text-brand-800 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded">
+              {badge}
+            </span>
+          )}
         </div>
-        <button
-          type="button"
-          className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors focus:outline-none"
-          aria-expanded={isOpen}
-          aria-label={`Toggle section ${title}`}
-        >
-          {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
+        <div className="flex items-center gap-2">
+          {description && (
+            <p className="hidden md:block text-[10.5px] text-gray-500 font-medium mr-2">
+              {description}
+            </p>
+          )}
+          <button
+            type="button"
+            className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors focus:outline-none"
+            aria-expanded={isOpen}
+            aria-label={`Toggle section ${title}`}
+          >
+            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
 
-      {isOpen && <div className="p-4 sm:p-5 space-y-4">{children}</div>}
+      {isOpen && <div className="p-4 sm:p-5 space-y-5">{children}</div>}
     </section>
   );
 };
 
-// ==========================================
-// Section 1: Portfolio Overview
-// ==========================================
-export const PortfolioOverviewSection: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <div className="space-y-4 font-sans">
-      {children}
-      {/* Chart 1: Portfolio Financial Comparison */}
-      <div className="p-4 border border-gray-150 rounded-lg bg-gray-50/40 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 pb-2">
-          <div>
-            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
-              Portfolio Financial Comparison (Top 8 Active Sites)
-            </h4>
-            <p className="text-[10px] text-gray-400 font-medium leading-tight">
-              Compare project scale, approved budgets, actual outlay, and client billing across the portfolio.
-            </p>
-          </div>
-          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
-            Global Portfolio View
-          </span>
-        </div>
-        <div className="h-[270px] w-full pt-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              layout={window.innerWidth < 640 ? "vertical" : "horizontal"} 
-              data={PORTFOLIO_FINANCIAL_COMPARISON} 
-              margin={{ top: 10, right: 15, left: window.innerWidth < 640 ? 10 : 0, bottom: 25 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" vertical={window.innerWidth < 640} horizontal={window.innerWidth >= 640} stroke="#e5e7eb" />
-              {window.innerWidth < 640 ? (
-                <>
-                  <XAxis type="number" tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(val) => formatIndianCurrencyAbbrev(val)} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: '#374151', fontWeight: 600 }} width={75} />
-                </>
-              ) : (
-                <>
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} 
-                    interval={0} 
-                    angle={-15} 
-                    textAnchor="end" 
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 9, fill: '#6b7280' }} 
-                    tickFormatter={(val) => formatIndianCurrencyAbbrev(val)} 
-                  />
-                </>
-              )}
-              <Tooltip 
-                formatter={(val: number) => [safeFormatCurrency(val), '']} 
-                labelFormatter={(label, items) => {
-                  const item = items && items[0] ? items[0].payload : null;
-                  return item ? `${item.fullName} (${item.siteCode})` : label;
-                }}
-                contentStyle={{ fontSize: '11px', borderRadius: '6px', backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}
-              />
-              <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '8px' }} />
-              <Bar dataKey="approvedBudget" name="Approved Budget" fill="#ab9570" radius={window.innerWidth < 640 ? [0, 3, 3, 0] : [3, 3, 0, 0]} />
-              <Bar dataKey="actualOutlay" name="Actual Outlay" fill="#3b82f6" radius={window.innerWidth < 640 ? [0, 3, 3, 0] : [3, 3, 0, 0]} />
-              <Bar dataKey="clientBilling" name="Client Billing" fill="#10b981" radius={window.innerWidth < 640 ? [0, 3, 3, 0] : [3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
-  );
-};
+// ============================================================================
+// SECTION 1: Executive KPI Summary
+// ============================================================================
+export const ExecutiveKpiSummarySection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
+  const navigate = useNavigate();
+  const kpis = data.kpis;
 
-// ==========================================
-// Section 2: Selected Site Snapshot
-// ==========================================
-export const SiteSnapshotSection: React.FC<{ site: SiteSchema | null }> = ({ site }) => {
-  if (!site) {
-    return (
-      <div className="p-6 bg-brand-50/50 border border-brand-200 rounded-md text-center space-y-2 font-sans">
-        <h3 className="font-extrabold text-sm text-brand-900">ALL SITES — Portfolio Performance Mode</h3>
-        <p className="text-xs text-gray-500 max-w-xl mx-auto">
-          Currently displaying portfolio-wide metrics. Select a specific project site from the Header dropdown to inspect site-level financial snapshot and ledger outlays.
-        </p>
-      </div>
-    );
-  }
-
-  const isNotStarted = site.executionStatus === 'not_started' || site.workflowStatus === 'draft';
-
-  const approvedClientBill = isNotStarted ? 0 : Math.round(site.budget * 0.42);
-  const projectPurchase = isNotStarted ? 0 : Math.round(site.budget * 0.35);
-  const profitMargin = isNotStarted ? 0 : Math.round(site.budget * 0.22);
-  const profitMarginPct = isNotStarted ? 0 : 22.0;
-  const totalApprovedTender = isNotStarted ? 0 : Math.round(site.budget * 0.95);
-  const clientBillApproved = isNotStarted ? 0 : Math.round(site.budget * 0.38);
-  const clientPaymentReceived = isNotStarted ? 0 : Math.round(site.budget * 0.32);
-  const approvedBudgetVal = isNotStarted ? 0 : (site.approvedValue || site.budget);
-  const vendorPaidTotal = isNotStarted ? 0 : Math.round(site.budget * 0.28);
-
-  return (
-    <div className="space-y-4 font-sans">
-      {/* Site Metadata Header Pill */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-xs font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-1 rounded">
-            {site.code}
-          </span>
-          <div>
-            <h3 className="font-extrabold text-sm text-gray-900 leading-tight">{site.name}</h3>
-            <span className="text-[10px] text-gray-400 font-semibold">{site.category} • Client: {site.client} • {site.city}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-4 text-[11px]">
-          <div>
-            <span className="text-gray-400 block text-[9px] uppercase font-bold">Project Manager</span>
-            <span className="font-bold text-gray-800">{site.manager}</span>
-          </div>
-          <div>
-            <span className="text-gray-400 block text-[9px] uppercase font-bold">Workflow Status</span>
-            <span className="font-bold uppercase text-[10px] text-brand-700">{site.workflowStatus.replace('_', ' ')}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Primary Financial Snapshot Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="p-3 border border-gray-150 rounded bg-white">
-          <span className="text-[9px] uppercase font-bold text-gray-400 block">Approved Client Bill</span>
-          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{safeFormatCurrency(approvedClientBill)}</span>
-        </div>
-        <div className="p-3 border border-gray-150 rounded bg-white">
-          <span className="text-[9px] uppercase font-bold text-gray-400 block">Project Purchase</span>
-          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{safeFormatCurrency(projectPurchase)}</span>
-        </div>
-        <div className="p-3 border border-gray-150 rounded bg-white">
-          <span className="text-[9px] uppercase font-bold text-gray-400 block">Profit Margin</span>
-          <span className="font-extrabold text-sm text-emerald-700 block mt-0.5">{safeFormatCurrency(profitMargin)}</span>
-        </div>
-        <div className="p-3 border border-gray-150 rounded bg-white">
-          <span className="text-[9px] uppercase font-bold text-gray-400 block">Margin Percentage</span>
-          <span className="font-extrabold text-sm text-emerald-700 block mt-0.5">{profitMarginPct}%</span>
-        </div>
-        <div className="p-3 border border-gray-150 rounded bg-white">
-          <span className="text-[9px] uppercase font-bold text-gray-400 block">Approved Tender Val</span>
-          <span className="font-extrabold text-sm text-gray-900 block mt-0.5">{safeFormatCurrency(totalApprovedTender)}</span>
-        </div>
-        <div className="p-3 border border-gray-150 rounded bg-white">
-          <span className="text-[9px] uppercase font-bold text-gray-400 block">Client Payments Recd</span>
-          <span className="font-extrabold text-sm text-emerald-800 block mt-0.5">{safeFormatCurrency(clientPaymentReceived)}</span>
-        </div>
-      </div>
-
-      {/* Secondary Financial & Dates Summary Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Financial Breakdown */}
-        <div className="p-3.5 border border-gray-150 rounded bg-gray-50/40 space-y-2 text-xs">
-          <h4 className="font-bold text-gray-700 uppercase text-[9.5px] tracking-wider border-b pb-1.5 border-gray-200">
-            Financial Ledger Summary
-          </h4>
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div className="flex justify-between py-1 border-b border-gray-100">
-              <span className="text-gray-500">Client Bill Approved:</span>
-              <span className="font-bold text-gray-800">{safeFormatCurrency(clientBillApproved)}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-gray-100">
-              <span className="text-gray-500">Approved Budget:</span>
-              <span className="font-bold text-gray-800">{safeFormatCurrency(approvedBudgetVal)}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-gray-100">
-              <span className="text-gray-500">Paid to Vendors:</span>
-              <span className="font-bold text-gray-800">{safeFormatCurrency(vendorPaidTotal)}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-gray-100">
-              <span className="text-gray-500">Total Site Budget:</span>
-              <span className="font-extrabold text-brand-700">{isNotStarted ? safeFormatCurrency(0) : safeFormatCurrency(site.budget)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Schedule & Progress Status */}
-        <div className="p-3.5 border border-gray-150 rounded bg-gray-50/40 space-y-2 text-xs">
-          <h4 className="font-bold text-gray-700 uppercase text-[9.5px] tracking-wider border-b pb-1.5 border-gray-200">
-            Site Schedule & Progress Tracker
-          </h4>
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div className="p-2 bg-white rounded border border-gray-200">
-              <span className="text-[9px] uppercase font-bold text-gray-400 block">Start Date</span>
-              <div className="font-mono font-bold text-gray-800 mt-0.5">{site.startDate}</div>
-              <span className="text-[9.5px] text-gray-500 block mt-1">Status: <strong className="text-gray-800 uppercase">{site.executionStatus}</strong></span>
-            </div>
-            <div className="p-2 bg-white rounded border border-gray-200">
-              <span className="text-[9px] uppercase font-bold text-gray-400 block">Target Completion</span>
-              <div className="font-mono font-bold text-gray-800 mt-0.5">{site.targetCompletion}</div>
-              <span className="text-[9.5px] text-gray-500 block mt-1">Progress: <strong className="text-brand-700">{site.progress}%</strong></span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Chart 2: Selected Site Performance Matrix */}
-      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-3 font-sans">
-        <div className="flex items-center justify-between border-b pb-2">
-          <div>
-            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
-              Selected Site Performance Matrix ({site.code} - {site.name})
-            </h4>
-            <p className="text-[10px] text-gray-400 font-medium leading-tight">
-              Operational benchmark metrics scaled from 0% to 100%. Highlighted warnings indicate schedule/cost deviations.
-            </p>
-          </div>
-          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
-            Selected-Site Dynamic
-          </span>
-        </div>
-        <div className="h-[260px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart layout="vertical" data={getSelectedSitePerformanceMatrix(site)} margin={{ top: 5, right: 45, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-              <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 9, fill: '#6b7280' }} />
-              <YAxis type="category" dataKey="metric" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} width={115} />
-              <Tooltip 
-                formatter={(val: number, _n: string, props: any) => [
-                  `${val}% ${props.payload.warningReason ? `⚠️ ${props.payload.warningReason}` : ''}`,
-                  props.payload.metric
-                ]} 
-                contentStyle={{ fontSize: '11px', borderRadius: '6px' }}
-              />
-              <Bar dataKey="value" name="Metric Achievement" radius={[0, 3, 3, 0]}>
-                {getSelectedSitePerformanceMatrix(site).map((entry: SiteMatrixMetric, index: number) => (
-                  <Cell key={`matrix-cell-${index}`} fill={entry.color} />
-                ))}
-                <LabelList dataKey="value" position="right" formatter={(v: number) => `${v}%`} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#374151' }} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// Section 3: Site Progress Matrix
-// ==========================================
-export const SiteProgressMatrixSection: React.FC<{ site: SiteSchema | null }> = ({ site }) => {
-  if (!site) {
-    return (
-      <div className="p-6 bg-brand-50/50 border border-brand-200 rounded-md text-center space-y-2 font-sans">
-        <h3 className="font-extrabold text-sm text-brand-900">ALL SITES — Portfolio Performance Mode</h3>
-        <p className="text-xs text-gray-500 max-w-xl mx-auto">
-          Currently displaying portfolio view. Select a specific project site from the Header dropdown to inspect site-level progress matrix metrics.
-        </p>
-      </div>
-    );
-  }
-
-  const isNotStarted = site.executionStatus === 'not_started' || site.workflowStatus === 'draft';
-
-  const indicators = [
-    { label: 'Time Progress', pct: isNotStarted ? 0 : Math.round((142 / 270) * 100), color: 'bg-blue-500' },
-    { label: 'Site Execution Progress', pct: isNotStarted ? 0 : (site.progress || 0), color: 'bg-brand-500' },
-    { label: 'Bill Progress', pct: isNotStarted ? 0 : 42, color: 'bg-amber-500' },
-    { label: 'Client Payment Progress', pct: isNotStarted ? 0 : 32, color: 'bg-emerald-500' },
-    { label: 'Vendor Bill Progress', pct: isNotStarted ? 0 : 38, color: 'bg-indigo-500' },
-    { label: 'Vendor Payment Progress', pct: isNotStarted ? 0 : 28, color: 'bg-purple-500' },
-    { label: 'Budget Consumption', pct: isNotStarted ? 0 : 44, color: 'bg-rose-500' },
-    { label: 'Gross Profit', pct: isNotStarted ? 0 : 22, color: 'bg-teal-500' }
+  const cards = [
+    {
+      label: 'Active Projects',
+      value: `${kpis.activeProjectsCount} / ${kpis.totalProjectsCount}`,
+      sub: 'Site execution active',
+      icon: Building2,
+      variant: 'brand',
+      onClick: () => navigateWithFilter(navigate, '/projects', { status: 'active' }),
+    },
+    {
+      label: 'Total Contract Value',
+      value: safeFormatCurrency(kpis.totalContractValue),
+      sub: 'Accepted BOQ value',
+      icon: FileText,
+      variant: 'gold',
+      onClick: () => navigateWithFilter(navigate, '/reports/project-financial'),
+    },
+    {
+      label: 'Approved Budget',
+      value: safeFormatCurrency(kpis.approvedBudget),
+      sub: 'Baseline cost budget',
+      icon: Wallet,
+      variant: 'default',
+      onClick: () => navigateWithFilter(navigate, '/reports/project-financial'),
+    },
+    {
+      label: 'Committed Cost',
+      value: safeFormatCurrency(kpis.committedCost),
+      sub: 'POs + Subcontract WOs',
+      icon: ShoppingCart,
+      variant: 'warning',
+      onClick: () => navigateWithFilter(navigate, '/procurement/purchase-orders'),
+    },
+    {
+      label: 'Actual Cost',
+      value: safeFormatCurrency(kpis.actualCost),
+      sub: 'GRNs + SC Bills',
+      icon: DollarSign,
+      variant: 'danger',
+      onClick: () => navigateWithFilter(navigate, '/inventory/grns'),
+    },
+    {
+      label: 'Client Billed',
+      value: safeFormatCurrency(kpis.clientBilled),
+      sub: 'Net RA billed to clients',
+      icon: FileCheck2,
+      variant: 'info',
+      onClick: () => navigateWithFilter(navigate, '/finance/client-ra-bills'),
+    },
+    {
+      label: 'Client Received',
+      value: safeFormatCurrency(kpis.clientReceived),
+      sub: 'Cleared in bank account',
+      icon: TrendingUp,
+      variant: 'success',
+      onClick: () => navigateWithFilter(navigate, '/finance/client-ra-bills', { paymentStatus: 'Paid' }),
+    },
+    {
+      label: 'Client Outstanding',
+      value: safeFormatCurrency(kpis.clientOutstanding),
+      sub: 'Pending collection',
+      icon: Clock,
+      variant: 'warning',
+      onClick: () => navigateWithFilter(navigate, '/finance/client-ra-bills', { paymentStatus: 'Payment Pending' }),
+    },
+    {
+      label: 'Vendor & SC Payable',
+      value: safeFormatCurrency(kpis.totalPayable),
+      sub: 'Total unpaid liability',
+      icon: Store,
+      variant: 'danger',
+      onClick: () => navigateWithFilter(navigate, '/finance/accounts-payable', { status: 'Pending' }),
+    },
+    {
+      label: 'Gross Profit',
+      value: safeFormatCurrency(kpis.grossProfit),
+      sub: 'Contract - Actual Cost',
+      icon: DollarSign,
+      variant: 'success',
+      onClick: () => navigateWithFilter(navigate, '/reports/project-margin'),
+    },
+    {
+      label: 'Projected Margin %',
+      value: `${kpis.marginPct}%`,
+      sub: 'Gross profit margin',
+      icon: TrendingUp,
+      variant: 'brand',
+      onClick: () => navigateWithFilter(navigate, '/reports/project-margin'),
+    },
+    {
+      label: 'Pending Approvals',
+      value: kpis.pendingApprovalsCount,
+      sub: 'Action required queue',
+      icon: ShieldAlert,
+      variant: 'danger',
+      onClick: () => navigateWithFilter(navigate, '/procurement/indent-approvals'),
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-sans">
-      {indicators.map((ind, idx) => (
-        <div key={idx} className="p-3.5 border border-gray-150 rounded bg-white space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-gray-700 text-[11px]">{ind.label}</span>
-            <span className="font-extrabold text-gray-900 text-xs">{ind.pct}%</span>
+    <div className="space-y-5 font-sans">
+      {/* 6 to 12 Top KPI Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        {cards.map((card, idx) => {
+          const Icon = card.icon;
+          return (
+            <button
+              key={idx}
+              onClick={card.onClick}
+              className="p-3.5 border border-gray-200 rounded-lg bg-white hover:border-brand-400 hover:shadow-md transition-all text-left group flex flex-col justify-between h-[105px] focus:outline-none"
+            >
+              <div className="flex items-center justify-between gap-1 w-full">
+                <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-gray-500 group-hover:text-brand-700 transition-colors truncate">
+                  {card.label}
+                </span>
+                <div className="p-1 rounded bg-gray-50 group-hover:bg-brand-50 border border-gray-100 transition-colors shrink-0">
+                  <Icon className="h-3.5 w-3.5 text-gray-400 group-hover:text-brand-700" />
+                </div>
+              </div>
+
+              <div>
+                <span className="font-extrabold text-sm sm:text-base text-gray-900 block tracking-tight font-mono">
+                  {card.value}
+                </span>
+                <span className="text-[9px] font-semibold text-gray-400 block mt-0.5 truncate">
+                  {card.sub}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ONE Large Full-Width Portfolio Financial Comparison Graph */}
+      <div className="p-5 sm:p-6 border border-gray-200 rounded-xl bg-white space-y-3 shadow-xs w-full">
+        <div className="flex items-center justify-between border-b pb-3">
+          <div>
+            <h3 className="font-extrabold text-sm text-gray-900 uppercase tracking-wider flex items-center gap-2">
+              <BarChart3 className="h-4.5 w-4.5 text-brand-600" /> PORTFOLIO FINANCIAL COMPARISON (TOP 8 ACTIVE SITES)
+            </h3>
+            <p className="text-xs text-gray-500 font-medium mt-0.5">
+              Approved Baseline Budget vs Actual Outlay vs Client Billing across Active Projects
+            </p>
           </div>
-          <div className="w-full bg-gray-150 h-2 rounded-full overflow-hidden">
-            <div className={`h-full ${ind.color} rounded-full transition-all duration-300`} style={{ width: `${ind.pct}%` }}></div>
-          </div>
+          <span className="text-xs font-bold text-brand-800 bg-brand-50 border border-brand-200 px-3 py-1 rounded-md">
+            {data.isPortfolioMode ? 'Top 8 Active Sites' : data.selectedProjectName}
+          </span>
         </div>
-      ))}
+
+        <div className="h-[380px] w-full pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data.projectComparisonData} margin={{ top: 15, right: 25, left: 15, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#374151', fontWeight: 600 }} angle={-10} textAnchor="end" />
+              <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+              <Tooltip content={<CustomPortfolioTooltip />} />
+              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+              <Bar dataKey="approvedBudget" name="Approved Budget" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="actualCost" name="Actual Outlay" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="clientBilled" name="Client Billing" fill="#10b981" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 };
 
-// ==========================================
-// Section 4: Client Tender and Billing Snapshot
-// ==========================================
-export const ClientTenderBillingSection: React.FC<{ site: SiteSchema | null }> = ({ site }) => {
-  if (!site) {
+const CustomPortfolioTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const item = payload[0].payload;
     return (
-      <div className="p-6 bg-brand-50/50 border border-brand-200 rounded-md text-center space-y-2 font-sans col-span-2">
-        <h3 className="font-extrabold text-sm text-brand-900">ALL SITES — Portfolio View</h3>
-        <p className="text-xs text-gray-500 max-w-xl mx-auto">
-          Select a specific project site from the Header dropdown to inspect client tender approvals and billing series.
-        </p>
+      <div className="bg-gray-900 text-white p-3.5 rounded-xl shadow-xl border border-gray-700 text-xs font-sans space-y-1.5 min-w-[240px]">
+        <div className="font-extrabold text-brand-300 text-sm border-b border-gray-700 pb-1">
+          {item.fullName}
+        </div>
+        <div className="text-[10.5px] text-gray-400 font-mono font-semibold">
+          Project Code: {item.code}
+        </div>
+        <div className="space-y-1 pt-1 font-mono text-[11px]">
+          <div className="flex justify-between items-center text-blue-400">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block"/> Approved Budget:</span>
+            <span className="font-bold">{safeFormatCurrency(item.approvedBudget)}</span>
+          </div>
+          <div className="flex justify-between items-center text-rose-400">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block"/> Actual Outlay:</span>
+            <span className="font-bold">{safeFormatCurrency(item.actualCost)}</span>
+          </div>
+          <div className="flex justify-between items-center text-emerald-400">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"/> Client Billing:</span>
+            <span className="font-bold">{safeFormatCurrency(item.clientBilled)}</span>
+          </div>
+        </div>
       </div>
     );
   }
+  return null;
+};
 
-  const isNotStarted = site.executionStatus === 'not_started' || site.workflowStatus === 'draft';
+const CircularProgressCard: React.FC<{
+  label: string;
+  pct: number;
+  sublabel: string;
+  colorHex: string;
+}> = ({ label, pct, sublabel, colorHex }) => {
+  const radius = 38;
+  const strokeWidth = 7.5;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(100, Math.max(0, pct)) / 100) * circumference;
 
-  const tenderVal = isNotStarted ? 0 : Math.round(site.budget * 0.95);
-  const tenderApprovedVal = isNotStarted ? 0 : Math.round(site.budget * 0.90);
-  const extraTenderVal = isNotStarted ? 0 : Math.round(site.budget * 0.12);
-  const extraApprovedVal = isNotStarted ? 0 : Math.round(site.budget * 0.10);
-
-  const billSubmitted = isNotStarted ? 0 : Math.round(site.budget * 0.45);
-  const billApproved = isNotStarted ? 0 : Math.round(site.budget * 0.40);
-  const billHeld = isNotStarted ? 0 : Math.round(site.budget * 0.03);
-  const billUnsubmitted = isNotStarted ? 0 : Math.round(site.budget * 0.52);
+  const getSemanticBadgeClass = (val: number) => {
+    if (val >= 75) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (val >= 50) return 'bg-amber-50 text-amber-700 border-amber-200';
+    if (val >= 25) return 'bg-blue-50 text-blue-700 border-blue-200';
+    return 'bg-rose-50 text-rose-700 border-rose-200';
+  };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 font-sans">
-      {/* Table grid */}
-      <div className="space-y-3">
-        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Tender & Extra Item Summary</h4>
-        <table className="w-full text-left text-xs border border-gray-150 rounded divide-y divide-gray-100">
-          <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
-            <tr>
-              <th className="p-2.5">Category</th>
-              <th className="p-2.5 text-right">Submitted</th>
-              <th className="p-2.5 text-right">Approved</th>
-              <th className="p-2.5 text-right">Approval %</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-            <tr>
-              <td className="p-2.5 font-bold text-gray-800">Main Tender</td>
-              <td className="p-2.5 text-right font-mono">{safeFormatCurrency(tenderVal)}</td>
-              <td className="p-2.5 text-right font-mono">{safeFormatCurrency(tenderApprovedVal)}</td>
-              <td className="p-2.5 text-right font-bold text-emerald-700">94.7%</td>
-            </tr>
-            <tr>
-              <td className="p-2.5 font-bold text-gray-800">Extra Item Tender</td>
-              <td className="p-2.5 text-right font-mono">{safeFormatCurrency(extraTenderVal)}</td>
-              <td className="p-2.5 text-right font-mono">{safeFormatCurrency(extraApprovedVal)}</td>
-              <td className="p-2.5 text-right font-bold text-emerald-700">83.3%</td>
-            </tr>
-          </tbody>
-        </table>
+    <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-xs hover:border-brand-400 hover:shadow-md transition-all flex flex-col items-center justify-between text-center group font-sans">
+      <div className="w-full flex items-center justify-between gap-1 mb-1">
+        <span className="text-[10.5px] font-extrabold text-gray-800 uppercase tracking-tight truncate">
+          {label}
+        </span>
+        <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded border ${getSemanticBadgeClass(pct)}`}>
+          {pct}%
+        </span>
+      </div>
 
-        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider pt-2">Client Bill Status Breakdown</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          <div className="p-2 bg-gray-50 border rounded">
-            <span className="text-[9px] uppercase font-bold text-gray-400 block">Submitted Bill</span>
-            <span className="font-bold text-gray-800 font-mono text-xs mt-0.5 block">{safeFormatCurrency(billSubmitted)}</span>
+      <div className="relative w-24 h-24 my-2 flex items-center justify-center">
+        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+          <circle
+            cx="50"
+            cy="50"
+            r={radius}
+            stroke="#f3f4f6"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r={radius}
+            stroke={colorHex}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            fill="transparent"
+            className="transition-all duration-1000 ease-out"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-lg font-extrabold text-gray-900 font-mono tracking-tighter">
+            {pct}%
+          </span>
+          <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+            Target
+          </span>
+        </div>
+      </div>
+
+      <div className="w-full pt-2 border-t border-gray-100">
+        <span className="text-[9.5px] font-semibold text-gray-500 block truncate">
+          {sublabel}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// SECTION 2: Project Performance & Gantt Timeline
+// ============================================================================
+export const ProjectPerformanceGanttSection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
+  const perf = data.performanceProgress;
+  const gantt = data.ganttMilestones;
+  const isPortfolio = data.isPortfolioMode;
+
+  const metrics = [
+    { label: 'Time Progress', pct: perf.timeElapsedPct, sublabel: `Time Elapsed: ${perf.timeElapsedPct}%`, colorHex: '#3b82f6' },
+    { label: 'Site Execution', pct: perf.siteExecutionPct, sublabel: `Physical BOQ: ${perf.siteExecutionPct}%`, colorHex: '#ab9570' },
+    { label: 'Procurement Outlay', pct: perf.procurementPct, sublabel: `POs Committed: ${perf.procurementPct}%`, colorHex: '#6366f1' },
+    { label: 'Material Receipt', pct: perf.materialReceiptPct, sublabel: `GRNs Logged: ${perf.materialReceiptPct}%`, colorHex: '#f59e0b' },
+    { label: 'Client Billing', pct: perf.billingPct, sublabel: `RA Bills Claimed: ${perf.billingPct}%`, colorHex: '#0284c7' },
+    { label: 'Client Collection', pct: perf.collectionPct, sublabel: `Payments Cleared: ${perf.collectionPct}%`, colorHex: '#10b981' },
+    { label: 'Vendor Payment', pct: perf.vendorPaymentPct, sublabel: `AP Invoices Settled: ${perf.vendorPaymentPct}%`, colorHex: '#8b5cf6' },
+    { label: 'Budget Outlay', pct: perf.budgetConsumptionPct, sublabel: `Budget Outlay: ${perf.budgetConsumptionPct}%`, colorHex: '#e11d48' },
+  ];
+
+  return (
+    <div className="space-y-6 font-sans">
+      {/* PROJECT PERFORMANCE INDEX (8 Circular Progress Indicators) */}
+      <div className="p-5 sm:p-6 border border-gray-200 rounded-xl bg-white space-y-4 shadow-xs">
+        <div className="flex items-center justify-between border-b pb-3">
+          <div>
+            <h3 className="font-extrabold text-sm text-gray-900 uppercase tracking-wider flex items-center gap-2">
+              <Activity className="h-4.5 w-4.5 text-brand-600" /> PROJECT PERFORMANCE INDEX
+            </h3>
+            <p className="text-xs text-gray-500 font-medium mt-0.5">
+              Current operational progress across 8 core project and financial metrics.
+            </p>
           </div>
-          <div className="p-2 bg-emerald-50/50 border border-emerald-150 rounded">
-            <span className="text-[9px] uppercase font-bold text-emerald-700 block">Approved Bill</span>
-            <span className="font-bold text-emerald-900 font-mono text-xs mt-0.5 block">{safeFormatCurrency(billApproved)}</span>
+          <span className="text-xs font-bold text-brand-800 bg-brand-50 border border-brand-200 px-3 py-1 rounded-md">
+            8 CORE METRICS
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-1">
+          {metrics.map((m, idx) => (
+            <CircularProgressCard
+              key={idx}
+              label={m.label}
+              pct={m.pct}
+              sublabel={m.sublabel}
+              colorHex={m.colorHex}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Row 2: Visual Gantt Timeline Chart (100% Full Width) */}
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-4 shadow-sm w-full">
+        <div className="flex flex-wrap items-center justify-between border-b pb-3 gap-2">
+          <div>
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+              <Calendar className="h-4 w-4 text-brand-600" />
+              {isPortfolio ? 'Portfolio Work Package Gantt Schedule' : `Project Schedule & Milestone Gantt (${data.selectedProjectName})`}
+            </h4>
+            <p className="text-[10px] text-gray-400 font-medium">Visual project timeline spanning planned work packages, milestones, and completion status.</p>
           </div>
-          <div className="p-2 bg-amber-50/50 border border-amber-150 rounded">
-            <span className="text-[9px] uppercase font-bold text-amber-700 block">Held Bill Amount</span>
-            <span className="font-bold text-amber-900 font-mono text-xs mt-0.5 block">{safeFormatCurrency(billHeld)}</span>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1 text-[9.5px] font-semibold text-gray-500">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Completed
+            </span>
+            <span className="flex items-center gap-1 text-[9.5px] font-semibold text-gray-500">
+              <span className="w-2.5 h-2.5 rounded-full bg-brand-500 inline-block"></span> In Progress
+            </span>
+            <span className="flex items-center gap-1 text-[9.5px] font-semibold text-gray-500">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-400 inline-block"></span> Upcoming
+            </span>
+            <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded ml-2">
+              {isPortfolio ? 'All Projects' : 'Project Filtered'}
+            </span>
           </div>
-          <div className="p-2 bg-gray-50 border rounded">
-            <span className="text-[9px] uppercase font-bold text-gray-400 block">Unsubmitted Bill</span>
-            <span className="font-bold text-gray-800 font-mono text-xs mt-0.5 block">{safeFormatCurrency(billUnsubmitted)}</span>
+        </div>
+
+        {/* Visual Gantt Matrix */}
+        <div className="overflow-x-auto">
+          <div className="min-w-[700px] text-xs font-sans">
+            {/* Gantt Header Month Scale */}
+            <div className="grid grid-cols-12 gap-1 bg-gray-100 p-2 rounded-t-lg font-bold text-[10px] text-gray-600 uppercase border-b border-gray-200">
+              <div className="col-span-4">Work Package & Owner</div>
+              <div className="col-span-1 text-center">Dates</div>
+              <div className="col-span-6 grid grid-cols-6 text-center">
+                <div>May 26</div>
+                <div>Jun 26</div>
+                <div>Jul 26</div>
+                <div>Aug 26</div>
+                <div>Sep 26</div>
+                <div>Oct 26</div>
+              </div>
+              <div className="col-span-1 text-right">Status</div>
+            </div>
+
+            {/* Gantt Rows */}
+            <div className="divide-y divide-gray-100 border-x border-b border-gray-200 rounded-b-lg bg-white">
+              {gantt.map((m, idx) => {
+                // Calculate visual offsets for timeline bar
+                const startMonthIdx = idx % 3; // 0=May, 1=Jun, 2=Jul
+                const duration = Math.min(5, 2 + (idx % 3)); // 2-4 months duration
+                const offsetCols = startMonthIdx;
+                
+                return (
+                  <div key={m.id} className="grid grid-cols-12 gap-1 p-2.5 items-center hover:bg-gray-50/80 transition-colors">
+                    {/* Column 1: Package Name & Phase */}
+                    <div className="col-span-4 pr-2">
+                      <div className="font-bold text-gray-900 text-xs truncate">{m.name}</div>
+                      <div className="text-[9.5px] text-gray-400 font-semibold flex items-center gap-1 mt-0.5">
+                        <span className="px-1.5 py-0.2 bg-gray-100 border border-gray-200 rounded text-gray-600 font-bold">{m.phase}</span>
+                        <span>•</span>
+                        <span>{m.owner}</span>
+                      </div>
+                    </div>
+
+                    {/* Column 2: Planned Dates */}
+                    <div className="col-span-1 text-center font-mono text-[9.5px] text-gray-500">
+                      <div>{m.plannedStart ? m.plannedStart.substring(5) : '05-01'}</div>
+                      <div className="text-[8.5px] text-gray-400">to {m.plannedEnd ? m.plannedEnd.substring(5) : '09-30'}</div>
+                    </div>
+
+                    {/* Column 3: Visual Timeline Bar spanning months */}
+                    <div className="col-span-6 grid grid-cols-6 items-center h-7 relative px-1 bg-gray-50/60 rounded">
+                      <div 
+                        className="h-5 rounded-full relative overflow-hidden flex items-center justify-between px-2 text-[9px] font-bold text-white shadow-xs transition-all duration-300"
+                        style={{
+                          gridColumnStart: offsetCols + 1,
+                          gridColumnEnd: `span ${duration}`,
+                          backgroundColor: m.status === 'Completed' ? '#10b981' : m.status === 'In Progress' ? '#ab9570' : '#3b82f6'
+                        }}
+                      >
+                        {/* Progress overlay */}
+                        <div 
+                          className="absolute left-0 top-0 bottom-0 bg-black/20 rounded-full"
+                          style={{ width: `${m.progress}%` }}
+                        />
+                        <span className="relative z-10 font-sans truncate pr-1">{m.progress}%</span>
+                        <span className="relative z-10 font-mono text-[8px] opacity-90">{m.phase}</span>
+                      </div>
+                    </div>
+
+                    {/* Column 4: Status Badge */}
+                    <div className="col-span-1 text-right">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                          m.status === 'Completed'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : m.status === 'In Progress'
+                            ? 'bg-brand-50 text-brand-700 border border-brand-200'
+                            : 'bg-gray-100 text-gray-600 border border-gray-200'
+                        }`}
+                      >
+                        {m.status}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// SECTION 3: Commercial Position
+// ============================================================================
+export const CommercialPositionSection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
+  const tender = data.tenderSummary;
+  const waterfall = data.waterfallData;
+  const budgetVsActual = data.budgetVsActualByCategory;
+  const expComp = data.expenditureComposition;
+  const profitTrend = data.profitTrendMonthly;
+
+  return (
+    <div className="space-y-5 font-sans">
+      {/* ROW 1: Revenue & Profit Trend (100% Full-Width Line Chart - Requirement 4) */}
+      <div className="p-5 sm:p-6 border border-gray-200 rounded-xl bg-white space-y-3 shadow-xs w-full">
+        <div className="flex items-center justify-between border-b pb-3">
+          <div>
+            <h4 className="font-extrabold text-sm text-gray-900 uppercase tracking-wider flex items-center gap-2">
+              <TrendingUp className="h-4.5 w-4.5 text-emerald-600" /> REVENUE & PROFIT TREND
+            </h4>
+            <p className="text-xs text-gray-500 font-medium mt-0.5">
+              Monthly Recognized Client Billed Revenue vs Actual Cost & Gross Margin (May - Oct 2026)
+            </p>
+          </div>
+          <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-md">
+            Portfolio Financial Trajectory
+          </span>
+        </div>
+        <div className="h-[380px] w-full pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={profitTrend} margin={{ top: 15, right: 25, left: 15, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#374151', fontWeight: 600 }} />
+              <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+              <Tooltip formatter={(v: number) => [safeFormatCurrency(v), '']} contentStyle={{ fontSize: '12px', borderRadius: '8px' }} />
+              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+              <Line type="monotone" dataKey="billedRevenue" name="Client Billed Revenue" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="actualCost" name="Actual Recognized Cost" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="grossProfit" name="Gross Profit Surplus" stroke="#10b981" strokeWidth={3} dot={{ r: 5 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ROW 2: 50% / 50% Split (Cost Composition Donut + Tender Position) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Donut: Cost Composition */}
+        <div className="p-5 border border-gray-200 rounded-xl bg-white space-y-3 shadow-xs">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+              <PieChartIcon className="h-4 w-4 text-brand-600" /> Cost Composition Donut
+            </h4>
+            <span className="text-[9.5px] font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
+              Outlay Breakdown
+            </span>
+          </div>
+          <div className="h-[320px] w-full flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={expComp} cx="50%" cy="48%" innerRadius={55} outerRadius={90} paddingAngle={5} dataKey="value">
+                  {expComp.map((entry, index) => (
+                    <Cell key={`exp-cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(val: number) => [safeFormatCurrency(val), 'Cost Share']} contentStyle={{ fontSize: '11.5px', borderRadius: '6px' }} />
+                <Legend wrapperStyle={{ fontSize: '10.5px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Tender & Extra Item Position Summary */}
+        <div className="p-5 border border-gray-200 rounded-xl bg-white space-y-4 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b pb-2">
+              <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+                Tender Bidding & Commercial Variation Claims
+              </h4>
+              <span className="text-[9.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                Win Rate: {tender.winRatePct}%
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <span className="text-[9.5px] uppercase font-bold text-gray-400 block">Submitted Tenders</span>
+                <span className="font-extrabold text-sm text-gray-900 font-mono mt-1 block">{safeFormatCurrency(tender.submittedValue)}</span>
+              </div>
+              <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+                <span className="text-[9.5px] uppercase font-bold text-emerald-700 block">Awarded / Won</span>
+                <span className="font-extrabold text-sm text-emerald-900 font-mono mt-1 block">{safeFormatCurrency(tender.approvedValue)}</span>
+              </div>
+              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg">
+                <span className="text-[9.5px] uppercase font-bold text-amber-700 block">Pending Decision</span>
+                <span className="font-extrabold text-sm text-amber-900 font-mono mt-1 block">{safeFormatCurrency(tender.pendingValue)}</span>
+              </div>
+              <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-lg">
+                <span className="text-[9.5px] uppercase font-bold text-rose-700 block">Lost Opportunities</span>
+                <span className="font-extrabold text-sm text-rose-900 font-mono mt-1 block">{safeFormatCurrency(tender.lostValue)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3.5 bg-brand-50/70 border border-brand-200 rounded-lg flex items-center justify-between text-xs">
+            <div>
+              <span className="font-bold text-brand-900 block text-xs">Commercial Extra Work & Variation Claims</span>
+              <span className="text-[10px] text-gray-500 font-medium">4 variation orders submitted for client approval</span>
+            </div>
+            <span className="font-extrabold text-brand-800 font-mono text-sm">₹14.50 L</span>
           </div>
         </div>
       </div>
 
-      {/* Chart 3: Client Billing and Collections Composed Chart */}
-      <div className="p-3.5 border border-gray-150 rounded bg-white flex flex-col justify-between space-y-2">
-        <div className="flex items-center justify-between border-b pb-1.5">
-          <div>
-            <h4 className="font-bold text-xs text-gray-900 uppercase tracking-wider">Client Billing & Collections ({site.code})</h4>
-            <p className="text-[10px] text-gray-400 font-medium">Monthly billing activity vs client receipts for 2026.</p>
+      {/* ROW 3: 50% / 50% Split (Financial Waterfall + Budget Baseline vs Actual) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Waterfall Chart: Financial Margin Waterfall */}
+        <div className="p-5 border border-gray-200 rounded-xl bg-white space-y-2 shadow-xs">
+          <div className="flex items-center justify-between border-b pb-2">
+            <div>
+              <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                <BarChart3 className="h-4 w-4 text-brand-600" /> Commercial Financial Waterfall
+              </h4>
+              <p className="text-[10px] text-gray-400 font-medium">Contract Revenue &rarr; Direct Material & Subcontractor Deductions &rarr; Gross Profit.</p>
+            </div>
+            <span className="text-[9.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+              Margin Waterfall
+            </span>
           </div>
-          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-1.5 py-0.5 rounded">
-            Selected-Site Series
-          </span>
+          <div className="h-[300px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={waterfall} margin={{ top: 10, right: 15, left: 10, bottom: 25 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis dataKey="stage" tick={{ fontSize: 9.5, fill: '#374151', fontWeight: 600 }} angle={-10} textAnchor="end" />
+                <YAxis tick={{ fontSize: 9.5, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+                <Tooltip formatter={(v: number) => [safeFormatCurrency(Math.abs(v)), 'Stage Value']} contentStyle={{ fontSize: '11.5px', borderRadius: '6px' }} />
+                <Bar dataKey="value" name="Stage Amount" radius={[3, 3, 0, 0]}>
+                  {waterfall.map((entry, index) => (
+                    <Cell key={`wf-cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        <div className="h-[220px] w-full pt-1">
+
+        {/* Budget vs Actual Grouped Bar Chart by Category */}
+        <div className="p-5 border border-gray-200 rounded-xl bg-white space-y-2 shadow-xs">
+          <div className="flex items-center justify-between border-b pb-2">
+            <div>
+              <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+                Budget Baseline vs Actual Outlay by Trade Category
+              </h4>
+              <p className="text-[10px] text-gray-400 font-medium">Variance tracking across major work trades.</p>
+            </div>
+            <span className="text-[9.5px] font-bold text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+              Trade Breakdown
+            </span>
+          </div>
+          <div className="h-[300px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={budgetVsActual} margin={{ top: 10, right: 15, left: 10, bottom: 25 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis dataKey="category" tick={{ fontSize: 9.5, fill: '#374151', fontWeight: 600 }} angle={-15} textAnchor="end" />
+                <YAxis tick={{ fontSize: 9.5, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+                <Tooltip formatter={(v: number) => [safeFormatCurrency(v), '']} contentStyle={{ fontSize: '11.5px', borderRadius: '6px' }} />
+                <Legend wrapperStyle={{ fontSize: '10.5px' }} />
+                <Bar dataKey="budget" name="Approved Budget" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="committed" name="Committed Cost" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="actual" name="Actual Cost" fill="#ef4444" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// SECTION 4: Procurement Intelligence
+// ============================================================================
+export const ProcurementIntelligenceSection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
+  const navigate = useNavigate();
+  const pf = data.procurementFunnel;
+  const deliveries = data.upcomingDeliveries;
+  const spend = data.poSpendByCategory;
+  const purchaseTrend = data.purchaseValueTrend;
+  const topVendors = data.topVendorsList;
+
+  return (
+    <div className="space-y-5 font-sans">
+      {/* Detailed Procurement Pipeline Funnel */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs font-semibold">
+        <div className="p-2.5 bg-gray-50 border border-gray-200 rounded">
+          <span className="text-[9px] text-gray-400 uppercase font-bold block">1. Requirements</span>
+          <span className="font-extrabold text-sm text-gray-900 mt-0.5 block">{pf.requirementsCount} Items</span>
+        </div>
+        <button
+          onClick={() => navigateWithFilter(navigate, '/procurement/indents')}
+          className="p-2.5 bg-brand-50/50 border border-brand-200 rounded text-left hover:bg-brand-100/50 transition-colors focus:outline-none"
+        >
+          <span className="text-[9px] text-brand-700 uppercase font-bold block">2. Indents</span>
+          <span className="font-extrabold text-sm text-brand-900 mt-0.5 block">{pf.indentsCount} ({safeFormatCurrency(pf.indentsValue)})</span>
+        </button>
+        <button
+          onClick={() => navigateWithFilter(navigate, '/procurement/rfqs')}
+          className="p-2.5 bg-indigo-50/50 border border-indigo-200 rounded text-left hover:bg-indigo-100/50 transition-colors focus:outline-none"
+        >
+          <span className="text-[9px] text-indigo-700 uppercase font-bold block">3. RFQs Issued</span>
+          <span className="font-extrabold text-sm text-indigo-900 mt-0.5 block">{pf.rfqsCount} RFQs</span>
+        </button>
+        <div className="p-2.5 bg-blue-50/50 border border-blue-200 rounded text-left">
+          <span className="text-[9px] text-blue-700 uppercase font-bold block">4. Quotes Received</span>
+          <span className="font-extrabold text-sm text-blue-900 mt-0.5 block">{pf.quotesCount} Quotes</span>
+        </div>
+        <button
+          onClick={() => navigateWithFilter(navigate, '/procurement/purchase-orders')}
+          className="p-2.5 bg-amber-50/50 border border-amber-200 rounded text-left hover:bg-amber-100/50 transition-colors focus:outline-none"
+        >
+          <span className="text-[9px] text-amber-700 uppercase font-bold block">5. Purchase Orders</span>
+          <span className="font-extrabold text-sm text-amber-900 mt-0.5 block">{pf.posCount} ({safeFormatCurrency(pf.posValue)})</span>
+        </button>
+        <div className="p-2.5 bg-purple-50/50 border border-purple-200 rounded text-left">
+          <span className="text-[9px] text-purple-700 uppercase font-bold block">6. In-Transit</span>
+          <span className="font-extrabold text-sm text-purple-900 mt-0.5 block">{pf.deliveriesCount} Deliveries</span>
+        </div>
+        <button
+          onClick={() => navigateWithFilter(navigate, '/inventory/grns')}
+          className="p-2.5 bg-emerald-50/50 border border-emerald-200 rounded text-left hover:bg-emerald-100/50 transition-colors focus:outline-none"
+        >
+          <span className="text-[9px] text-emerald-700 uppercase font-bold block">7. GRNs Received</span>
+          <span className="font-extrabold text-sm text-emerald-900 mt-0.5 block">{pf.grnsCount} ({safeFormatCurrency(pf.grnsValue)})</span>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Purchase Value Trend Chart: PO Ordered vs GRN Received */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-2">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Purchase Order Value vs Physical GRN Receipt Trend
+            </h4>
+            <span className="text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+              Procurement Trend
+            </span>
+          </div>
+          <div className="h-[230px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={purchaseTrend} margin={{ top: 10, right: 15, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#374151' }} />
+                <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+                <Tooltip formatter={(v: number) => [safeFormatCurrency(v), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
+                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                <Bar dataKey="poOrdered" name="PO Value Ordered" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                <Line type="monotone" dataKey="grnReceived" name="GRN Value Received" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Horizontal Bar Chart: Top Vendors by Purchase Value */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-2">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Top Vendors by Purchase Order Value
+            </h4>
+            <button
+              onClick={() => navigate('/procurement/vendors')}
+              className="text-[10px] font-bold text-brand-700 hover:underline cursor-pointer"
+            >
+              Vendor Directory &rarr;
+            </button>
+          </div>
+          <div className="h-[230px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart layout="vertical" data={topVendors} margin={{ top: 5, right: 15, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                <XAxis type="number" tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+                <YAxis type="category" dataKey="vendor" tick={{ fontSize: 9, fill: '#374151', fontWeight: 600 }} width={120} />
+                <Tooltip formatter={(v: number) => [safeFormatCurrency(v), 'Ordered Value']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
+                <Bar dataKey="orderedValue" name="Ordered PO Value" fill="#ab9570" radius={[0, 3, 3, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Category Spend Chart */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-2">
+          <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider border-b pb-2">
+            PO Spend Distribution by Material Category
+          </h4>
+          <div className="h-[220px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={spend} margin={{ top: 10, right: 15, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis dataKey="category" tick={{ fontSize: 9, fill: '#374151', fontWeight: 600 }} interval={0} angle={-10} textAnchor="end" />
+                <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+                <Tooltip formatter={(v: number) => [safeFormatCurrency(v), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
+                <Bar dataKey="amount" name="PO Amount" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Deliveries Table */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-2 flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+              <Truck className="h-4 w-4 text-brand-600" /> Upcoming Material Deliveries
+            </h4>
+            <button
+              onClick={() => navigate('/procurement/purchase-orders')}
+              className="text-[10px] font-bold text-brand-700 hover:underline cursor-pointer"
+            >
+              View All POs &rarr;
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs divide-y divide-gray-200">
+              <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
+                <tr>
+                  <th className="p-2">PO # / Material</th>
+                  <th className="p-2">Vendor</th>
+                  <th className="p-2 text-right">Qty (Ord/Rec)</th>
+                  <th className="p-2 text-right">Expected Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+                {deliveries.map((row) => (
+                  <tr
+                    key={row.id}
+                    onClick={() => navigate(`/procurement/purchase-orders/${row.poId}`)}
+                    className="hover:bg-gray-50 cursor-pointer"
+                  >
+                    <td className="p-2">
+                      <div className="font-bold text-brand-700">{row.poNumber}</div>
+                      <div className="text-[9.5px] text-gray-500 truncate max-w-[140px]">{row.materialName}</div>
+                    </td>
+                    <td className="p-2 text-[10px] font-semibold text-gray-800">{row.vendorName}</td>
+                    <td className="p-2 text-right font-mono text-[10px]">
+                      {row.orderedQty} / <strong className="text-emerald-700">{row.receivedQty}</strong>
+                    </td>
+                    <td className="p-2 text-right text-[10px] font-mono text-gray-600">{row.expectedDate}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// SECTION 5: Inventory & Quality Control
+// ============================================================================
+export const InventoryQualitySection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
+  const navigate = useNavigate();
+  const qc = data.qcSummary;
+  const stock = data.stockSummary;
+  const stockMovement = data.stockMovementTrend;
+  const qcFailures = data.qcFailuresByCategory;
+
+  return (
+    <div className="space-y-5 font-sans">
+      {/* Inward Workflow Funnel */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs font-semibold">
+        <div className="p-2.5 bg-gray-50 border border-gray-200 rounded">
+          <span className="text-[9px] text-gray-400 uppercase font-bold block">1. Gate Entry</span>
+          <span className="font-extrabold text-sm text-gray-900 mt-0.5 block">14 Tokens</span>
+        </div>
+        <div className="p-2.5 bg-gray-50 border border-gray-200 rounded">
+          <span className="text-[9px] text-gray-400 uppercase font-bold block">2. Receiving</span>
+          <span className="font-extrabold text-sm text-gray-900 mt-0.5 block">12 Checked</span>
+        </div>
+        <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded">
+          <span className="text-[9px] text-amber-700 uppercase font-bold block">3. QC Inspection</span>
+          <span className="font-extrabold text-sm text-amber-900 mt-0.5 block">{qc.totalInspections} Done</span>
+        </div>
+        <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded">
+          <span className="text-[9px] text-emerald-700 uppercase font-bold block">4. GRN Posted</span>
+          <span className="font-extrabold text-sm text-emerald-900 mt-0.5 block">10 Approved</span>
+        </div>
+        <div className="p-2.5 bg-brand-50/70 border border-brand-200 rounded">
+          <span className="text-[9px] text-brand-700 uppercase font-bold block">5. Stock Ledger</span>
+          <span className="font-extrabold text-sm text-brand-900 mt-0.5 block">{safeFormatCurrency(stock.totalValue)}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Stock Inward vs Outward Movement Trend */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-2">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Monthly Stock Receipts (Inward) vs Site Consumption (Outward)
+            </h4>
+            <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded">
+              Movement Trend
+            </span>
+          </div>
+          <div className="h-[210px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stockMovement} margin={{ top: 10, right: 15, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#374151' }} />
+                <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+                <Tooltip formatter={(v: number) => [safeFormatCurrency(v), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
+                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                <Bar dataKey="inwardValue" name="GRN Inward Stock" fill="#10b981" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="outwardValue" name="Site Issue Outward" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* QC Inspection Pie Chart */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-2">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              QC Inspection Quality Yield ({qc.passRatePct}% Pass Rate)
+            </h4>
+            <button
+              onClick={() => navigate('/inventory/qc-inspections')}
+              className="text-[10px] font-bold text-brand-700 hover:underline cursor-pointer"
+            >
+              Inspection Register &rarr;
+            </button>
+          </div>
+
+          <div className="h-[210px] w-full flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={data.qcDistributionChart} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={4} dataKey="value">
+                  {data.qcDistributionChart.map((entry, index) => (
+                    <Cell key={`qc-cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(val: number) => [`${val} Inspections`, '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
+                <Legend wrapperStyle={{ fontSize: '10px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* QC Rejections & Non-Conformances by Category */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-2">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+              <AlertTriangle className="h-4 w-4 text-rose-600" /> QC Rejections & Non-Conformances by Category
+            </h4>
+            <span className="text-[9.5px] font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+              Quality Audit
+            </span>
+          </div>
+          <div className="h-[200px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart layout="vertical" data={qcFailures} margin={{ top: 5, right: 15, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                <XAxis type="number" tick={{ fontSize: 9, fill: '#6b7280' }} />
+                <YAxis type="category" dataKey="category" tick={{ fontSize: 9, fill: '#374151', fontWeight: 600 }} width={120} />
+                <Tooltip formatter={(v: number) => [`${v} Issues`, 'Rejections']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
+                <Bar dataKey="rejections" name="Rejected Lots" fill="#ef4444" radius={[0, 3, 3, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Low Stock Watchlist */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-2 flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+              <Package className="h-4 w-4 text-amber-600" /> Low Stock Watchlist ({stock.lowStockCount} Items)
+            </h4>
+            <button
+              onClick={() => navigate('/inventory/stock-ledger')}
+              className="text-[10px] font-bold text-brand-700 hover:underline cursor-pointer"
+            >
+              Full Stock Ledger &rarr;
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs divide-y divide-gray-200">
+              <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
+                <tr>
+                  <th className="p-2">Material</th>
+                  <th className="p-2">Category</th>
+                  <th className="p-2 text-right">Available</th>
+                  <th className="p-2 text-right">Stock Value</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+                {stock.lowStockItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-gray-400 italic">No low stock warnings. Stock levels optimal.</td>
+                  </tr>
+                ) : (
+                  stock.lowStockItems.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="p-2 font-bold text-gray-900">{item.materialName}</td>
+                      <td className="p-2 text-[10px] text-gray-500">{item.categoryName}</td>
+                      <td className="p-2 text-right font-mono font-bold text-rose-700">
+                        {item.available} {item.unit}
+                      </td>
+                      <td className="p-2 text-right font-mono font-bold text-gray-900">
+                        {safeFormatCurrency(item.stockValue)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// SECTION 6: Finance & Cash Flow
+// ============================================================================
+export const FinanceCashFlowSection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
+  const navigate = useNavigate();
+  const cf = data.cashFlowMonthly;
+  const sc = data.subcontractorSummary;
+  const apAging = data.payableAging;
+
+  return (
+    <div className="space-y-5 font-sans">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Monthly Cash Flow Inflow vs Outflow */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-2">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+              Monthly Operating Cash Flow (Client Receipts vs Disbursements)
+            </h4>
+            <span className="text-[9.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+              Cash Position Positive
+            </span>
+          </div>
+          <div className="h-[240px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={cf} margin={{ top: 10, right: 15, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#374151' }} />
+                <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+                <Tooltip formatter={(v: number) => [safeFormatCurrency(v), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
+                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                <Bar dataKey="cashInflow" name="Client Cash Inflow" fill="#10b981" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="cashOutflow" name="Vendor Cash Outflow" fill="#ef4444" radius={[3, 3, 0, 0]} />
+                <Line type="monotone" dataKey="netCashFlow" name="Net Surplus" stroke="#ab9570" strokeWidth={2.5} dot={{ r: 4 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Vendor & Subcontractor Payable Aging Schedule */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b pb-2">
+              <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+                Vendor & Subcontractor Accounts Payable Aging
+              </h4>
+              <button
+                onClick={() => navigate('/finance/accounts-payable')}
+                className="text-[10px] font-bold text-brand-700 hover:underline cursor-pointer"
+              >
+                AP Register &rarr;
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs mt-3">
+              <div className="p-2 bg-emerald-50/70 border border-emerald-200 rounded">
+                <span className="text-[9px] text-emerald-700 uppercase font-bold block">Current (0-30d)</span>
+                <span className="font-extrabold text-xs text-emerald-900 font-mono mt-0.5 block">{safeFormatCurrency(apAging.current)}</span>
+              </div>
+              <div className="p-2 bg-blue-50/70 border border-blue-200 rounded">
+                <span className="text-[9px] text-blue-700 uppercase font-bold block">31-60 Days</span>
+                <span className="font-extrabold text-xs text-blue-900 font-mono mt-0.5 block">{safeFormatCurrency(apAging.days1To30)}</span>
+              </div>
+              <div className="p-2 bg-amber-50/70 border border-amber-200 rounded">
+                <span className="text-[9px] text-amber-700 uppercase font-bold block">61-90 Days</span>
+                <span className="font-extrabold text-xs text-amber-900 font-mono mt-0.5 block">{safeFormatCurrency(apAging.days31To60)}</span>
+              </div>
+              <div className="p-2 bg-rose-50/70 border border-rose-200 rounded">
+                <span className="text-[9px] text-rose-700 uppercase font-bold block">91-120 Days</span>
+                <span className="font-extrabold text-xs text-rose-900 font-mono mt-0.5 block">{safeFormatCurrency(apAging.days61To90)}</span>
+              </div>
+              <div className="p-2 bg-rose-100 border border-rose-300 rounded">
+                <span className="text-[9px] text-rose-800 uppercase font-bold block">120+ Days</span>
+                <span className="font-extrabold text-xs text-rose-950 font-mono mt-0.5 block">{safeFormatCurrency(apAging.days90Plus)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Subcontractor WIP Summary Block */}
+          <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-lg space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                <HardHat className="h-4 w-4 text-amber-700" /> Subcontractor WIP Execution: {safeFormatCurrency(sc.certifiedWIP)}
+              </span>
+              <span className="font-extrabold text-amber-800 font-mono text-xs">{((sc.certifiedWIP / (sc.totalWOValue || 1)) * 100).toFixed(1)}% Executed</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-[10px] pt-1">
+              <div>
+                <span className="text-gray-400 block font-semibold">Total WO Value:</span>
+                <span className="font-mono font-bold text-gray-900">{safeFormatCurrency(sc.totalWOValue)}</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block font-semibold">Paid Amount:</span>
+                <span className="font-mono font-bold text-emerald-700">{safeFormatCurrency(sc.paidAmount)}</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block font-semibold">Outstanding Balance:</span>
+                <span className="font-mono font-bold text-rose-700">{safeFormatCurrency(sc.outstandingAmount)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// SECTION 7: Billing & Receivables
+// ============================================================================
+export const BillingReceivablesSection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
+  const navigate = useNavigate();
+  const trend = data.clientBillingTrend;
+  const aging = data.receivableAging;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 font-sans">
+      {/* Monthly Client Billing & Collection Chart */}
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-2">
+        <div className="flex items-center justify-between border-b pb-2">
+          <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
+            Client Billing vs Collection Trend
+          </h4>
+          <button
+            onClick={() => navigate('/finance/client-ra-bills')}
+            className="text-[10px] font-bold text-brand-700 hover:underline cursor-pointer"
+          >
+            Client RA Bills &rarr;
+          </button>
+        </div>
+        <div className="h-[240px] w-full pt-1">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={getSelectedSiteMonthlyBilling(site)}>
+            <ComposedChart data={trend} margin={{ top: 10, right: 15, left: 10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#374151' }} />
-              <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(val) => formatIndianCurrencyAbbrev(val)} />
-              <Tooltip formatter={(val: number) => [safeFormatCurrency(val), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
+              <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
+              <Tooltip formatter={(v: number) => [safeFormatCurrency(v), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
               <Legend wrapperStyle={{ fontSize: '10px' }} />
-              <Bar dataKey="submittedBills" name="Submitted Bills" fill="#94a3b8" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="approvedBills" name="Approved Bills" fill="#ab9570" radius={[2, 2, 0, 0]} />
-              <Line type="monotone" dataKey="clientReceipts" name="Client Receipts" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
+              <Bar dataKey="submittedBills" name="Submitted Bills" fill="#94a3b8" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="approvedBills" name="Approved Bills" fill="#ab9570" radius={[3, 3, 0, 0]} />
+              <Line type="monotone" dataKey="clientReceipts" name="Client Receipts" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>
-    </div>
-  );
-};
 
-// ==========================================
-// Section 5: Vendor Bill Snapshot
-// ==========================================
-export const VendorBillSnapshotSection: React.FC<{ site: SiteSchema | null }> = ({ site }) => {
-  if (!site) {
-    return (
-      <div className="p-6 bg-brand-50/50 border border-brand-200 rounded-md text-center space-y-2 font-sans">
-        <h3 className="font-extrabold text-sm text-brand-900">ALL SITES — Portfolio View</h3>
-        <p className="text-xs text-gray-500 max-w-xl mx-auto">
-          Select a specific project site from the Header dropdown to inspect site vendor bill ledger snapshot.
-        </p>
-      </div>
-    );
-  }
-
-  const isNotStarted = site.executionStatus === 'not_started' || site.workflowStatus === 'draft';
-
-  const data = [
-    { cat: 'Material', bill: isNotStarted ? 0 : Math.round(site.budget * 0.22), paid: isNotStarted ? 0 : Math.round(site.budget * 0.16), pending: isNotStarted ? 0 : Math.round(site.budget * 0.06), paidPct: isNotStarted ? '0%' : '72.7%' },
-    { cat: 'Labour', bill: isNotStarted ? 0 : Math.round(site.budget * 0.12), paid: isNotStarted ? 0 : Math.round(site.budget * 0.09), pending: isNotStarted ? 0 : Math.round(site.budget * 0.03), paidPct: isNotStarted ? '0%' : '75.0%' },
-    { cat: 'Utility & Salary', bill: isNotStarted ? 0 : Math.round(site.budget * 0.04), paid: isNotStarted ? 0 : Math.round(site.budget * 0.035), pending: isNotStarted ? 0 : Math.round(site.budget * 0.005), paidPct: isNotStarted ? '0%' : '87.5%' }
-  ];
-
-  const totalBill = data.reduce((s, d) => s + d.bill, 0);
-  const totalPaid = data.reduce((s, d) => s + d.paid, 0);
-  const totalPending = data.reduce((s, d) => s + d.pending, 0);
-  const totalPaidPct = totalBill ? `${((totalPaid / totalBill) * 100).toFixed(1)}%` : '0%';
-
-  return (
-    <div className="space-y-4 font-sans">
-      <div className="overflow-x-auto border border-gray-150 rounded">
-        <table className="w-full text-left text-xs divide-y divide-gray-150 min-w-[550px]">
-          <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
-            <tr>
-              <th className="p-3">Vendor Category</th>
-              <th className="p-3 text-right">Bill Amount</th>
-              <th className="p-3 text-right">Paid Amount</th>
-              <th className="p-3 text-right">Pending Amount</th>
-              <th className="p-3 text-right">Paid %</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-            {data.map((row, idx) => (
-              <tr key={idx} className="hover:bg-gray-50/50">
-                <td className="p-3 font-bold text-gray-800">{row.cat}</td>
-                <td className="p-3 text-right font-mono">{safeFormatCurrency(row.bill)}</td>
-                <td className="p-3 text-right font-mono text-emerald-700">{safeFormatCurrency(row.paid)}</td>
-                <td className="p-3 text-right font-mono text-rose-700">{safeFormatCurrency(row.pending)}</td>
-                <td className="p-3 text-right font-bold text-gray-900">{row.paidPct}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot className="bg-gray-50 font-bold border-t border-gray-200 text-gray-900">
-            <tr>
-              <td className="p-3 uppercase text-[10px]">Total Vendor Exposure</td>
-              <td className="p-3 text-right font-mono">{safeFormatCurrency(totalBill)}</td>
-              <td className="p-3 text-right font-mono text-emerald-800">{safeFormatCurrency(totalPaid)}</td>
-              <td className="p-3 text-right font-mono text-rose-800">{safeFormatCurrency(totalPending)}</td>
-              <td className="p-3 text-right text-brand-700">{totalPaidPct}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      {/* Chart 4: Vendor Liability Stacked Bar Chart */}
-      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-2">
-        <div className="flex items-center justify-between border-b pb-2">
-          <div>
+      {/* Client Receivable Aging Breakdown */}
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-4 flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between border-b pb-2">
             <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
-              Vendor Liability & Outstanding Exposure (Top Vendors)
+              Client Receivable Aging Schedule
             </h4>
-            <p className="text-[10px] text-gray-400 font-medium">
-              Stacked breakdown of Paid Amount, Outstanding Liability, and Retention Amount for key suppliers.
-            </p>
+            <span className="text-[9.5px] font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+              Outstanding: {safeFormatCurrency(data.kpis.clientOutstanding)}
+            </span>
           </div>
-          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
-            Portfolio Liability
-          </span>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs mt-3">
+            <div className="p-2 bg-emerald-50/70 border border-emerald-200 rounded">
+              <span className="text-[9px] text-emerald-700 uppercase font-bold block">Current (0-30d)</span>
+              <span className="font-extrabold text-xs text-emerald-900 font-mono mt-0.5 block">{safeFormatCurrency(aging.current)}</span>
+            </div>
+            <div className="p-2 bg-blue-50/70 border border-blue-200 rounded">
+              <span className="text-[9px] text-blue-700 uppercase font-bold block">31-60 Days</span>
+              <span className="font-extrabold text-xs text-blue-900 font-mono mt-0.5 block">{safeFormatCurrency(aging.days1To30)}</span>
+            </div>
+            <div className="p-2 bg-amber-50/70 border border-amber-200 rounded">
+              <span className="text-[9px] text-amber-700 uppercase font-bold block">61-90 Days</span>
+              <span className="font-extrabold text-xs text-amber-900 font-mono mt-0.5 block">{safeFormatCurrency(aging.days31To60)}</span>
+            </div>
+            <div className="p-2 bg-rose-50/70 border border-rose-200 rounded">
+              <span className="text-[9px] text-rose-700 uppercase font-bold block">91-120 Days</span>
+              <span className="font-extrabold text-xs text-rose-900 font-mono mt-0.5 block">{safeFormatCurrency(aging.days61To90)}</span>
+            </div>
+            <div className="p-2 bg-rose-100 border border-rose-300 rounded">
+              <span className="text-[9px] text-rose-800 uppercase font-bold block">120+ Days</span>
+              <span className="font-extrabold text-xs text-rose-950 font-mono mt-0.5 block">{safeFormatCurrency(aging.days90Plus)}</span>
+            </div>
+          </div>
         </div>
-        <div className="h-[240px] w-full pt-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart layout="vertical" data={VENDOR_LIABILITY_DATA} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-              <XAxis type="number" tickFormatter={(v) => formatIndianCurrencyAbbrev(v)} tick={{ fontSize: 9, fill: '#6b7280' }} />
-              <YAxis type="category" dataKey="vendor" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} width={125} />
-              <Tooltip formatter={(v: number) => [safeFormatCurrency(v), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
-              <Legend wrapperStyle={{ fontSize: '10px' }} />
-              <Bar dataKey="paidAmount" name="Paid Amount" stackId="a" fill="#10b981" />
-              <Bar dataKey="outstandingAmount" name="Outstanding Liability" stackId="a" fill="#ef4444" />
-              <Bar dataKey="retentionAmount" name="Retention Withheld" stackId="a" fill="#f59e0b" />
-            </BarChart>
-          </ResponsiveContainer>
+
+        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between text-xs">
+          <span className="text-gray-600 font-medium">Average Client Collection Lead Time:</span>
+          <span className="font-extrabold text-gray-900 font-mono">18 Days</span>
         </div>
       </div>
     </div>
   );
 };
 
-import { useERPStore } from '../store/ERPStoreContext';
-
-// ==========================================
-// Section 6: Approval Pending Counts
-// ==========================================
-export const ApprovalPendingSection: React.FC = () => {
+// ============================================================================
+// SECTION 8: Approvals & System Alerts Center
+// ============================================================================
+export const ApprovalsAlertsSection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
   const navigate = useNavigate();
-  const { state } = useERPStore();
-  const pendingRABillsCount = (state.clientRABills || []).filter(
-    (b) => b.billStatus === 'Pending Approval'
-  ).length;
+  const queue = data.approvalsQueue;
+  const alerts = data.systemAlerts;
 
-  const items = [
-    { label: 'Client RA Bills', count: pendingRABillsCount, route: '/finance/client-ra-bills' },
-    { label: 'Indent Approval', count: 4, route: '/settings?mod=indents' },
-    { label: 'Rate Finalization', count: 2, route: '/settings?mod=rate-inquiry' },
-    { label: 'Payment Approval', count: 5, route: '/finance/vendor-ap' },
-    { label: 'Budget Approval', count: 1, route: '/projects' },
-    { label: 'Task Approval', count: 6, route: '/settings?mod=tasks' }
+  const approvalItems = [
+    { label: 'Material Indents', count: queue.indentsPending, route: '/procurement/indent-approvals' },
+    { label: 'Purchase Orders', count: queue.posPending, route: '/procurement/purchase-orders' },
+    { label: 'QC Exception Approvals', count: queue.qcExceptionsPending, route: '/inventory/qc-inspections' },
+    { label: 'Vendor AP Approvals', count: queue.vendorAPsPending, route: '/finance/accounts-payable' },
+    { label: 'Subcontractor Bills', count: queue.scBillsPending, route: '/procurement/work-orders' },
+    { label: 'Client RA Bills', count: queue.raBillsPending, route: '/finance/client-ra-bills' },
   ];
 
   return (
-    <div className="space-y-4 font-sans">
-      {/* Chart 5: Approval Pipeline Donut Chart */}
-      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-2">
-        <div className="flex items-center justify-between border-b pb-2">
-          <div>
-            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
-              Approval Pipeline Breakdown ({TOTAL_APPROVAL_COUNT} Total Pending)
-            </h4>
-            <p className="text-[10px] text-gray-400 font-medium">
-              Distribution of pending operational approvals across modules.
-            </p>
-          </div>
-          <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-150 px-2 py-0.5 rounded">
-            {TOTAL_APPROVAL_COUNT} Action Items
-          </span>
-        </div>
-        <div className="h-[220px] w-full flex items-center justify-center relative">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={APPROVAL_PIPELINE_DATA}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={75}
-                paddingAngle={3}
-                dataKey="count"
-              >
-                {APPROVAL_PIPELINE_DATA.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip 
-                formatter={(val: number, name: string) => [
-                  `${val} Pending (${((val / TOTAL_APPROVAL_COUNT) * 100).toFixed(1)}%)`,
-                  name
-                ]} 
-                contentStyle={{ fontSize: '11px', borderRadius: '6px' }}
-              />
-              <Legend wrapperStyle={{ fontSize: '10px' }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Quick Approval Nav Cards Grid */}
+    <div className="space-y-5 font-sans">
+      {/* 6 Quick Approval Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {items.map((item, idx) => (
+        {approvalItems.map((item, idx) => (
           <button
             key={idx}
             onClick={() => navigate(item.route)}
-            className="p-3.5 border border-gray-150 rounded bg-white hover:border-brand-300 hover:shadow-sm transition-all text-left group cursor-pointer focus:outline-none"
+            className="p-3 border border-gray-200 rounded-lg bg-white hover:border-brand-400 hover:shadow-sm transition-all text-left group focus:outline-none"
           >
-            <span className="text-[9.5px] uppercase font-bold text-gray-400 group-hover:text-brand-600 transition-colors block">
+            <span className="text-[9.5px] uppercase font-bold text-gray-400 group-hover:text-brand-700 transition-colors block truncate">
               {item.label}
             </span>
             <div className="flex items-baseline justify-between mt-1">
-              <span className="font-extrabold text-lg text-gray-900">{item.count}</span>
-              <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-150 px-1.5 py-0.25 rounded">
+              <span className="font-extrabold text-base text-gray-900">{item.count}</span>
+              <span className="text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.25 rounded">
                 Pending
               </span>
             </div>
           </button>
         ))}
       </div>
+
+      {/* Live System Alerts Feed */}
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3">
+        <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
+          <ShieldAlert className="h-4 w-4 text-rose-600" /> Operational Exceptions & System Alerts
+        </h4>
+
+        <div className="space-y-2">
+          {alerts.map((alt) => (
+            <div
+              key={alt.id}
+              onClick={() => navigate(alt.link)}
+              className="p-3 border rounded-lg text-xs flex items-start justify-between gap-3 cursor-pointer hover:bg-gray-50 transition-colors bg-gray-50/40 border-gray-200"
+            >
+              <div className="flex items-start gap-2.5">
+                <span
+                  className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 mt-0.5 ${
+                    alt.type === 'critical'
+                      ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                      : alt.type === 'warning'
+                      ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                      : 'bg-blue-100 text-blue-800 border border-blue-300'
+                  }`}
+                >
+                  {alt.type}
+                </span>
+                <div>
+                  <h5 className="font-bold text-gray-900">{alt.title}</h5>
+                  <p className="text-[10.5px] text-gray-500 font-medium mt-0.5">{alt.description}</p>
+                </div>
+              </div>
+              <span className="text-[9.5px] text-gray-400 font-mono shrink-0">{alt.timestamp}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
 
-// ==========================================
-// Section 7: Notifications, Tasks and Activity
-// ==========================================
-export const NotificationsTasksActivitySection: React.FC = () => {
+// ============================================================================
+// SECTION 9: Tasks & Notifications
+// ============================================================================
+export const TasksNotificationsSection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
   const navigate = useNavigate();
-  const { alerts, tasks, calendarEvents } = useWorkflow();
-  const [unreadTab, setUnreadTab] = React.useState<'all' | 'unread'>('all');
-  const [taskTab, setTaskTab] = React.useState<'overdue' | 'upcoming'>('overdue');
-
-  const filteredNotifications = (alerts || []).filter((n: any) => unreadTab === 'all' || n.readStatus === 'unread');
-  const filteredTasks = (tasks || []).filter((t: any) => {
-    const today = new Date().toISOString().split('T')[0];
-    if (taskTab === 'overdue') return t.dueDate < today && t.status !== 'completed';
-    return t.dueDate >= today && t.status !== 'completed';
-  });
+  const tasks = data.tasksList;
+  const notifs = data.notificationsList;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 font-sans">
-      {/* 1. Notifications Card */}
-      <div className="border border-gray-150 rounded bg-white p-3.5 space-y-3 flex flex-col justify-between">
-        <div className="space-y-2">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 font-sans">
+      {/* My Tasks Panel */}
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3 flex flex-col justify-between">
+        <div>
           <div className="flex items-center justify-between border-b pb-2">
-            <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Bell className="h-4 w-4 text-brand-600" /> System Notifications
-            </h4>
-            <div className="flex items-center gap-1 text-[9.5px]">
-              <button
-                onClick={() => setUnreadTab('all')}
-                className={`px-2 py-0.5 rounded font-bold cursor-pointer ${unreadTab === 'all' ? 'bg-brand-50 text-brand-700' : 'text-gray-400'}`}
-              >
-                All ({alerts.length})
-              </button>
-              <button
-                onClick={() => setUnreadTab('unread')}
-                className={`px-2 py-0.5 rounded font-bold cursor-pointer ${unreadTab === 'unread' ? 'bg-brand-50 text-brand-700' : 'text-gray-400'}`}
-              >
-                Unread ({alerts.filter((n: any) => n.readStatus === 'unread').length})
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between text-[10px]">
-            <button onClick={() => navigate('/overview/notifications')} className="text-brand-650 hover:underline font-bold cursor-pointer">
-              View All Notifications &rarr;
-            </button>
-          </div>
-
-          <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
-            {filteredNotifications.length === 0 ? (
-              <p className="text-[11px] text-gray-400 text-center py-6 italic">No notifications found</p>
-            ) : (
-              filteredNotifications.slice(0, 4).map((n: any) => (
-                <div 
-                  key={n.id} 
-                  onClick={() => navigate('/overview/notifications')}
-                  className={`p-2 rounded border text-xs flex items-start justify-between gap-2 cursor-pointer transition-colors hover:bg-gray-50 ${n.readStatus === 'unread' ? 'bg-brand-50/30 border-brand-100 font-semibold' : 'bg-gray-50/50 border-gray-100'}`}
-                >
-                  <span className="truncate">{n.title}</span>
-                  <span className="text-[9px] text-gray-400 whitespace-nowrap shrink-0">{n.alertDate}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 2. My Tasks & Action Items */}
-      <div className="border border-gray-150 rounded bg-white p-3.5 space-y-3 flex flex-col justify-between">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between border-b pb-2">
-            <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
               <CheckSquare className="h-4 w-4 text-blue-600" /> My Tasks & Action Items
             </h4>
-            <div className="flex items-center gap-1 text-[9.5px]">
-              <button
-                onClick={() => setTaskTab('overdue')}
-                className={`px-2 py-0.5 rounded font-bold cursor-pointer ${taskTab === 'overdue' ? 'bg-rose-50 text-rose-700' : 'text-gray-400'}`}
-              >
-                Overdue
-              </button>
-              <button
-                onClick={() => setTaskTab('upcoming')}
-                className={`px-2 py-0.5 rounded font-bold cursor-pointer ${taskTab === 'upcoming' ? 'bg-blue-50 text-blue-700' : 'text-gray-400'}`}
-              >
-                Upcoming
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between text-[10px]">
-            <button onClick={() => navigate('/overview/my-tasks')} className="text-brand-650 hover:underline font-bold cursor-pointer">
-              Manage All Tasks ({tasks.length}) &rarr;
+            <button
+              onClick={() => navigate('/overview/my-tasks')}
+              className="text-[10px] font-bold text-brand-700 hover:underline cursor-pointer"
+            >
+              Manage Tasks &rarr;
             </button>
           </div>
 
-          <div className="space-y-2 max-h-[220px] overflow-y-auto">
-            {filteredTasks.length === 0 ? (
-              <p className="text-[11px] text-gray-400 text-center py-6 italic">No tasks found</p>
+          <div className="space-y-2 mt-3">
+            {tasks.length === 0 ? (
+              <p className="text-[11px] text-gray-400 text-center py-6 italic">No tasks assigned.</p>
             ) : (
-              filteredTasks.slice(0, 3).map((task: any) => (
-                <div 
-                  key={task.id} 
+              tasks.map((task) => (
+                <div
+                  key={task.id}
                   onClick={() => navigate('/overview/my-tasks')}
-                  className="p-2.5 border border-gray-150 rounded bg-gray-50/40 text-xs space-y-1 cursor-pointer hover:bg-gray-100/50 transition-colors"
+                  className="p-2.5 border border-gray-200 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 cursor-pointer space-y-1 transition-colors text-xs"
                 >
-                  <div className="flex items-center justify-between font-bold text-gray-800">
+                  <div className="flex items-center justify-between font-bold text-gray-900">
                     <span className="truncate">{task.subject}</span>
-                    <span className={`text-[9px] px-1.5 py-0.25 rounded font-mono ${taskTab === 'overdue' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'}`}>
-                      {task.dueDate}
+                    <span className="text-[9px] px-1.5 py-0.25 rounded font-mono bg-blue-50 text-blue-700 border border-blue-200">
+                      Due {task.dueDate}
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px] text-gray-500">
-                    <span>Site: {task.relatedSite}</span>
-                    <span>From: {task.assignedBy}</span>
+                    <span>Project: {task.relatedSite}</span>
+                    <span>Assigned By: {task.assignedBy}</span>
                   </div>
                 </div>
               ))
@@ -798,673 +1404,169 @@ export const NotificationsTasksActivitySection: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Operational Calendar & Messages Direct Quicklinks */}
-      <div className="border border-gray-150 rounded bg-white p-3.5 space-y-3 flex flex-col justify-between">
-        <div className="space-y-2">
-          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
-            <Layers className="h-4 w-4 text-emerald-600" /> Operational Feed & Messages
-          </h4>
-          <div className="space-y-2 text-xs">
+      {/* Notifications Feed */}
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3 flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+              <Bell className="h-4 w-4 text-brand-600" /> Notifications Feed
+            </h4>
             <button
-              onClick={() => navigate('/overview/calendar')}
-              className="w-full p-2.5 border border-gray-200 rounded bg-gray-50/50 text-left hover:bg-brand-50/30 hover:border-brand-200 transition-colors cursor-pointer group"
+              onClick={() => navigate('/overview/notifications')}
+              className="text-[10px] font-bold text-brand-700 hover:underline cursor-pointer"
             >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-gray-800 group-hover:text-brand-700">Project & Delivery Calendar</span>
-                <span className="text-[9.5px] font-extrabold text-brand-650 bg-white px-2 py-0.5 rounded border">{calendarEvents.length} Events</span>
-              </div>
-              <span className="text-[10px] text-gray-400 block mt-0.5">Track GRN arrivals, payment due dates & tender milestones</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/overview/messages')}
-              className="w-full p-2.5 border border-gray-200 rounded bg-gray-50/50 text-left hover:bg-brand-50/30 hover:border-brand-200 transition-colors cursor-pointer group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-gray-800 group-hover:text-brand-700">Internal Team Messages</span>
-                <span className="text-[9.5px] font-extrabold text-emerald-700 bg-white px-2 py-0.5 rounded border">Live Chat</span>
-              </div>
-              <span className="text-[10px] text-gray-400 block mt-0.5">Direct chat with Project Managers & Procurement team</span>
+              All Notifications &rarr;
             </button>
           </div>
+
+          <div className="space-y-2 mt-3">
+            {notifs.length === 0 ? (
+              <p className="text-[11px] text-gray-400 text-center py-6 italic">No recent notifications.</p>
+            ) : (
+              notifs.map((n) => (
+                <div
+                  key={n.id}
+                  onClick={() => navigate('/overview/notifications')}
+                  className="p-2.5 border border-gray-200 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 cursor-pointer flex items-start justify-between gap-2 text-xs"
+                >
+                  <div>
+                    <h5 className="font-bold text-gray-900">{n.title}</h5>
+                    <p className="text-[10px] text-gray-500 font-medium truncate max-w-[280px]">{n.message}</p>
+                  </div>
+                  <span className="text-[9px] text-gray-400 font-mono shrink-0">{n.alertDate}</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// ==========================================
-// Section 8: Procurement & Vendor Intelligence
-// ==========================================
-export const ProcurementIntelligenceSection: React.FC = () => {
-  return (
-    <div className="space-y-4 font-sans">
-      {/* 4 Summary Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3 border rounded bg-gray-50/50">
-          <span className="text-[9px] uppercase font-bold text-gray-400 block">Mapped Records</span>
-          <span className="font-extrabold text-base text-gray-900 block mt-0.5">142 Items</span>
-        </div>
-        <div className="p-3 border rounded bg-gray-50/50">
-          <span className="text-[9px] uppercase font-bold text-gray-400 block">Open Items</span>
-          <span className="font-extrabold text-base text-amber-700 block mt-0.5">18 Items</span>
-        </div>
-        <div className="p-3 border rounded bg-gray-50/50">
-          <span className="text-[9px] uppercase font-bold text-gray-400 block">Document Drafts</span>
-          <span className="font-extrabold text-base text-gray-900 block mt-0.5">8 Drafts</span>
-        </div>
-        <div className="p-3 border rounded bg-gray-50/50">
-          <span className="text-[9px] uppercase font-bold text-gray-400 block">Rate Defined</span>
-          <span className="font-extrabold text-base text-emerald-700 block mt-0.5">118 Defined</span>
-        </div>
-      </div>
-
-      {/* Chart 6: Procurement Pipeline Conversion Funnel Chart */}
-      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-2">
-        <div className="flex items-center justify-between border-b pb-2">
-          <div>
-            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
-              Procurement Document Conversion Funnel
-            </h4>
-            <p className="text-[10px] text-gray-400 font-medium">
-              Stage-by-stage progression from Material Indents down to Verified Vendor Invoices.
-            </p>
-          </div>
-          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
-            Procurement Flow
-          </span>
-        </div>
-        <div className="h-[250px] w-full pt-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart layout="vertical" data={PROCUREMENT_PIPELINE_STAGES} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-              <XAxis type="number" tick={{ fontSize: 9, fill: '#6b7280' }} />
-              <YAxis type="category" dataKey="stage" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} width={135} />
-              <Tooltip 
-                formatter={(val: number, _name: string, props: any) => [
-                  `${val} Records (${safeFormatCurrency(props.payload.value)}) • Step Conv: ${props.payload.conversionRate}`,
-                  'Volume'
-                ]} 
-                contentStyle={{ fontSize: '11px', borderRadius: '6px' }}
-              />
-              <Bar dataKey="count" name="Record Volume" fill="#ab9570" radius={[0, 3, 3, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Highest Ordered by Qty */}
-        <div className="border rounded p-3 space-y-2">
-          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Highest Ordered Material (By Qty)</h4>
-          <table className="w-full text-left text-xs divide-y divide-gray-100">
-            <thead className="bg-gray-50 text-[9px] font-bold text-gray-400 uppercase">
-              <tr><th className="p-2">Material</th><th className="p-2 text-right">Quantity</th><th className="p-2 text-right">Unit</th></tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-              <tr><td className="p-2 font-semibold">Gypsum Board 12mm</td><td className="p-2 text-right font-mono">4,500</td><td className="p-2 text-right">Sq Ft</td></tr>
-              <tr><td className="p-2 font-semibold">Teak Wood Veneer 4mm</td><td className="p-2 text-right font-mono">2,800</td><td className="p-2 text-right">Sheets</td></tr>
-              <tr><td className="p-2 font-semibold">LED Recessed Spotlights</td><td className="p-2 text-right font-mono">1,200</td><td className="p-2 text-right">Pcs</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Highest Ordered by Value */}
-        <div className="border rounded p-3 space-y-2">
-          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Highest Ordered Material (By Value)</h4>
-          <table className="w-full text-left text-xs divide-y divide-gray-100">
-            <thead className="bg-gray-50 text-[9px] font-bold text-gray-400 uppercase">
-              <tr><th className="p-2">Material</th><th className="p-2 text-right">Total Invoice Value</th></tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-              <tr><td className="p-2 font-semibold">Italian Marble Flooring</td><td className="p-2 text-right font-mono font-bold text-gray-900">{safeFormatCurrency(4800000)}</td></tr>
-              <tr><td className="p-2 font-semibold">VRV Air Conditioning Units</td><td className="p-2 text-right font-mono font-bold text-gray-900">{safeFormatCurrency(3600000)}</td></tr>
-              <tr><td className="p-2 font-semibold">Acoustic Fabric Wall Panels</td><td className="p-2 text-right font-mono font-bold text-gray-900">{safeFormatCurrency(1800000)}</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// Section 9: Period Statistics
-// ==========================================
-export const PeriodStatisticsSection: React.FC = () => {
-  const rows = [
-    { name: 'Indent', d1: '2', d7: '14', m1: '45', q1: '120', y1: '480' },
-    { name: 'Rate Inquiry', d1: '1', d7: '8', m1: '28', q1: '85', y1: '310' },
-    { name: 'Rate Finalization', d1: '0', d7: '5', m1: '18', q1: '62', y1: '240' },
-    { name: 'Purchase Order', d1: '3', d7: '16', m1: '52', q1: '150', y1: '580' },
-    { name: 'Invoice', d1: '4', d7: '22', m1: '68', q1: '190', y1: '720' },
-    { name: 'Payment', d1: '₹4.5 L', d7: '₹28.0 L', m1: '₹1.1 Cr', q1: '₹3.4 Cr', y1: '₹14.2 Cr' }
-  ];
+// ============================================================================
+// SECTION 10: Management Position Snapshot & Activity Log
+// ============================================================================
+export const ManagementSnapshotActivitySection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
+  const kpis = data.kpis;
+  const logs = data.activityLogs;
+  const healthMatrix = data.projectHealthMatrix;
 
   return (
-    <div className="space-y-4 font-sans">
-      {/* Chart 7: Monthly Operational Financial Flow Area Chart */}
-      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-2">
-        <div className="flex items-center justify-between border-b pb-2">
+    <div className="space-y-5 font-sans">
+      {/* Executive Management Snapshot Card */}
+      <div className="p-5 border border-brand-200 rounded-xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-700 pb-3">
           <div>
-            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
-              Monthly Operational Financial Flow (Purchase vs Invoice vs Payment)
-            </h4>
-            <p className="text-[10px] text-gray-400 font-medium">
-              12-month operational trend showing Purchase Order commitments, Invoiced liabilities, and Cash disbursements.
+            <h3 className="font-extrabold text-base text-brand-400 uppercase tracking-wider">
+              Top Management Executive Position Snapshot
+            </h3>
+            <p className="text-xs text-gray-400 font-medium">
+              Unified commercial & cash standing for {data.selectedProjectName}
             </p>
           </div>
-          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
-            Operational Time-Series
-          </span>
-        </div>
-        <div className="h-[250px] w-full pt-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={MONTHLY_OPERATIONAL_FLOW_DATA} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} />
-              <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v) => formatIndianCurrencyAbbrev(v)} />
-              <Tooltip formatter={(val: number) => [safeFormatCurrency(val), '']} contentStyle={{ fontSize: '11px', borderRadius: '6px' }} />
-              <Legend wrapperStyle={{ fontSize: '10px' }} />
-              <Area type="monotone" dataKey="purchaseValue" name="Purchase Commitments" stroke="#ab9570" fill="#ab9570" fillOpacity={0.2} />
-              <Area type="monotone" dataKey="invoiceValue" name="Invoiced Liabilities" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
-              <Area type="monotone" dataKey="paymentValue" name="Cash Payments" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto border border-gray-150 rounded">
-        <table className="w-full text-left text-xs divide-y divide-gray-150 min-w-[600px]">
-          <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
-            <tr>
-              <th className="p-3">Operational Record</th>
-              <th className="p-3 text-right">Today</th>
-              <th className="p-3 text-right">Last 7 Days</th>
-              <th className="p-3 text-right">Last Month</th>
-              <th className="p-3 text-right">Last Quarter</th>
-              <th className="p-3 text-right">Last Year</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-            {rows.map((r, idx) => (
-              <tr key={idx} className="hover:bg-gray-50/50">
-                <td className="p-3 font-bold text-gray-800">{r.name}</td>
-                <td className="p-3 text-right font-mono">{r.d1}</td>
-                <td className="p-3 text-right font-mono">{r.d7}</td>
-                <td className="p-3 text-right font-mono">{r.m1}</td>
-                <td className="p-3 text-right font-mono">{r.q1}</td>
-                <td className="p-3 text-right font-mono font-bold text-gray-900">{r.y1}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// Section 10: Upcoming & Exception Tables (With Receive Delivery Modal)
-// ==========================================
-export const UpcomingExceptionsSection: React.FC = () => {
-  const [selectedOrder, setSelectedOrder] = React.useState<any>(null);
-  const [rcvdQty, setRcvdQty] = React.useState<string>('');
-  const [rcvdDate, setRcvdDate] = React.useState<string>(new Date().toISOString().split('T')[0]);
-  const [toast, setToast] = React.useState<string | null>(null);
-
-  const deliveries = [
-    { po: 'PO-2026-089', item: 'Plywood 18mm Commercial Grade', ordered: 500, due: '2026-07-26', vendor: 'Century Ply Ltd' },
-    { po: 'PO-2026-092', item: 'Acoustic Insulation Foam Panels', ordered: 200, due: '2026-07-28', vendor: 'Supreme Industries' }
-  ];
-
-  const handleRecordReceipt = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedOrder) return;
-    setToast(`Recorded receipt of ${rcvdQty} units for ${selectedOrder.po}`);
-    setSelectedOrder(null);
-    setRcvdQty('');
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  return (
-    <div className="space-y-4 font-sans">
-      {toast && (
-        <div className="fixed top-4 right-4 z-[1100] bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded shadow font-bold text-xs flex items-center gap-2">
-          <Check className="h-4 w-4 text-emerald-600" />
-          {toast}
-        </div>
-      )}
-
-      {/* Chart 9: Upcoming Risk Timeline Diverging Bar Chart */}
-      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-2 font-sans">
-        <div className="flex items-center justify-between border-b pb-2">
-          <div>
-            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
-              Upcoming Risk & Deadline Timeline
-            </h4>
-            <p className="text-[10px] text-gray-400 font-medium">
-              Diverging timeline relative to zero reference line (Today). Overdue items extend left, upcoming extend right.
-            </p>
-          </div>
-          <span className="text-[9.5px] font-bold text-rose-700 bg-rose-50 border border-rose-150 px-2 py-0.5 rounded">
-            Risk & Deadline Monitor
+          <span className="text-xs font-bold text-brand-300 bg-brand-950/80 border border-brand-700 px-3 py-1 rounded-full">
+            REAL-TIME CONNECTED ERP
           </span>
         </div>
 
-        {UPCOMING_RISK_TIMELINE_DATA.length === 0 ? (
-          <div className="h-[180px] w-full flex items-center justify-center text-xs text-gray-400 font-medium bg-gray-50 border border-dashed rounded">
-            No active risk or deadline items found.
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-gray-400 block">Total Contract Value</span>
+            <span className="font-extrabold text-base text-white font-mono block mt-1">{safeFormatCurrency(kpis.totalContractValue)}</span>
           </div>
-        ) : (
-          <div className="h-[250px] w-full pt-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                layout="vertical" 
-                data={UPCOMING_RISK_TIMELINE_DATA.slice().sort((a, b) => a.daysRemaining - b.daysRemaining)} 
-                margin={{ top: 15, right: 65, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                <XAxis 
-                  type="number" 
-                  domain={[-6, 20]} 
-                  tick={{ fontSize: 9, fill: '#6b7280' }} 
-                  tickFormatter={(v) => (v === 0 ? 'Today' : v < 0 ? `${v}d` : `+${v}d`)}
-                />
-                <YAxis type="category" dataKey="refNo" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} width={85} />
-                <ReferenceLine x={0} stroke="#374151" strokeWidth={2} label={{ value: 'Today', position: 'top', fill: '#374151', fontSize: 10, fontWeight: 'bold' }} />
-                <Tooltip 
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      const days = data.daysRemaining;
-                      const statusText = days < 0 ? `${Math.abs(days)} Days Overdue ⚠️` : days === 0 ? 'Due Today 🔔' : `${days} Days Remaining`;
-                      return (
-                        <div className="bg-white border border-gray-200 p-2.5 rounded shadow-md text-xs space-y-1 z-50">
-                          <div className="font-bold text-gray-900 border-b pb-1">{data.refNo} — {data.title}</div>
-                          <div><span className="text-gray-400">Category:</span> <strong className="text-gray-700">{data.category}</strong></div>
-                          <div><span className="text-gray-400">Due Date:</span> <strong className="text-gray-700">{data.dueDate}</strong></div>
-                          <div><span className="text-gray-400">Status:</span> <strong className={days < 0 ? 'text-red-600' : days <= 5 ? 'text-amber-600' : 'text-emerald-600'}>{statusText}</strong></div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Bar dataKey="daysRemaining" name="Days Overdue / Remaining" radius={[3, 3, 3, 3]}>
-                  {UPCOMING_RISK_TIMELINE_DATA.slice().sort((a, b) => a.daysRemaining - b.daysRemaining).map((entry, index) => (
-                    <Cell 
-                      key={`risk-cell-${index}`} 
-                      fill={entry.daysRemaining < 0 ? '#ef4444' : entry.daysRemaining === 0 ? '#f59e0b' : entry.daysRemaining <= 7 ? '#eab308' : '#10b981'} 
-                    />
-                  ))}
-                  <LabelList 
-                    dataKey="daysRemaining" 
-                    position="right" 
-                    formatter={(v: number) => (v < 0 ? `${Math.abs(v)}d overdue` : v === 0 ? 'Due today' : `${v}d remaining`)} 
-                    style={{ fontSize: '9.5px', fontWeight: 'bold', fill: '#374151' }} 
-                  />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div>
+            <span className="text-[10px] uppercase font-bold text-gray-400 block">Approved Baseline Budget</span>
+            <span className="font-extrabold text-base text-gray-200 font-mono block mt-1">{safeFormatCurrency(kpis.approvedBudget)}</span>
           </div>
-        )}
+          <div>
+            <span className="text-[10px] uppercase font-bold text-gray-400 block">Actual Outlay (GRN+SC)</span>
+            <span className="font-extrabold text-base text-rose-400 font-mono block mt-1">{safeFormatCurrency(kpis.actualCost)}</span>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase font-bold text-gray-400 block">Client Billing Cleared</span>
+            <span className="font-extrabold text-base text-emerald-400 font-mono block mt-1">{safeFormatCurrency(kpis.clientReceived)}</span>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase font-bold text-gray-400 block">Net Liability Exposure</span>
+            <span className="font-extrabold text-base text-amber-400 font-mono block mt-1">{safeFormatCurrency(kpis.totalPayable)}</span>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase font-bold text-gray-400 block">Gross Profit Margin</span>
+            <span className="font-extrabold text-base text-brand-400 font-mono block mt-1">{safeFormatCurrency(kpis.grossProfit)} ({kpis.marginPct}%)</span>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Table 1: Expected Order Deliveries with Receive Delivery button */}
-        <div className="border rounded p-3 space-y-2">
-          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center justify-between">
-            <span>Expected Order Deliveries</span>
-            <Truck className="h-4 w-4 text-gray-400" />
-          </h4>
-          <table className="w-full text-left text-xs divide-y divide-gray-100">
-            <thead className="bg-gray-50 text-[9px] font-bold text-gray-400 uppercase">
+      {/* Multi-Dimensional Project Health Matrix */}
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3">
+        <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
+          <Activity className="h-4 w-4 text-brand-600" /> Multi-Dimensional Project Health Index & Status Matrix
+        </h4>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {healthMatrix.map((item, idx) => (
+            <div
+              key={idx}
+              className={`p-3 border rounded-lg flex flex-col justify-between text-xs space-y-2 ${
+                item.status === 'Healthy'
+                  ? 'bg-emerald-50/50 border-emerald-200'
+                  : item.status === 'Critical'
+                  ? 'bg-rose-50/50 border-rose-200'
+                  : 'bg-amber-50/50 border-amber-200'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-gray-900 text-[11px]">{item.dimension}</span>
+                <span
+                  className={`text-[9px] font-bold uppercase px-1.5 py-0.25 rounded ${
+                    item.status === 'Healthy'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : item.status === 'Critical'
+                      ? 'bg-rose-100 text-rose-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}
+                >
+                  {item.status}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-gray-700 font-semibold block leading-tight">{item.note}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* System Activity Audit Log */}
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3">
+        <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
+          <Clock className="h-4 w-4 text-gray-600" /> Recent Chronological System Audit Log
+        </h4>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs divide-y divide-gray-200">
+            <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
               <tr>
-                <th className="p-2">PO & Item</th>
-                <th className="p-2 text-right">Qty</th>
-                <th className="p-2 text-right">Action</th>
+                <th className="p-2.5">User</th>
+                <th className="p-2.5">Action Performed</th>
+                <th className="p-2.5">Module</th>
+                <th className="p-2.5">Reference Document</th>
+                <th className="p-2.5 text-right">Timestamp</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-              {deliveries.map((d, idx) => (
-                <tr key={idx}>
-                  <td className="p-2">
-                    <span className="font-bold text-gray-900 block">{d.po}</span>
-                    <span className="text-[10px] text-gray-500 block">{d.item}</span>
-                  </td>
-                  <td className="p-2 text-right font-mono font-bold">{d.ordered} Pcs</td>
-                  <td className="p-2 text-right">
-                    <button
-                      onClick={() => {
-                        setSelectedOrder(d);
-                        setRcvdQty(d.ordered.toString());
-                      }}
-                      className="px-2 py-1 bg-brand-500 hover:bg-brand-600 text-white rounded text-[10px] font-bold cursor-pointer transition-colors"
-                    >
-                      Receive Delivery
-                    </button>
-                  </td>
+              {logs.map((log) => (
+                <tr key={log.id} className="hover:bg-gray-50">
+                  <td className="p-2.5 font-bold text-gray-900">{log.user}</td>
+                  <td className="p-2.5 font-semibold text-brand-800">{log.action}</td>
+                  <td className="p-2.5 text-gray-500 text-[10px]">{log.module}</td>
+                  <td className="p-2.5 font-mono text-[10px] text-gray-800">{log.reference}</td>
+                  <td className="p-2.5 text-right font-mono text-[10px] text-gray-500">{log.timestamp}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-
-        {/* Table 2: GRN Pending / Exception items */}
-        <div className="border rounded p-3 space-y-2">
-          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center justify-between">
-            <span>GRN Pending & Exceptions</span>
-            <ShieldAlert className="h-4 w-4 text-amber-500" />
-          </h4>
-          <div className="space-y-2 text-xs">
-            <div className="p-2 bg-amber-50/50 border border-amber-150 rounded flex justify-between items-center">
-              <div>
-                <span className="font-bold text-amber-900 block">GRN Pending for PO-2026-074</span>
-                <span className="text-[10px] text-amber-700 block">Received 3 days ago • Material: Hardware Fittings</span>
-              </div>
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-bold text-[9.5px]">Pending GRN</span>
-            </div>
-            <div className="p-2 bg-rose-50/50 border border-rose-150 rounded flex justify-between items-center">
-              <div>
-                <span className="font-bold text-rose-900 block">Payments Done Without Approval</span>
-                <span className="text-[10px] text-rose-700 block">₹45,000 Petty Cash Site Emergency</span>
-              </div>
-              <span className="px-2 py-0.5 bg-rose-100 text-rose-800 rounded font-bold text-[9.5px]">Unapproved</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Receive Delivery Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 select-none">
-          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
-          <div className="relative bg-white rounded-lg border max-w-sm w-full p-5 shadow-xl font-sans text-xs space-y-4">
-            <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-extrabold text-sm text-gray-900">Receive Delivery</h3>
-              <button onClick={() => setSelectedOrder(null)} className="text-gray-400 hover:text-gray-700 cursor-pointer">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleRecordReceipt} className="space-y-3">
-              <div>
-                <span className="text-[9px] uppercase font-bold text-gray-400 block">Order Number:</span>
-                <span className="font-mono font-bold text-gray-900 text-xs">{selectedOrder.po} ({selectedOrder.vendor})</span>
-              </div>
-
-              <div>
-                <span className="text-[9px] uppercase font-bold text-gray-400 block">Item Description:</span>
-                <span className="font-bold text-gray-800 text-xs">{selectedOrder.item}</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[9px] uppercase font-bold text-gray-400 block mb-1">Ordered Quantity:</label>
-                  <input type="text" value={selectedOrder.ordered} readOnly className="w-full border rounded p-1.5 bg-gray-50 font-mono font-bold" />
-                </div>
-                <div>
-                  <label className="text-[9px] uppercase font-bold text-gray-400 block mb-1">Received Quantity:</label>
-                  <input 
-                    type="number" 
-                    value={rcvdQty} 
-                    onChange={(e) => setRcvdQty(e.target.value)} 
-                    className="w-full border rounded p-1.5 bg-white font-mono font-bold focus:outline-none focus:border-brand-500" 
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[9px] uppercase font-bold text-gray-400 block mb-1">Received Date:</label>
-                <input 
-                  type="date" 
-                  value={rcvdDate} 
-                  onChange={(e) => setRcvdDate(e.target.value)} 
-                  className="w-full border rounded p-1.5 bg-white text-xs focus:outline-none focus:border-brand-500" 
-                  required 
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t">
-                <button type="button" onClick={() => setSelectedOrder(null)} className="px-3 py-1.5 border rounded font-bold hover:bg-gray-50 cursor-pointer">
-                  Cancel
-                </button>
-                <button type="submit" className="px-3.5 py-1.5 bg-brand-500 hover:bg-brand-600 font-bold text-white rounded shadow-sm cursor-pointer">
-                  Record Receipt
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ==========================================
-// Section 11: Vendor Exposure
-// ==========================================
-export const VendorExposureSection: React.FC = () => {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans">
-      <div className="border rounded p-3 space-y-2">
-        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Vendors With Highest Amount Due</h4>
-        <table className="w-full text-left text-xs divide-y divide-gray-100">
-          <thead className="bg-gray-50 text-[9px] font-bold text-gray-400 uppercase">
-            <tr><th className="p-2">Vendor Name</th><th className="p-2 text-right">Amount Pending</th></tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-            <tr><td className="p-2 font-semibold">Asian Paints Ltd</td><td className="p-2 text-right font-mono font-bold text-rose-700">{safeFormatCurrency(1850000)}</td></tr>
-            <tr><td className="p-2 font-semibold">Century Plyboards India</td><td className="p-2 text-right font-mono font-bold text-rose-700">{safeFormatCurrency(1420000)}</td></tr>
-            <tr><td className="p-2 font-semibold">Schneider Electric Ltd</td><td className="p-2 text-right font-mono font-bold text-rose-700">{safeFormatCurrency(980000)}</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div className="border rounded p-3 space-y-2">
-        <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Vendors With Highest Amount Paid</h4>
-        <table className="w-full text-left text-xs divide-y divide-gray-100">
-          <thead className="bg-gray-50 text-[9px] font-bold text-gray-400 uppercase">
-            <tr><th className="p-2">Vendor Name</th><th className="p-2 text-right">Amount Paid</th></tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-            <tr><td className="p-2 font-semibold">Greenlam Industries</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{safeFormatCurrency(4200000)}</td></tr>
-            <tr><td className="p-2 font-semibold">Saint-Gobain India</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{safeFormatCurrency(3800000)}</td></tr>
-            <tr><td className="p-2 font-semibold">Havells India Ltd</td><td className="p-2 text-right font-mono font-bold text-emerald-700">{safeFormatCurrency(2900000)}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// Section 12: Flow Reports
-// ==========================================
-export const FlowReportsSection: React.FC = () => {
-  const flowData = [
-    { month: 'Apr', Inflow: 4200000, Outflow: 3100000 },
-    { month: 'May', Inflow: 5800000, Outflow: 4500000 },
-    { month: 'Jun', Inflow: 6500000, Outflow: 5200000 },
-    { month: 'Jul', Inflow: 8200000, Outflow: 6800000 }
-  ];
-
-  return (
-    <div className="p-3.5 border rounded bg-white space-y-2 font-sans">
-      <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Monthly Cash Inflow vs Outflow</h4>
-      <div className="h-[220px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={flowData}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 9 }} tickFormatter={(v) => `₹${Number(v / 100000 || 0).toFixed(0)}L`} />
-            <Tooltip formatter={(val: number) => [safeFormatCurrency(val), 'Amount']} />
-            <Legend wrapperStyle={{ fontSize: '10px' }} />
-            <Area type="monotone" dataKey="Inflow" stroke="#10b981" fill="#d1fae5" />
-            <Area type="monotone" dataKey="Outflow" stroke="#ef4444" fill="#fee2e2" />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// Section 13: Detailed Site Progress
-// ==========================================
-export const DetailedSiteProgressSection: React.FC<{ site: SiteSchema | null }> = ({ site }) => {
-  if (!site) {
-    return (
-      <div className="p-6 bg-brand-50/50 border border-brand-200 rounded-md text-center space-y-2 font-sans">
-        <h3 className="font-extrabold text-sm text-brand-900">ALL SITES — Portfolio View</h3>
-        <p className="text-xs text-gray-500 max-w-xl mx-auto">
-          Select a specific project site from the Header dropdown to inspect detailed site progress indicators.
-        </p>
-      </div>
-    );
-  }
-
-  const isNotStarted = site.executionStatus === 'not_started' || site.workflowStatus === 'draft';
-
-  const details = [
-    { label: 'Tender Approval Progress', pct: isNotStarted ? 0 : 95 },
-    { label: 'Extra Item Tender Progress', pct: isNotStarted ? 0 : 83 },
-    { label: 'Total Tender Progress', pct: isNotStarted ? 0 : 92 },
-    { label: 'Site Execution Progress', pct: isNotStarted ? 0 : (site.progress || 0) },
-    { label: 'Client Bill Progress', pct: isNotStarted ? 0 : 42 },
-    { label: 'Client Payment Progress', pct: isNotStarted ? 0 : 32 },
-    { label: 'Purchase Completion', pct: isNotStarted ? 0 : 38 },
-    { label: 'Total Vendor Payment Progress', pct: isNotStarted ? 0 : 28 },
-    { label: 'Material Payment Progress', pct: isNotStarted ? 0 : 72 },
-    { label: 'Labour Payment Progress', pct: isNotStarted ? 0 : 75 },
-    { label: 'Approved Budget Utilization', pct: 44 },
-    { label: 'Budget Consumption', pct: 44 }
-  ];
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-sans">
-      {details.map((d, idx) => (
-        <div key={idx} className="p-3 border rounded bg-white space-y-1.5">
-          <div className="flex justify-between text-xs font-bold text-gray-700">
-            <span className="text-[10.5px] truncate">{d.label}</span>
-            <span>{d.pct}%</span>
-          </div>
-          <div className="w-full bg-gray-150 h-1.5 rounded-full overflow-hidden">
-            <div className="h-full bg-brand-500 rounded-full" style={{ width: `${d.pct}%` }}></div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ==========================================
-// Section 14: Payment Modes
-// ==========================================
-export const PaymentModesSection: React.FC = () => {
-  const vendorModes = [
-    { name: 'Bank Transfer / RTGS', value: 65 },
-    { name: 'Cheque', value: 20 },
-    { name: 'Corporate Card', value: 15 }
-  ];
-
-  return (
-    <div className="space-y-4 font-sans">
-      {/* Chart 8: Ranked Horizontal Payment Mode Bar Chart */}
-      <div className="p-4 border border-gray-150 rounded-lg bg-white space-y-3 font-sans">
-        <div className="flex items-center justify-between border-b pb-2">
-          <div>
-            <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
-              Payment Mode Distribution
-            </h4>
-            <p className="text-[10px] text-gray-400 font-medium leading-tight">
-              Ranked horizontal financial volume by payment method across all operational disbursements.
-            </p>
-          </div>
-          <span className="text-[9.5px] font-bold text-brand-700 bg-brand-50 border border-brand-150 px-2 py-0.5 rounded">
-            Payment Methods
-          </span>
-        </div>
-
-        {/* Compact Summary Header Block */}
-        <div className="grid grid-cols-3 gap-2 bg-gray-50 p-2.5 rounded border border-gray-150 text-center">
-          <div>
-            <span className="text-[9px] uppercase font-bold text-gray-400 block">Total Disbursements</span>
-            <span className="text-xs font-extrabold text-gray-900">{formatIndianCurrencyAbbrev(PAYMENT_MODE_DISTRIBUTION.reduce((s, i) => s + i.amount, 0))}</span>
-          </div>
-          <div>
-            <span className="text-[9px] uppercase font-bold text-gray-400 block">Most Used Method</span>
-            <span className="text-xs font-extrabold text-brand-700 truncate block">{PAYMENT_MODE_DISTRIBUTION[0]?.name} ({PAYMENT_MODE_DISTRIBUTION[0]?.value}%)</span>
-          </div>
-          <div>
-            <span className="text-[9px] uppercase font-bold text-gray-400 block">Total Transactions</span>
-            <span className="text-xs font-extrabold text-gray-900">{PAYMENT_MODE_DISTRIBUTION.reduce((s, i) => s + i.txCount, 0)} Payments</span>
-          </div>
-        </div>
-
-        <div className="h-[240px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              layout="vertical" 
-              data={PAYMENT_MODE_DISTRIBUTION} 
-              margin={{ top: 5, right: 45, left: 25, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-              <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 9, fill: '#6b7280' }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#374151', fontWeight: 600 }} width={140} />
-              <Tooltip 
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const d = payload[0].payload;
-                    return (
-                      <div className="bg-white border border-gray-200 p-2.5 rounded shadow-md text-xs space-y-1 z-50">
-                        <div className="font-bold text-gray-900 border-b pb-1">{d.name}</div>
-                        <div><span className="text-gray-400">Total Volume:</span> <strong className="text-gray-800">{safeFormatCurrency(d.amount)}</strong></div>
-                        <div><span className="text-gray-400">Share of Payments:</span> <strong className="text-brand-700">{d.value}%</strong></div>
-                        <div><span className="text-gray-400">Transaction Count:</span> <strong className="text-gray-800">{d.txCount} Payments</strong></div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Bar dataKey="value" name="Volume Share" radius={[0, 3, 3, 0]}>
-                {PAYMENT_MODE_DISTRIBUTION.map((entry, index) => (
-                  <Cell key={`pay-mode-cell-${index}`} fill={entry.color} />
-                ))}
-                <LabelList dataKey="value" position="right" formatter={(v: number) => `${v}%`} style={{ fontSize: '10px', fontWeight: 'bold', fill: '#374151' }} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-3 border rounded bg-white space-y-3">
-          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Payment Mode to Vendors</h4>
-          <div className="space-y-2 text-xs">
-            {vendorModes.map((m, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 rounded bg-gray-50 border">
-                <span className="font-bold text-gray-700">{m.name}</span>
-                <span className="font-mono font-bold text-gray-900">{m.value}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-3 border rounded bg-white space-y-3">
-          <h4 className="font-bold text-xs text-gray-800 uppercase tracking-wider">Payment Mode Received From Client</h4>
-          <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between p-2 rounded bg-gray-50 border">
-              <span className="font-bold text-gray-700">Direct Wire / NEFT</span>
-              <span className="font-mono font-bold text-gray-900">85%</span>
-            </div>
-            <div className="flex items-center justify-between p-2 rounded bg-gray-50 border">
-              <span className="font-bold text-gray-700">Letter of Credit (LC)</span>
-              <span className="font-mono font-bold text-gray-900">15%</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

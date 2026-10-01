@@ -51,6 +51,17 @@ import {
   ClientPaymentReceipt,
   ClientRABillPaymentStatus,
   ProjectBillingMilestone,
+  Department,
+  DepartmentActivityLog,
+  Role,
+  Brand,
+  MeasurementConversion,
+  BankAccount,
+  LocationMaster,
+  StockLocation,
+  PMCMaster,
+  ArchitectMaster,
+  CompanyEntity,
 } from '../domain/types';
 import { evaluateBillingMilestones, BillingEvaluationTriggerEvent } from '../utils/milestoneBillingEngine';
 import { generateGateTokenNumber, generatePONumber, generateGRNNumber } from '../domain/documentNumbers';
@@ -227,6 +238,48 @@ export interface ERPStoreContextType {
   deactivateCategory: (categoryId: string, reason: string, performedBy?: string) => { success: boolean; error?: string };
   reactivateCategory: (categoryId: string, performedBy?: string) => { success: boolean; error?: string };
 
+  createDepartment: (dept: Partial<Department>, performedBy?: string) => { success: boolean; department?: Department; error?: string };
+  updateDepartment: (id: string, updates: Partial<Department>, performedBy?: string) => { success: boolean; error?: string };
+  deactivateDepartment: (id: string, reason: string, performedBy?: string) => { success: boolean; error?: string };
+  activateDepartment: (id: string, performedBy?: string) => { success: boolean; error?: string };
+
+  createRole: (roleInput: Partial<Role>, performedBy?: string) => { success: boolean; role?: Role; error?: string };
+  updateRole: (id: string, updates: Partial<Role>, performedBy?: string) => { success: boolean; error?: string };
+  deactivateRole: (id: string, reason: string, performedBy?: string) => { success: boolean; error?: string };
+  activateRole: (id: string, performedBy?: string) => { success: boolean; error?: string };
+
+  createBrand: (input: Partial<Brand>, performedBy?: string) => { success: boolean; brand?: Brand; error?: string };
+  updateBrand: (id: string, updates: Partial<Brand>, performedBy?: string) => { success: boolean; error?: string };
+  toggleBrandStatus: (id: string, performedBy?: string) => { success: boolean; error?: string };
+
+  createMeasurementConversion: (input: Partial<MeasurementConversion>, performedBy?: string) => { success: boolean; conversion?: MeasurementConversion; error?: string };
+  updateMeasurementConversion: (id: string, updates: Partial<MeasurementConversion>, performedBy?: string) => { success: boolean; error?: string };
+  toggleConversionStatus: (id: string, performedBy?: string) => { success: boolean; error?: string };
+
+  createBankAccount: (input: Partial<BankAccount>, performedBy?: string) => { success: boolean; bankAccount?: BankAccount; error?: string };
+  updateBankAccount: (id: string, updates: Partial<BankAccount>, performedBy?: string) => { success: boolean; error?: string };
+  toggleBankAccountStatus: (id: string, performedBy?: string) => { success: boolean; error?: string };
+
+  createLocation: (input: Partial<LocationMaster>, performedBy?: string) => { success: boolean; location?: LocationMaster; error?: string };
+  updateLocation: (id: string, updates: Partial<LocationMaster>, performedBy?: string) => { success: boolean; error?: string };
+  toggleLocationStatus: (id: string, performedBy?: string) => { success: boolean; error?: string };
+
+  createStockLocation: (input: Partial<StockLocation>, performedBy?: string) => { success: boolean; stockLocation?: StockLocation; error?: string };
+  updateStockLocation: (id: string, updates: Partial<StockLocation>, performedBy?: string) => { success: boolean; error?: string };
+  toggleStockLocationStatus: (id: string, performedBy?: string) => { success: boolean; error?: string };
+
+  createPMC: (input: Partial<PMCMaster>, performedBy?: string) => { success: boolean; pmc?: PMCMaster; error?: string };
+  updatePMC: (id: string, updates: Partial<PMCMaster>, performedBy?: string) => { success: boolean; error?: string };
+  togglePMCStatus: (id: string, performedBy?: string) => { success: boolean; error?: string };
+
+  createArchitect: (input: Partial<ArchitectMaster>, performedBy?: string) => { success: boolean; architect?: ArchitectMaster; error?: string };
+  updateArchitect: (id: string, updates: Partial<ArchitectMaster>, performedBy?: string) => { success: boolean; error?: string };
+  toggleArchitectStatus: (id: string, performedBy?: string) => { success: boolean; error?: string };
+
+  createCompanyEntity: (input: Partial<CompanyEntity>, performedBy?: string) => { success: boolean; companyEntity?: CompanyEntity; error?: string };
+  updateCompanyEntity: (id: string, updates: Partial<CompanyEntity>, performedBy?: string) => { success: boolean; error?: string };
+  toggleCompanyStatus: (id: string, performedBy?: string) => { success: boolean; error?: string };
+
   addProjectCategory: (category: string) => void;
   addPropertyType: (type: string) => void;
 
@@ -254,7 +307,7 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         const stored = await repository.loadAll();
 
         // Check demo seed version
-        const DEMO_SEED_VERSION = 'v8_canonical_grn_tokens';
+        const DEMO_SEED_VERSION = 'v9_executive_presentation_ready';
         const storedSeedVersion = localStorage.getItem('flutebyte_demo_seed_version');
 
         if (storedSeedVersion !== DEMO_SEED_VERSION) {
@@ -4422,6 +4475,870 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, [resetDemoData]);
 
+  const createDepartment = (
+    deptData: Partial<Department>,
+    performedBy: string = 'Admin User'
+  ): { success: boolean; department?: Department; error?: string } => {
+    const rawCode = (deptData.code || '').trim();
+    const rawName = (deptData.name || '').trim();
+
+    if (!rawCode) {
+      return { success: false, error: 'Department Code is required.' };
+    }
+    if (!rawName) {
+      return { success: false, error: 'Department Name is required.' };
+    }
+
+    const upperCode = rawCode.toUpperCase();
+    const existingDepts = state.departments || [];
+
+    if (existingDepts.some((d) => d.code.toUpperCase() === upperCode)) {
+      return { success: false, error: `Department Code ${upperCode} already exists.` };
+    }
+
+    if (existingDepts.some((d) => d.name.trim().toLowerCase() === rawName.toLowerCase())) {
+      return { success: false, error: 'A department with this name already exists.' };
+    }
+
+    const newDept: Department = {
+      id: deptData.id || `dept-${Date.now()}`,
+      code: upperCode,
+      name: rawName,
+      headEmployeeId: deptData.headEmployeeId || '',
+      headEmployeeName: deptData.headEmployeeName || '',
+      headDesignationName: deptData.headDesignationName || '',
+      description: deptData.description || '',
+      type: deptData.type || 'Operations',
+      status: deptData.status || 'Active',
+      createdAt: new Date().toISOString(),
+      createdBy: performedBy,
+    };
+
+    const newActivityLog: DepartmentActivityLog = {
+      id: `log-${Date.now()}`,
+      departmentId: newDept.id,
+      timestamp: new Date().toISOString(),
+      user: performedBy,
+      action: 'Department Created',
+      newValue: `${newDept.name} (${newDept.code})`,
+      details: `Department created with code ${newDept.code}.`,
+    };
+
+    const updatedDepts = [newDept, ...existingDepts];
+    const updatedLogs = [newActivityLog, ...(state.departmentActivityLogs || [])];
+
+    setState((prev) => ({
+      ...prev,
+      departments: updatedDepts,
+      departmentActivityLogs: updatedLogs,
+    }));
+
+    repository.saveCollection('departments', updatedDepts);
+    repository.saveCollection('departmentActivityLogs', updatedLogs);
+
+    return { success: true, department: newDept };
+  };
+
+  const updateDepartment = (
+    id: string,
+    updates: Partial<Department>,
+    performedBy: string = 'Admin User'
+  ): { success: boolean; error?: string } => {
+    const existingDepts = state.departments || [];
+    const dept = existingDepts.find((d) => d.id === id);
+
+    if (!dept) {
+      return { success: false, error: 'Department not found.' };
+    }
+
+    const logsToAppend: DepartmentActivityLog[] = [];
+
+    if (updates.code && updates.code.trim().toUpperCase() !== dept.code.toUpperCase()) {
+      const newUpperCode = updates.code.trim().toUpperCase();
+
+      const isReferencedByEmployees = (state.employees || []).some((e) => e.departmentId === id);
+      const isReferencedByDesignations = (state.designations || []).some((d) => d.departmentId === id);
+
+      if (isReferencedByEmployees || isReferencedByDesignations) {
+        return {
+          success: false,
+          error: 'Department Code cannot be changed because this department is already in use.',
+        };
+      }
+
+      if (existingDepts.some((d) => d.id !== id && d.code.toUpperCase() === newUpperCode)) {
+        return { success: false, error: `Department Code ${newUpperCode} already exists.` };
+      }
+
+      logsToAppend.push({
+        id: `log-${Date.now()}-code`,
+        departmentId: id,
+        timestamp: new Date().toISOString(),
+        user: performedBy,
+        action: 'Department Updated',
+        oldValue: dept.code,
+        newValue: newUpperCode,
+        details: `Department Code changed from ${dept.code} to ${newUpperCode}.`,
+      });
+    }
+
+    if (updates.name && updates.name.trim().toLowerCase() !== dept.name.trim().toLowerCase()) {
+      const newName = updates.name.trim();
+
+      if (existingDepts.some((d) => d.id !== id && d.name.trim().toLowerCase() === newName.toLowerCase())) {
+        return { success: false, error: 'A department with this name already exists.' };
+      }
+
+      logsToAppend.push({
+        id: `log-${Date.now()}-name`,
+        departmentId: id,
+        timestamp: new Date().toISOString(),
+        user: performedBy,
+        action: 'Department Updated',
+        oldValue: dept.name,
+        newValue: newName,
+        details: `Department Name updated to ${newName}.`,
+      });
+    }
+
+    if (
+      updates.headEmployeeId !== undefined &&
+      updates.headEmployeeId !== dept.headEmployeeId
+    ) {
+      const oldHead = dept.headEmployeeName ? `${dept.headEmployeeName}` : 'Not Assigned';
+      const newHead = updates.headEmployeeName ? `${updates.headEmployeeName}` : 'Not Assigned';
+
+      logsToAppend.push({
+        id: `log-${Date.now()}-head`,
+        departmentId: id,
+        timestamp: new Date().toISOString(),
+        user: performedBy,
+        action: 'Department Head Changed',
+        oldValue: oldHead,
+        newValue: newHead,
+        details: `Department Head updated from ${oldHead} to ${newHead}.`,
+      });
+    }
+
+    const updatedDept: Department = {
+      ...dept,
+      ...updates,
+      code: updates.code ? updates.code.trim().toUpperCase() : dept.code,
+      name: updates.name ? updates.name.trim() : dept.name,
+      updatedAt: new Date().toISOString(),
+      updatedBy: performedBy,
+    };
+
+    const updatedDepts = existingDepts.map((d) => (d.id === id ? updatedDept : d));
+    const updatedLogs = [...logsToAppend, ...(state.departmentActivityLogs || [])];
+
+    setState((prev) => ({
+      ...prev,
+      departments: updatedDepts,
+      departmentActivityLogs: updatedLogs,
+    }));
+
+    repository.saveCollection('departments', updatedDepts);
+    repository.saveCollection('departmentActivityLogs', updatedLogs);
+
+    return { success: true };
+  };
+
+  const deactivateDepartment = (
+    id: string,
+    reason: string,
+    performedBy: string = 'Admin User'
+  ): { success: boolean; error?: string } => {
+    const existingDepts = state.departments || [];
+    const dept = existingDepts.find((d) => d.id === id);
+
+    if (!dept) {
+      return { success: false, error: 'Department not found.' };
+    }
+
+    const activeEmployees = (state.employees || []).filter(
+      (e) => e.departmentId === id && (e.status === 'active' || e.status === 'Active')
+    );
+
+    if (activeEmployees.length > 0) {
+      return {
+        success: false,
+        error: 'Reassign active users before deactivating this department.',
+      };
+    }
+
+    const updatedDept: Department = {
+      ...dept,
+      status: 'Inactive',
+      updatedAt: new Date().toISOString(),
+      updatedBy: performedBy,
+    };
+
+    const activityLog: DepartmentActivityLog = {
+      id: `log-${Date.now()}-deact`,
+      departmentId: id,
+      timestamp: new Date().toISOString(),
+      user: performedBy,
+      action: 'Department Deactivated',
+      oldValue: 'Active',
+      newValue: 'Inactive',
+      details: reason ? `Deactivated. Reason: ${reason}` : 'Department deactivated.',
+    };
+
+    const updatedDepts = existingDepts.map((d) => (d.id === id ? updatedDept : d));
+    const updatedLogs = [activityLog, ...(state.departmentActivityLogs || [])];
+
+    setState((prev) => ({
+      ...prev,
+      departments: updatedDepts,
+      departmentActivityLogs: updatedLogs,
+    }));
+
+    repository.saveCollection('departments', updatedDepts);
+    repository.saveCollection('departmentActivityLogs', updatedLogs);
+
+    return { success: true };
+  };
+
+  const activateDepartment = (
+    id: string,
+    performedBy: string = 'Admin User'
+  ): { success: boolean; error?: string } => {
+    const existingDepts = state.departments || [];
+    const dept = existingDepts.find((d) => d.id === id);
+
+    if (!dept) {
+      return { success: false, error: 'Department not found.' };
+    }
+
+    const updatedDept: Department = {
+      ...dept,
+      status: 'Active',
+      updatedAt: new Date().toISOString(),
+      updatedBy: performedBy,
+    };
+
+    const activityLog: DepartmentActivityLog = {
+      id: `log-${Date.now()}-act`,
+      departmentId: id,
+      timestamp: new Date().toISOString(),
+      user: performedBy,
+      action: 'Department Activated',
+      oldValue: 'Inactive',
+      newValue: 'Active',
+      details: 'Department reactivated.',
+    };
+
+    const updatedDepts = existingDepts.map((d) => (d.id === id ? updatedDept : d));
+    const updatedLogs = [activityLog, ...(state.departmentActivityLogs || [])];
+
+    setState((prev) => ({
+      ...prev,
+      departments: updatedDepts,
+      departmentActivityLogs: updatedLogs,
+    }));
+
+    repository.saveCollection('departments', updatedDepts);
+    repository.saveCollection('departmentActivityLogs', updatedLogs);
+
+    return { success: true };
+  };
+
+  const createRole = (
+    roleInput: Partial<Role>,
+    performedBy: string = 'Admin User'
+  ): { success: boolean; role?: Role; error?: string } => {
+    const roleName = (roleInput.roleName || roleInput.name || '').trim();
+    const rawCode = (roleInput.roleId || roleInput.name || roleInput.roleName || '').trim();
+
+    if (!roleName) {
+      return { success: false, error: 'Role Name is required.' };
+    }
+
+    const normalizedCode = rawCode
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, '_')
+      .replace(/_+/g, '_');
+
+    if (!normalizedCode) {
+      return { success: false, error: 'Valid Role Code is required.' };
+    }
+
+    const existingRoles = state.roles || [];
+    const duplicate = existingRoles.some(
+      (r) => r.roleId.toUpperCase() === normalizedCode || (r.roleName && r.roleName.toLowerCase() === roleName.toLowerCase())
+    );
+
+    if (duplicate) {
+      return { success: false, error: `Role Code '${normalizedCode}' or Role Name '${roleName}' already exists.` };
+    }
+
+    const newRole: Role = {
+      id: `role-${Date.now()}`,
+      roleId: normalizedCode,
+      roleName: roleName,
+      name: roleName,
+      description: roleInput.description?.trim() || '',
+      status: roleInput.status || 'Active',
+      permissions: roleInput.permissions || ['view:dashboard'],
+      userCount: 0,
+      permissionsCount: (roleInput.permissions || ['view:dashboard']).length,
+      createdAt: new Date().toISOString(),
+      createdBy: performedBy,
+      updatedAt: new Date().toISOString(),
+      updatedBy: performedBy,
+    };
+
+    const updatedRoles = [newRole, ...existingRoles];
+
+    setState((prev) => ({
+      ...prev,
+      roles: updatedRoles,
+    }));
+
+    repository.saveCollection('roles', updatedRoles);
+
+    return { success: true, role: newRole };
+  };
+
+  const updateRole = (
+    id: string,
+    updates: Partial<Role>,
+    performedBy: string = 'Admin User'
+  ): { success: boolean; error?: string } => {
+    const existingRoles = state.roles || [];
+    const roleIndex = existingRoles.findIndex((r) => r.id === id || r.roleId === id);
+
+    if (roleIndex === -1) {
+      return { success: false, error: 'Role not found.' };
+    }
+
+    const currentRole = existingRoles[roleIndex];
+
+    if (updates.roleName) {
+      const newName = updates.roleName.trim();
+      const duplicateName = existingRoles.some(
+        (r) => r.id !== currentRole.id && r.roleName.toLowerCase() === newName.toLowerCase()
+      );
+      if (duplicateName) {
+        return { success: false, error: `Role Name '${newName}' is already used by another role.` };
+      }
+    }
+
+    const updatedRole: Role = {
+      ...currentRole,
+      ...updates,
+      roleName: updates.roleName ? updates.roleName.trim() : currentRole.roleName,
+      name: updates.roleName ? updates.roleName.trim() : currentRole.name || currentRole.roleName,
+      description: updates.description !== undefined ? updates.description.trim() : currentRole.description,
+      updatedAt: new Date().toISOString(),
+      updatedBy: performedBy,
+    };
+
+    const updatedRoles = [...existingRoles];
+    updatedRoles[roleIndex] = updatedRole;
+
+    setState((prev) => ({
+      ...prev,
+      roles: updatedRoles,
+    }));
+
+    repository.saveCollection('roles', updatedRoles);
+
+    return { success: true };
+  };
+
+  const deactivateRole = (
+    id: string,
+    _reason: string,
+    performedBy: string = 'Admin User'
+  ): { success: boolean; error?: string } => {
+    const existingRoles = state.roles || [];
+    const role = existingRoles.find((r) => r.id === id || r.roleId === id);
+
+    if (!role) {
+      return { success: false, error: 'Role not found.' };
+    }
+
+    const assignedUsersCount = (state.employees || []).filter(
+      (e) => (e.roleId === role.roleId || e.roleId === role.id) && (e.status === 'active' || e.status === 'Active')
+    ).length;
+
+    if (assignedUsersCount > 0 || (role.userCount || 0) > 0) {
+      return {
+        success: false,
+        error: `Cannot deactivate role '${role.roleName || role.roleId}' because it is assigned to ${assignedUsersCount || role.userCount} active users.`,
+      };
+    }
+
+    const updatedRole: Role = {
+      ...role,
+      status: 'Inactive',
+      updatedAt: new Date().toISOString(),
+      updatedBy: performedBy,
+    };
+
+    const updatedRoles = existingRoles.map((r) => (r.id === role.id ? updatedRole : r));
+
+    setState((prev) => ({
+      ...prev,
+      roles: updatedRoles,
+    }));
+
+    repository.saveCollection('roles', updatedRoles);
+
+    return { success: true };
+  };
+
+  const activateRole = (
+    id: string,
+    performedBy: string = 'Admin User'
+  ): { success: boolean; error?: string } => {
+    const existingRoles = state.roles || [];
+    const role = existingRoles.find((r) => r.id === id || r.roleId === id);
+
+    if (!role) {
+      return { success: false, error: 'Role not found.' };
+    }
+
+    const updatedRole: Role = {
+      ...role,
+      status: 'Active',
+      updatedAt: new Date().toISOString(),
+      updatedBy: performedBy,
+    };
+
+    const updatedRoles = existingRoles.map((r) => (r.id === role.id ? updatedRole : r));
+
+    setState((prev) => ({
+      ...prev,
+      roles: updatedRoles,
+    }));
+
+    return { success: true };
+  };
+
+  // --------------------------------------------------------------------------
+  // MASTER DATA MODULES CRUD & VALIDATION
+  // --------------------------------------------------------------------------
+  const createBrand = (input: Partial<Brand>): { success: boolean; brand?: Brand; error?: string } => {
+    const code = (input.code || '').trim().toUpperCase();
+    const name = (input.name || '').trim();
+    if (!code || !name) return { success: false, error: 'Brand Code and Name are required.' };
+
+    const existing = state.brands || [];
+    if (existing.some((b) => b.code.toUpperCase() === code || b.name.toLowerCase() === name.toLowerCase())) {
+      return { success: false, error: 'A Brand with this Code or Name already exists.' };
+    }
+
+    const newBrand: Brand = {
+      id: `brd-${Date.now()}`,
+      code,
+      name,
+      category: input.category || 'General',
+      categoryId: input.categoryId,
+      description: input.description,
+      status: input.status || 'Active',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newBrand, ...existing];
+    setState((prev) => ({ ...prev, brands: updated }));
+    repository.saveCollection('brands', updated);
+    return { success: true, brand: newBrand };
+  };
+
+  const updateBrand = (id: string, updates: Partial<Brand>): { success: boolean; error?: string } => {
+    const existing = state.brands || [];
+    const item = existing.find((b) => b.id === id);
+    if (!item) return { success: false, error: 'Brand not found.' };
+
+    const updated = existing.map((b) => (b.id === id ? { ...b, ...updates } : b));
+    setState((prev) => ({ ...prev, brands: updated }));
+    repository.saveCollection('brands', updated);
+    return { success: true };
+  };
+
+  const toggleBrandStatus = (id: string): { success: boolean; error?: string } => {
+    const existing = state.brands || [];
+    const item = existing.find((b) => b.id === id);
+    if (!item) return { success: false, error: 'Brand not found.' };
+
+    const updated = existing.map((b) => (b.id === id ? { ...b, status: (b.status === 'Active' ? 'Inactive' : 'Active') as 'Active' | 'Inactive' } : b));
+    setState((prev) => ({ ...prev, brands: updated }));
+    repository.saveCollection('brands', updated);
+    return { success: true };
+  };
+
+  const createMeasurementConversion = (input: Partial<MeasurementConversion>): { success: boolean; conversion?: MeasurementConversion; error?: string } => {
+    if (!input.fromUnitId || !input.toUnitId) return { success: false, error: 'From Unit and To Unit are required.' };
+    if (input.fromUnitId === input.toUnitId) return { success: false, error: 'From Unit cannot equal To Unit.' };
+    if (!input.conversionFactor || input.conversionFactor <= 0) return { success: false, error: 'Conversion factor must be greater than 0.' };
+
+    const existing = state.measurementConversions || [];
+    if (existing.some((c) => c.fromUnitId === input.fromUnitId && c.toUnitId === input.toUnitId)) {
+      return { success: false, error: 'A conversion rule for this unit pair already exists.' };
+    }
+
+    const code = (input.conversionCode || `CONV-${String(existing.length + 1).padStart(3, '0')}`).trim().toUpperCase();
+    const newConv: MeasurementConversion = {
+      id: `conv-${Date.now()}`,
+      conversionCode: code,
+      fromUnitId: input.fromUnitId,
+      fromUnitSymbol: input.fromUnitSymbol || 'unit',
+      toUnitId: input.toUnitId,
+      toUnitSymbol: input.toUnitSymbol || 'unit',
+      conversionFactor: input.conversionFactor,
+      notes: input.notes,
+      status: input.status || 'Active',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newConv, ...existing];
+    setState((prev) => ({ ...prev, measurementConversions: updated }));
+    repository.saveCollection('measurementConversions', updated);
+    return { success: true, conversion: newConv };
+  };
+
+  const updateMeasurementConversion = (id: string, updates: Partial<MeasurementConversion>): { success: boolean; error?: string } => {
+    const existing = state.measurementConversions || [];
+    const item = existing.find((c) => c.id === id);
+    if (!item) return { success: false, error: 'Conversion not found.' };
+
+    const updated = existing.map((c) => (c.id === id ? { ...c, ...updates } : c));
+    setState((prev) => ({ ...prev, measurementConversions: updated }));
+    repository.saveCollection('measurementConversions', updated);
+    return { success: true };
+  };
+
+  const toggleConversionStatus = (id: string): { success: boolean; error?: string } => {
+    const existing = state.measurementConversions || [];
+    const item = existing.find((c) => c.id === id);
+    if (!item) return { success: false, error: 'Conversion not found.' };
+
+    const updated = existing.map((c) => (c.id === id ? { ...c, status: (c.status === 'Active' ? 'Inactive' : 'Active') as 'Active' | 'Inactive' } : c));
+    setState((prev) => ({ ...prev, measurementConversions: updated }));
+    repository.saveCollection('measurementConversions', updated);
+    return { success: true };
+  };
+
+  const createBankAccount = (input: Partial<BankAccount>): { success: boolean; bankAccount?: BankAccount; error?: string } => {
+    const accountName = (input.accountName || '').trim();
+    const bankName = (input.bankName || '').trim();
+    const accountNumber = (input.accountNumber || '').trim();
+    const ifsc = (input.ifsc || '').trim().toUpperCase();
+    if (!accountName || !bankName || !accountNumber || !ifsc) {
+      return { success: false, error: 'Account Name, Bank Name, Account Number, and IFSC are required.' };
+    }
+
+    const existing = state.bankAccounts || [];
+    if (existing.some((a) => a.accountNumber === accountNumber)) {
+      return { success: false, error: 'A Bank Account with this Account Number already exists.' };
+    }
+
+    const last4 = accountNumber.slice(-4);
+    const maskedAccountNumber = `****${last4}`;
+    const newAcc: BankAccount = {
+      id: `bank-${Date.now()}`,
+      accountName,
+      bankName,
+      accountNumber,
+      maskedAccountNumber,
+      ifsc,
+      branch: input.branch,
+      accountType: input.accountType || 'Current',
+      companyEntityId: input.companyEntityId,
+      companyEntityName: input.companyEntityName,
+      openingBalance: input.openingBalance || 0,
+      status: input.status || 'Active',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newAcc, ...existing];
+    setState((prev) => ({ ...prev, bankAccounts: updated }));
+    repository.saveCollection('bankAccounts', updated);
+    return { success: true, bankAccount: newAcc };
+  };
+
+  const updateBankAccount = (id: string, updates: Partial<BankAccount>): { success: boolean; error?: string } => {
+    const existing = state.bankAccounts || [];
+    const item = existing.find((a) => a.id === id);
+    if (!item) return { success: false, error: 'Bank account not found.' };
+
+    let maskedAccountNumber = item.maskedAccountNumber;
+    if (updates.accountNumber && updates.accountNumber !== item.accountNumber) {
+      const last4 = updates.accountNumber.trim().slice(-4);
+      maskedAccountNumber = `****${last4}`;
+    }
+
+    const updated = existing.map((a) => (a.id === id ? { ...a, ...updates, maskedAccountNumber } : a));
+    setState((prev) => ({ ...prev, bankAccounts: updated }));
+    repository.saveCollection('bankAccounts', updated);
+    return { success: true };
+  };
+
+  const toggleBankAccountStatus = (id: string): { success: boolean; error?: string } => {
+    const existing = state.bankAccounts || [];
+    const item = existing.find((a) => a.id === id);
+    if (!item) return { success: false, error: 'Bank account not found.' };
+
+    const updated = existing.map((a) => (a.id === id ? { ...a, status: (a.status === 'Active' ? 'Inactive' : 'Active') as 'Active' | 'Inactive' } : a));
+    setState((prev) => ({ ...prev, bankAccounts: updated }));
+    repository.saveCollection('bankAccounts', updated);
+    return { success: true };
+  };
+
+  const createLocation = (input: Partial<LocationMaster>): { success: boolean; location?: LocationMaster; error?: string } => {
+    const code = (input.code || '').trim().toUpperCase();
+    const name = (input.name || '').trim();
+    if (!code || !name) return { success: false, error: 'Location Code and Name are required.' };
+
+    const existing = state.locations || [];
+    if (existing.some((l) => l.code === code)) return { success: false, error: 'Location Code already exists.' };
+
+    const newLoc: LocationMaster = {
+      id: `loc-${Date.now()}`,
+      code,
+      name,
+      type: input.type || 'Corporate Office',
+      address: input.address,
+      city: input.city || 'Mumbai',
+      state: input.state,
+      pinCode: input.pinCode,
+      country: input.country || 'India',
+      status: input.status || 'Active',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newLoc, ...existing];
+    setState((prev) => ({ ...prev, locations: updated }));
+    repository.saveCollection('locations', updated);
+    return { success: true, location: newLoc };
+  };
+
+  const updateLocation = (id: string, updates: Partial<LocationMaster>): { success: boolean; error?: string } => {
+    const existing = state.locations || [];
+    const item = existing.find((l) => l.id === id);
+    if (!item) return { success: false, error: 'Location not found.' };
+
+    const updated = existing.map((l) => (l.id === id ? { ...l, ...updates } : l));
+    setState((prev) => ({ ...prev, locations: updated }));
+    repository.saveCollection('locations', updated);
+    return { success: true };
+  };
+
+  const toggleLocationStatus = (id: string): { success: boolean; error?: string } => {
+    const existing = state.locations || [];
+    const item = existing.find((l) => l.id === id);
+    if (!item) return { success: false, error: 'Location not found.' };
+
+    const updated = existing.map((l) => (l.id === id ? { ...l, status: (l.status === 'Active' ? 'Inactive' : 'Active') as 'Active' | 'Inactive' } : l));
+    setState((prev) => ({ ...prev, locations: updated }));
+    repository.saveCollection('locations', updated);
+    return { success: true };
+  };
+
+  const createStockLocation = (input: Partial<StockLocation>): { success: boolean; stockLocation?: StockLocation; error?: string } => {
+    const code = (input.code || '').trim().toUpperCase();
+    const name = (input.name || '').trim();
+    if (!code || !name) return { success: false, error: 'Store Code and Store Name are required.' };
+
+    const existing = state.stockLocations || [];
+    if (existing.some((s) => s.code === code)) return { success: false, error: 'Store Code already exists.' };
+
+    const newLoc: StockLocation = {
+      id: `stk-${Date.now()}`,
+      code,
+      name,
+      locationId: input.locationId,
+      locationName: input.locationName,
+      type: input.type || 'Central Warehouse',
+      city: input.city || 'Mumbai',
+      address: input.address || '',
+      managerName: input.managerName || '',
+      phone: input.phone || '',
+      isActive: input.isActive ?? true,
+    };
+    const updated = [newLoc, ...existing];
+    setState((prev) => ({ ...prev, stockLocations: updated }));
+    repository.saveCollection('stockLocations', updated);
+    return { success: true, stockLocation: newLoc };
+  };
+
+  const updateStockLocation = (id: string, updates: Partial<StockLocation>): { success: boolean; error?: string } => {
+    const existing = state.stockLocations || [];
+    const item = existing.find((s) => s.id === id);
+    if (!item) return { success: false, error: 'Store location not found.' };
+
+    const updated = existing.map((s) => (s.id === id ? { ...s, ...updates } : s));
+    setState((prev) => ({ ...prev, stockLocations: updated }));
+    repository.saveCollection('stockLocations', updated);
+    return { success: true };
+  };
+
+  const toggleStockLocationStatus = (id: string): { success: boolean; error?: string } => {
+    const existing = state.stockLocations || [];
+    const item = existing.find((s) => s.id === id);
+    if (!item) return { success: false, error: 'Store location not found.' };
+
+    const updated = existing.map((s) => (s.id === id ? { ...s, isActive: !s.isActive } : s));
+    setState((prev) => ({ ...prev, stockLocations: updated }));
+    repository.saveCollection('stockLocations', updated);
+    return { success: true };
+  };
+
+  const createPMC = (input: Partial<PMCMaster>): { success: boolean; pmc?: PMCMaster; error?: string } => {
+    const code = (input.code || '').trim().toUpperCase();
+    const companyName = (input.companyName || '').trim();
+    if (!code || !companyName) return { success: false, error: 'PMC Code and Company Name are required.' };
+
+    const existing = state.pmcs || [];
+    if (existing.some((p) => p.code === code)) return { success: false, error: 'PMC Code already exists.' };
+
+    const newPMC: PMCMaster = {
+      id: `pmc-${Date.now()}`,
+      code,
+      name: companyName,
+      companyName,
+      contactPerson: input.contactPerson || '',
+      mobile: input.mobile || '',
+      email: input.email || '',
+      gstin: input.gstin,
+      pan: input.pan,
+      address: input.address,
+      city: input.city || 'Mumbai',
+      state: input.state,
+      status: input.status || 'Active',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newPMC, ...existing];
+    setState((prev) => ({ ...prev, pmcs: updated }));
+    repository.saveCollection('pmcs', updated);
+    return { success: true, pmc: newPMC };
+  };
+
+  const updatePMC = (id: string, updates: Partial<PMCMaster>): { success: boolean; error?: string } => {
+    const existing = state.pmcs || [];
+    const item = existing.find((p) => p.id === id);
+    if (!item) return { success: false, error: 'PMC not found.' };
+
+    const updated = existing.map((p) => (p.id === id ? { ...p, ...updates } : p));
+    setState((prev) => ({ ...prev, pmcs: updated }));
+    repository.saveCollection('pmcs', updated);
+    return { success: true };
+  };
+
+  const togglePMCStatus = (id: string): { success: boolean; error?: string } => {
+    const existing = state.pmcs || [];
+    const item = existing.find((p) => p.id === id);
+    if (!item) return { success: false, error: 'PMC not found.' };
+
+    const updated = existing.map((p) => (p.id === id ? { ...p, status: (p.status === 'Active' ? 'Inactive' : 'Active') as 'Active' | 'Inactive' } : p));
+    setState((prev) => ({ ...prev, pmcs: updated }));
+    repository.saveCollection('pmcs', updated);
+    return { success: true };
+  };
+
+  const createArchitect = (input: Partial<ArchitectMaster>): { success: boolean; architect?: ArchitectMaster; error?: string } => {
+    const code = (input.code || '').trim().toUpperCase();
+    const firmName = (input.firmName || '').trim();
+    if (!code || !firmName) return { success: false, error: 'Architect Code and Firm Name are required.' };
+
+    const existing = state.architects || [];
+    if (existing.some((a) => a.code === code)) return { success: false, error: 'Architect Code already exists.' };
+
+    const newArc: ArchitectMaster = {
+      id: `arc-${Date.now()}`,
+      code,
+      name: firmName,
+      firmName,
+      contactPerson: input.contactPerson || '',
+      mobile: input.mobile || '',
+      email: input.email || '',
+      gstin: input.gstin,
+      address: input.address,
+      city: input.city || 'Mumbai',
+      specialization: input.specialization,
+      status: input.status || 'Active',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newArc, ...existing];
+    setState((prev) => ({ ...prev, architects: updated }));
+    repository.saveCollection('architects', updated);
+    return { success: true, architect: newArc };
+  };
+
+  const updateArchitect = (id: string, updates: Partial<ArchitectMaster>): { success: boolean; error?: string } => {
+    const existing = state.architects || [];
+    const item = existing.find((a) => a.id === id);
+    if (!item) return { success: false, error: 'Architect not found.' };
+
+    const updated = existing.map((a) => (a.id === id ? { ...a, ...updates } : a));
+    setState((prev) => ({ ...prev, architects: updated }));
+    repository.saveCollection('architects', updated);
+    return { success: true };
+  };
+
+  const toggleArchitectStatus = (id: string): { success: boolean; error?: string } => {
+    const existing = state.architects || [];
+    const item = existing.find((a) => a.id === id);
+    if (!item) return { success: false, error: 'Architect not found.' };
+
+    const updated = existing.map((a) => (a.id === id ? { ...a, status: (a.status === 'Active' ? 'Inactive' : 'Active') as 'Active' | 'Inactive' } : a));
+    setState((prev) => ({ ...prev, architects: updated }));
+    repository.saveCollection('architects', updated);
+    return { success: true };
+  };
+
+  const createCompanyEntity = (input: Partial<CompanyEntity>): { success: boolean; companyEntity?: CompanyEntity; error?: string } => {
+    const code = (input.code || '').trim().toUpperCase();
+    const legalName = (input.legalName || '').trim();
+    if (!code || !legalName) return { success: false, error: 'Company Code and Legal Name are required.' };
+
+    const existing = state.companyEntities || [];
+    if (existing.some((c) => c.code === code)) return { success: false, error: 'Company Code already exists.' };
+
+    const newComp: CompanyEntity = {
+      id: `comp-${Date.now()}`,
+      code,
+      legalName,
+      tradeName: input.tradeName,
+      gstin: input.gstin || '',
+      pan: input.pan || '',
+      cin: input.cin,
+      registeredAddress: input.registeredAddress || '',
+      billingAddress: input.billingAddress,
+      state: input.state || 'Maharashtra',
+      country: input.country || 'India',
+      primaryEmail: input.primaryEmail || '',
+      primaryMobile: input.primaryMobile || '',
+      status: input.status || 'Active',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newComp, ...existing];
+    setState((prev) => ({ ...prev, companyEntities: updated }));
+    repository.saveCollection('companyEntities', updated);
+    return { success: true, companyEntity: newComp };
+  };
+
+  const updateCompanyEntity = (id: string, updates: Partial<CompanyEntity>): { success: boolean; error?: string } => {
+    const existing = state.companyEntities || [];
+    const item = existing.find((c) => c.id === id);
+    if (!item) return { success: false, error: 'Company Entity not found.' };
+
+    const updated = existing.map((c) => (c.id === id ? { ...c, ...updates } : c));
+    setState((prev) => ({ ...prev, companyEntities: updated }));
+    repository.saveCollection('companyEntities', updated);
+    return { success: true };
+  };
+
+  const toggleCompanyStatus = (id: string): { success: boolean; error?: string } => {
+    const existing = state.companyEntities || [];
+    const item = existing.find((c) => c.id === id);
+    if (!item) return { success: false, error: 'Company Entity not found.' };
+
+    const updated = existing.map((c) => (c.id === id ? { ...c, status: (c.status === 'Active' ? 'Inactive' : 'Active') as 'Active' | 'Inactive' } : c));
+    setState((prev) => ({ ...prev, companyEntities: updated }));
+    repository.saveCollection('companyEntities', updated);
+    return { success: true };
+  };
+
   return (
     <ERPStoreContext.Provider
       value={{
@@ -4524,6 +5441,38 @@ export const ERPStoreProvider: React.FC<{ children: ReactNode }> = ({ children }
         updateCategory,
         deactivateCategory,
         reactivateCategory,
+        createDepartment,
+        updateDepartment,
+        deactivateDepartment,
+        activateDepartment,
+        createRole,
+        updateRole,
+        deactivateRole,
+        activateRole,
+        createBrand,
+        updateBrand,
+        toggleBrandStatus,
+        createMeasurementConversion,
+        updateMeasurementConversion,
+        toggleConversionStatus,
+        createBankAccount,
+        updateBankAccount,
+        toggleBankAccountStatus,
+        createLocation,
+        updateLocation,
+        toggleLocationStatus,
+        createStockLocation,
+        updateStockLocation,
+        toggleStockLocationStatus,
+        createPMC,
+        updatePMC,
+        togglePMCStatus,
+        createArchitect,
+        updateArchitect,
+        toggleArchitectStatus,
+        createCompanyEntity,
+        updateCompanyEntity,
+        toggleCompanyStatus,
         addProjectCategory,
         addPropertyType,
         logAudit,

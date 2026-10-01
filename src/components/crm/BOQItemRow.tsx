@@ -95,11 +95,6 @@ export const BOQItemRow: React.FC<BOQItemRowProps> = ({
       <tr className="border-b border-slate-100 hover:bg-slate-50/60 text-xs">
         <td className="py-2.5 px-3 font-mono text-slate-500">{index + 1}</td>
         <td className="py-2.5 px-3">
-          <span className="capitalize font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-            {item.itemType}
-          </span>
-        </td>
-        <td className="py-2.5 px-3">
           <div className="font-bold text-slate-900">{item.productName || item.description}</div>
           <div className="text-[11px] text-slate-500">{item.categoryName}</div>
         </td>
@@ -121,25 +116,11 @@ export const BOQItemRow: React.FC<BOQItemRowProps> = ({
         <div className="flex items-center gap-2">
           <span className="font-mono font-bold text-slate-400">#{index + 1}</span>
 
-          {/* Item Type */}
-          <select
-            value={item.itemType}
-            onChange={(e) => handleFieldChange('itemType', e.target.value)}
-            className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-xs font-bold text-slate-800 focus:border-[#AB9570]"
-          >
-            <option value="material">Material</option>
-            <option value="labour">Labour Work</option>
-            <option value="service">Service / Consultancy</option>
-            <option value="custom">Custom Item</option>
-            <option value="transportation">Transportation / Freight</option>
-            <option value="subcontract">Subcontract Work</option>
-          </select>
-
-          {/* Category */}
+          {/* Category Selector */}
           <select
             value={item.categoryId || ''}
             onChange={(e) => handleCategoryChange(e.target.value)}
-            className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-xs font-semibold text-slate-700 focus:border-[#AB9570]"
+            className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded text-xs font-bold text-slate-800 focus:border-[#AB9570]"
           >
             <option value="">-- Select Category --</option>
             {categories.map((c) => (
@@ -175,7 +156,7 @@ export const BOQItemRow: React.FC<BOQItemRowProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div>
           <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">
-            Material Master {item.itemType !== 'material' && '(Optional for Non-Material)'}
+            Material Master (Optional)
           </label>
           <ProductSelector
             productId={item.productId}
