@@ -7,6 +7,7 @@ import {
   ExecutiveKpiSummarySection,
   ProjectPerformanceGanttSection,
   CommercialPositionSection,
+  OperationsOverviewAnalyticsSection,
   ProcurementIntelligenceSection,
   InventoryQualitySection,
   FinanceCashFlowSection,
@@ -27,12 +28,13 @@ const sectionNavLinks = [
   { id: 'sec-portfolio', label: '1. Portfolio Overview' },
   { id: 'sec-site-snapshot', label: '2. Site Snapshot' },
   { id: 'sec-progress-matrix', label: '3. Progress Matrix & Commercial' },
-  { id: 'sec-client-billing', label: '4. Client Billing' },
-  { id: 'sec-vendor-bills', label: '5. Vendor Bills & Finance' },
-  { id: 'sec-approvals', label: '6. Approvals Pending' },
-  { id: 'sec-tasks-activity', label: '7. Tasks & Activity' },
-  { id: 'sec-procurement', label: '8. Procurement Intel' },
-  { id: 'sec-period-stats', label: '9. Period Statistics & Snapshot' },
+  { id: 'sec-operations-analytics', label: '4. Operations Overview' },
+  { id: 'sec-client-billing', label: '5. Client Billing' },
+  { id: 'sec-vendor-bills', label: '6. Vendor Bills & Finance' },
+  { id: 'sec-approvals', label: '7. Approvals Pending' },
+  { id: 'sec-tasks-activity', label: '8. Tasks & Activity' },
+  { id: 'sec-procurement', label: '9. Procurement Intel' },
+  { id: 'sec-period-stats', label: '10. Period Statistics & Snapshot' },
 ];
 
 export const Dashboard: React.FC = () => {
@@ -174,60 +176,70 @@ export const Dashboard: React.FC = () => {
         <CommercialPositionSection data={dashboardData} />
       </SectionWrapper>
 
-      {/* SECTION 4: Client Billing */}
+      {/* SECTION 4: Operations Overview Analytics */}
+      <SectionWrapper
+        id="sec-operations-analytics"
+        title="4. Operations Overview Analytics"
+        description="Monthly Financial Performance (Billing vs Payments Received) and Budget vs Actual Expenditure."
+        badge="Operations Analytics"
+      >
+        <OperationsOverviewAnalyticsSection data={dashboardData} />
+      </SectionWrapper>
+
+      {/* SECTION 5: Client Billing */}
       <SectionWrapper
         id="sec-client-billing"
-        title="4. Client Billing & Receivables"
+        title="5. Client Billing & Receivables"
         description="Client RA billing series, bank receipts, and receivable aging schedule."
         badge="Client Billing"
       >
         <BillingReceivablesSection data={dashboardData} />
       </SectionWrapper>
 
-      {/* SECTION 5: Vendor Bills & Finance */}
+      {/* SECTION 6: Vendor Bills & Finance */}
       <SectionWrapper
         id="sec-vendor-bills"
-        title="5. Vendor Bills, Finance & Cash Flow"
+        title="6. Vendor Bills, Finance & Cash Flow"
         description="Operating cash flow trends, AP liabilities aging, and subcontractor WIP certifications."
         badge="Finance & Treasury"
       >
         <FinanceCashFlowSection data={dashboardData} />
       </SectionWrapper>
 
-      {/* SECTION 6: Approvals Pending */}
+      {/* SECTION 7: Approvals Pending */}
       <SectionWrapper
         id="sec-approvals"
-        title="6. Approvals Pending & System Alerts"
+        title="7. Approvals Pending & System Alerts"
         description="Action queues for indents, POs, AP invoices, SC bills, and RA bills."
         badge={`${dashboardData.approvalsQueue.totalPending} Pending Approvals`}
       >
         <ApprovalsAlertsSection data={dashboardData} />
       </SectionWrapper>
 
-      {/* SECTION 7: Tasks & Activity */}
+      {/* SECTION 8: Tasks & Activity */}
       <SectionWrapper
         id="sec-tasks-activity"
-        title="7. Tasks & System Activity"
+        title="8. Tasks & System Activity"
         description="Assigned action items and real-time operational event notifications."
         badge="Workflow Tasks"
       >
         <TasksNotificationsSection data={dashboardData} />
       </SectionWrapper>
 
-      {/* SECTION 8: Procurement Intel */}
+      {/* SECTION 9: Procurement Intel */}
       <SectionWrapper
         id="sec-procurement"
-        title="8. Procurement Intelligence"
+        title="9. Procurement Intelligence"
         description="7-Stage procurement funnel, PO spend trends, top vendor outlays, and delivery tracker."
         badge="Procurement"
       >
         <ProcurementIntelligenceSection data={dashboardData} />
       </SectionWrapper>
 
-      {/* SECTION 9: Period Statistics & Snapshot */}
+      {/* SECTION 10: Period Statistics & Snapshot */}
       <SectionWrapper
         id="sec-period-stats"
-        title="9. Period Statistics, Inventory & Executive Snapshot"
+        title="10. Period Statistics, Inventory & Executive Snapshot"
         description="Stock movement, QC inspection yield, low-stock watchlist, health matrix, and audit log."
         badge="Period Stats"
       >

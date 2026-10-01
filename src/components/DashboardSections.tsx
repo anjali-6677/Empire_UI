@@ -15,6 +15,8 @@ import {
   ComposedChart,
   LineChart,
   Line,
+  AreaChart,
+  Area,
 } from 'recharts';
 import {
   ChevronDown,
@@ -304,15 +306,15 @@ const CustomPortfolioTooltip = ({ active, payload }: any) => {
         </div>
         <div className="space-y-1 pt-1 font-mono text-[11px]">
           <div className="flex justify-between items-center text-blue-400">
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block"/> Approved Budget:</span>
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Approved Budget:</span>
             <span className="font-bold">{safeFormatCurrency(item.approvedBudget)}</span>
           </div>
           <div className="flex justify-between items-center text-rose-400">
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block"/> Actual Outlay:</span>
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> Actual Outlay:</span>
             <span className="font-bold">{safeFormatCurrency(item.actualCost)}</span>
           </div>
           <div className="flex justify-between items-center text-emerald-400">
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"/> Client Billing:</span>
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Client Billing:</span>
             <span className="font-bold">{safeFormatCurrency(item.clientBilled)}</span>
           </div>
         </div>
@@ -494,7 +496,7 @@ export const ProjectPerformanceGanttSection: React.FC<{ data: ExecutiveDashboard
                 const startMonthIdx = idx % 3; // 0=May, 1=Jun, 2=Jul
                 const duration = Math.min(5, 2 + (idx % 3)); // 2-4 months duration
                 const offsetCols = startMonthIdx;
-                
+
                 return (
                   <div key={m.id} className="grid grid-cols-12 gap-1 p-2.5 items-center hover:bg-gray-50/80 transition-colors">
                     {/* Column 1: Package Name & Phase */}
@@ -515,7 +517,7 @@ export const ProjectPerformanceGanttSection: React.FC<{ data: ExecutiveDashboard
 
                     {/* Column 3: Visual Timeline Bar spanning months */}
                     <div className="col-span-6 grid grid-cols-6 items-center h-7 relative px-1 bg-gray-50/60 rounded">
-                      <div 
+                      <div
                         className="h-5 rounded-full relative overflow-hidden flex items-center justify-between px-2 text-[9px] font-bold text-white shadow-xs transition-all duration-300"
                         style={{
                           gridColumnStart: offsetCols + 1,
@@ -524,7 +526,7 @@ export const ProjectPerformanceGanttSection: React.FC<{ data: ExecutiveDashboard
                         }}
                       >
                         {/* Progress overlay */}
-                        <div 
+                        <div
                           className="absolute left-0 top-0 bottom-0 bg-black/20 rounded-full"
                           style={{ width: `${m.progress}%` }}
                         />
@@ -536,13 +538,12 @@ export const ProjectPerformanceGanttSection: React.FC<{ data: ExecutiveDashboard
                     {/* Column 4: Status Badge */}
                     <div className="col-span-1 text-right">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                          m.status === 'Completed'
+                        className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase ${m.status === 'Completed'
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             : m.status === 'In Progress'
-                            ? 'bg-brand-50 text-brand-700 border border-brand-200'
-                            : 'bg-gray-100 text-gray-600 border border-gray-200'
-                        }`}
+                              ? 'bg-brand-50 text-brand-700 border border-brand-200'
+                              : 'bg-gray-100 text-gray-600 border border-gray-200'
+                          }`}
                       >
                         {m.status}
                       </span>
@@ -559,11 +560,79 @@ export const ProjectPerformanceGanttSection: React.FC<{ data: ExecutiveDashboard
 };
 
 // ============================================================================
+// Helper Tooltips for Commercial Flow & Trade Category
+// ============================================================================
+const CustomCommercialFlowTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-gray-900/95 backdrop-blur-sm text-white p-4 rounded-xl shadow-xl border border-gray-700 text-xs font-sans space-y-2 min-w-[240px]">
+        <div className="font-extrabold text-amber-300 text-sm border-b border-gray-700 pb-1.5 flex items-center justify-between">
+          <span>Month: {label}</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase bg-amber-950 text-amber-300 border border-amber-800">
+            Flow Analysis
+          </span>
+        </div>
+        <div className="space-y-1.5 font-mono text-[11.5px]">
+          {payload.map((entry: any, idx: number) => (
+            <div key={`flow-item-${idx}`} className="flex justify-between items-center" style={{ color: entry.color }}>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: entry.color }} />
+                {entry.name}:
+              </span>
+              <span className="font-bold text-white">₹{entry.value} L</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomTradeCategoryTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const item = payload[0].payload;
+    return (
+      <div className="bg-gray-900/95 backdrop-blur-sm text-white p-4 rounded-xl shadow-xl border border-gray-700 text-xs font-sans space-y-2 min-w-[240px]">
+        <div className="font-extrabold text-amber-300 text-sm border-b border-gray-700 pb-1.5">
+          {item.category}
+        </div>
+        <div className="space-y-1.5 font-mono text-[11.5px]">
+          <div className="flex justify-between items-center text-amber-300">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#b79b68] inline-block"/> Approved Budget:</span>
+            <span className="font-bold">₹{item.budget?.toFixed(2)} L</span>
+          </div>
+          <div className="flex justify-between items-center text-slate-300">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#64748b] inline-block"/> Committed Cost:</span>
+            <span className="font-bold">₹{item.committed?.toFixed(2)} L</span>
+          </div>
+          <div className="flex justify-between items-center text-rose-400">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] inline-block"/> Actual Cost:</span>
+            <span className="font-bold">₹{item.actual?.toFixed(2)} L</span>
+          </div>
+          <div className="border-t border-gray-800 pt-1.5 space-y-1 text-[10.5px]">
+            <div className="flex justify-between items-center text-gray-300">
+              <span>Committed Utilization:</span>
+              <span className="font-bold text-slate-200">{item.committedUtilizationPct?.toFixed(1)}%</span>
+            </div>
+            <div className="flex justify-between items-center text-rose-300">
+              <span>Actual Utilization:</span>
+              <span className="font-bold">{item.actualUtilizationPct?.toFixed(1)}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+// ============================================================================
 // SECTION 3: Commercial Position
 // ============================================================================
 export const CommercialPositionSection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
   const tender = data.tenderSummary;
-  const waterfall = data.waterfallData;
+  const commercialFlow = data.commercialFinancialFlow;
   const budgetVsActual = data.budgetVsActualByCategory;
   const expComp = data.expenditureComposition;
   const profitTrend = data.profitTrendMonthly;
@@ -672,61 +741,151 @@ export const CommercialPositionSection: React.FC<{ data: ExecutiveDashboardData 
 
       {/* ROW 3: 50% / 50% Split (Financial Waterfall + Budget Baseline vs Actual) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Waterfall Chart: Financial Margin Waterfall */}
-        <div className="p-5 border border-gray-200 rounded-xl bg-white space-y-2 shadow-xs">
-          <div className="flex items-center justify-between border-b pb-2">
+        {/* Commercial Financial Flow AreaChart */}
+        <div className="p-5 sm:p-6 border border-gray-200 rounded-xl bg-white space-y-3 shadow-xs h-[460px] flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b pb-3 shrink-0">
             <div>
               <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                <BarChart3 className="h-4 w-4 text-brand-600" /> Commercial Financial Waterfall
+                <TrendingUp className="h-4 w-4 text-brand-600" /> COMMERCIAL FINANCIAL FLOW
               </h4>
-              <p className="text-[10px] text-gray-400 font-medium">Contract Revenue &rarr; Direct Material & Subcontractor Deductions &rarr; Gross Profit.</p>
+              <p className="text-[10.5px] text-gray-400 font-medium">Contract value, material outlay, subcontractor cost, and projected profit trend.</p>
             </div>
-            <span className="text-[9.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-              Margin Waterfall
+            <span className="text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md shrink-0">
+              Flow Analysis
             </span>
           </div>
-          <div className="h-[300px] w-full pt-1">
+
+          <div className="h-[340px] w-full pt-2 grow">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={waterfall} margin={{ top: 10, right: 15, left: 10, bottom: 25 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis dataKey="stage" tick={{ fontSize: 9.5, fill: '#374151', fontWeight: 600 }} angle={-10} textAnchor="end" />
-                <YAxis tick={{ fontSize: 9.5, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
-                <Tooltip formatter={(v: number) => [safeFormatCurrency(Math.abs(v)), 'Stage Value']} contentStyle={{ fontSize: '11.5px', borderRadius: '6px' }} />
-                <Bar dataKey="value" name="Stage Amount" radius={[3, 3, 0, 0]}>
-                  {waterfall.map((entry, index) => (
-                    <Cell key={`wf-cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
+              <AreaChart data={commercialFlow} margin={{ top: 20, right: 25, left: 15, bottom: 25 }}>
+                <defs>
+                  <linearGradient id="colorContract" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#B79B68" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#B79B68" stopOpacity={0.01} />
+                  </linearGradient>
+                  <linearGradient id="colorMaterial" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.01} />
+                  </linearGradient>
+                  <linearGradient id="colorSubcontractor" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0.01} />
+                  </linearGradient>
+                  <linearGradient id="colorOverheads" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#64748B" stopOpacity={0.20} />
+                    <stop offset="95%" stopColor="#64748B" stopOpacity={0.01} />
+                  </linearGradient>
+                  <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#EF4444" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#EF4444" stopOpacity={0.01} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" tick={{ fontSize: 10.5, fill: '#334155', fontWeight: 600 }} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `₹${v}L`} domain={[0, 'auto']} />
+                <Tooltip content={<CustomCommercialFlowTooltip />} />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Area
+                  type="monotone"
+                  dataKey="contractValue"
+                  name="Contract Value"
+                  stroke="#B79B68"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#colorContract)"
+                  dot={{ r: 3, fill: '#B79B68' }}
+                  activeDot={{ r: 6, stroke: '#FFFFFF', strokeWidth: 2 }}
+                  isAnimationActive={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="materialCost"
+                  name="Material Cost"
+                  stroke="#3B82F6"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#colorMaterial)"
+                  dot={{ r: 3, fill: '#3B82F6' }}
+                  activeDot={{ r: 6, stroke: '#FFFFFF', strokeWidth: 2 }}
+                  isAnimationActive={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="subcontractorWip"
+                  name="Subcontractor WIP"
+                  stroke="#10B981"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#colorSubcontractor)"
+                  dot={{ r: 3, fill: '#10B981' }}
+                  activeDot={{ r: 6, stroke: '#FFFFFF', strokeWidth: 2 }}
+                  isAnimationActive={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="siteOverheads"
+                  name="Site Overheads"
+                  stroke="#64748B"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorOverheads)"
+                  dot={{ r: 3, fill: '#64748B' }}
+                  activeDot={{ r: 5, stroke: '#FFFFFF', strokeWidth: 2 }}
+                  isAnimationActive={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="projectedGrossProfit"
+                  name="Projected Gross Profit"
+                  stroke="#EF4444"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#colorProfit)"
+                  dot={{ r: 3, fill: '#EF4444' }}
+                  activeDot={{ r: 6, stroke: '#FFFFFF', strokeWidth: 2 }}
+                  isAnimationActive={false}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Budget vs Actual Grouped Bar Chart by Category */}
-        <div className="p-5 border border-gray-200 rounded-xl bg-white space-y-2 shadow-xs">
-          <div className="flex items-center justify-between border-b pb-2">
+        {/* Trade Category Chart: Dual Axis Combo Chart */}
+        <div className="p-5 sm:p-6 border border-gray-200 rounded-xl bg-white space-y-3 shadow-xs h-[460px] flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b pb-3 shrink-0">
             <div>
-              <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider">
-                Budget Baseline vs Actual Outlay by Trade Category
+              <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                <BarChart3 className="h-4 w-4 text-brand-600" /> BUDGET, COMMITMENT & ACTUAL UTILIZATION BY TRADE
               </h4>
-              <p className="text-[10px] text-gray-400 font-medium">Variance tracking across major work trades.</p>
+              <p className="text-[10.5px] text-gray-400 font-medium">Approved Baseline vs PO Commitments (Left ₹L) & Actual Utilization % (Right %)</p>
             </div>
-            <span className="text-[9.5px] font-bold text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+            <span className="text-[9.5px] font-bold text-blue-800 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md shrink-0">
               Trade Breakdown
             </span>
           </div>
-          <div className="h-[300px] w-full pt-1">
+
+          <div className="h-[340px] w-full pt-2 grow">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={budgetVsActual} margin={{ top: 10, right: 15, left: 10, bottom: 25 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis dataKey="category" tick={{ fontSize: 9.5, fill: '#374151', fontWeight: 600 }} angle={-15} textAnchor="end" />
-                <YAxis tick={{ fontSize: 9.5, fill: '#6b7280' }} tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} />
-                <Tooltip formatter={(v: number) => [safeFormatCurrency(v), '']} contentStyle={{ fontSize: '11.5px', borderRadius: '6px' }} />
-                <Legend wrapperStyle={{ fontSize: '10.5px' }} />
-                <Bar dataKey="budget" name="Approved Budget" fill="#3b82f6" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="committed" name="Committed Cost" fill="#f59e0b" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="actual" name="Actual Cost" fill="#ef4444" radius={[3, 3, 0, 0]} />
-              </BarChart>
+              <ComposedChart data={budgetVsActual} margin={{ top: 25, right: 25, left: 15, bottom: 35 }} barGap={4} barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="shortCategory" tick={{ fontSize: 10, fill: '#334155', fontWeight: 700 }} angle={-15} textAnchor="end" />
+                <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `₹${v}L`} domain={[0, 'auto']} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#ef4444' }} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
+                <Tooltip content={<CustomTradeCategoryTooltip />} />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Bar yAxisId="left" dataKey="budget" name="Approved Budget" fill="#b79b68" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                <Bar yAxisId="left" dataKey="committed" name="Committed Cost" fill="#64748b" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="actualUtilizationPct"
+                  name="Actual Utilization %"
+                  stroke="#ef4444"
+                  strokeWidth={2.5}
+                  dot={{ r: 5, fill: '#ef4444', stroke: '#ffffff', strokeWidth: 2 }}
+                  isAnimationActive={false}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -1328,13 +1487,12 @@ export const ApprovalsAlertsSection: React.FC<{ data: ExecutiveDashboardData }> 
             >
               <div className="flex items-start gap-2.5">
                 <span
-                  className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 mt-0.5 ${
-                    alt.type === 'critical'
+                  className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 mt-0.5 ${alt.type === 'critical'
                       ? 'bg-rose-100 text-rose-800 border border-rose-300'
                       : alt.type === 'warning'
-                      ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                      : 'bg-blue-100 text-blue-800 border border-blue-300'
-                  }`}
+                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                        : 'bg-blue-100 text-blue-800 border border-blue-300'
+                    }`}
                 >
                   {alt.type}
                 </span>
@@ -1355,6 +1513,9 @@ export const ApprovalsAlertsSection: React.FC<{ data: ExecutiveDashboardData }> 
 // ============================================================================
 // SECTION 9: Tasks & Notifications
 // ============================================================================
+// ============================================================================
+// SECTION 9: Tasks & Notifications
+// ============================================================================
 export const TasksNotificationsSection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
   const navigate = useNavigate();
   const tasks = data.tasksList;
@@ -1363,11 +1524,11 @@ export const TasksNotificationsSection: React.FC<{ data: ExecutiveDashboardData 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 font-sans">
       {/* My Tasks Panel */}
-      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3 flex flex-col justify-between">
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3 flex flex-col justify-between shadow-xs">
         <div>
           <div className="flex items-center justify-between border-b pb-2">
             <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-              <CheckSquare className="h-4 w-4 text-blue-600" /> My Tasks & Action Items
+              <CheckSquare className="h-4 w-4 text-blue-600" /> My Tasks & Action Items ({tasks.length})
             </h4>
             <button
               onClick={() => navigate('/overview/my-tasks')}
@@ -1377,39 +1538,59 @@ export const TasksNotificationsSection: React.FC<{ data: ExecutiveDashboardData 
             </button>
           </div>
 
-          <div className="space-y-2 mt-3">
-            {tasks.length === 0 ? (
-              <p className="text-[11px] text-gray-400 text-center py-6 italic">No tasks assigned.</p>
-            ) : (
-              tasks.map((task) => (
+          <div className="space-y-2 mt-3 max-h-[440px] overflow-y-auto pr-1">
+            {tasks.map((task) => {
+              const priorityBg =
+                task.priority === 'Critical'
+                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                  : task.priority === 'High'
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    : 'bg-blue-50 text-blue-700 border-blue-200';
+
+              const statusBg =
+                task.status === 'Completed'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : task.status === 'Overdue'
+                    ? 'bg-rose-100 text-rose-800 font-bold'
+                    : task.status === 'In Progress'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-amber-100 text-amber-800';
+
+              return (
                 <div
                   key={task.id}
                   onClick={() => navigate('/overview/my-tasks')}
-                  className="p-2.5 border border-gray-200 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 cursor-pointer space-y-1 transition-colors text-xs"
+                  className="p-2.5 border border-gray-200 rounded-lg bg-gray-50/50 hover:bg-gray-100/60 cursor-pointer space-y-1.5 transition-colors text-xs"
                 >
-                  <div className="flex items-center justify-between font-bold text-gray-900">
-                    <span className="truncate">{task.subject}</span>
-                    <span className="text-[9px] px-1.5 py-0.25 rounded font-mono bg-blue-50 text-blue-700 border border-blue-200">
-                      Due {task.dueDate}
+                  <div className="flex items-start justify-between gap-2 font-bold text-gray-900">
+                    <span className="truncate leading-tight">{task.subject}</span>
+                    <span className={`text-[9px] px-1.5 py-0.25 rounded border font-semibold shrink-0 ${priorityBg}`}>
+                      {task.priority}
                     </span>
                   </div>
-                  <div className="flex justify-between text-[10px] text-gray-500">
-                    <span>Project: {task.relatedSite}</span>
-                    <span>Assigned By: {task.assignedBy}</span>
+                  <div className="flex items-center justify-between text-[10px] text-gray-500">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="px-1.5 py-0.2 bg-gray-100 border border-gray-200 rounded text-gray-600 font-semibold">{task.module || 'ERP'}</span>
+                      <span className="truncate text-gray-600">{task.relatedSite}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 font-mono">
+                      <span className={`px-1.5 py-0.2 rounded text-[8.5px] uppercase ${statusBg}`}>{task.status}</span>
+                      <span className="text-gray-400">Due {task.dueDate}</span>
+                    </div>
                   </div>
                 </div>
-              ))
-            )}
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Notifications Feed */}
-      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3 flex flex-col justify-between">
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3 flex flex-col justify-between shadow-xs">
         <div>
           <div className="flex items-center justify-between border-b pb-2">
             <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Bell className="h-4 w-4 text-brand-600" /> Notifications Feed
+              <Bell className="h-4 w-4 text-brand-600" /> Notifications Feed ({notifs.length})
             </h4>
             <button
               onClick={() => navigate('/overview/notifications')}
@@ -1419,24 +1600,36 @@ export const TasksNotificationsSection: React.FC<{ data: ExecutiveDashboardData 
             </button>
           </div>
 
-          <div className="space-y-2 mt-3">
-            {notifs.length === 0 ? (
-              <p className="text-[11px] text-gray-400 text-center py-6 italic">No recent notifications.</p>
-            ) : (
-              notifs.map((n) => (
+          <div className="space-y-2 mt-3 max-h-[440px] overflow-y-auto pr-1">
+            {notifs.map((n) => {
+              const sevBadge =
+                n.severity === 'critical'
+                  ? 'bg-rose-100 text-rose-800 border-rose-300'
+                  : n.severity === 'warning'
+                    ? 'bg-amber-100 text-amber-800 border-amber-300'
+                    : n.severity === 'success'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : 'bg-blue-100 text-blue-800 border-blue-300';
+
+              return (
                 <div
                   key={n.id}
                   onClick={() => navigate('/overview/notifications')}
-                  className="p-2.5 border border-gray-200 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 cursor-pointer flex items-start justify-between gap-2 text-xs"
+                  className="p-2.5 border border-gray-200 rounded-lg bg-gray-50/50 hover:bg-gray-100/60 cursor-pointer flex items-start justify-between gap-2.5 text-xs transition-colors"
                 >
-                  <div>
-                    <h5 className="font-bold text-gray-900">{n.title}</h5>
-                    <p className="text-[10px] text-gray-500 font-medium truncate max-w-[280px]">{n.message}</p>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[8.5px] font-bold uppercase px-1.5 py-0.25 rounded border shrink-0 ${sevBadge}`}>
+                        {n.severity || 'info'}
+                      </span>
+                      <h5 className="font-bold text-gray-900 truncate">{n.title}</h5>
+                    </div>
+                    <p className="text-[10.5px] text-gray-600 font-medium leading-normal pl-0.5">{n.message}</p>
                   </div>
-                  <span className="text-[9px] text-gray-400 font-mono shrink-0">{n.alertDate}</span>
+                  <span className="text-[9.5px] text-gray-400 font-mono shrink-0 whitespace-nowrap mt-0.5">{n.alertDate}</span>
                 </div>
-              ))
-            )}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1455,7 +1648,7 @@ export const ManagementSnapshotActivitySection: React.FC<{ data: ExecutiveDashbo
   return (
     <div className="space-y-5 font-sans">
       {/* Executive Management Snapshot Card */}
-      <div className="p-5 border border-brand-200 rounded-xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white space-y-4">
+      <div className="p-5 border border-brand-200 rounded-xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white space-y-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-700 pb-3">
           <div>
             <h3 className="font-extrabold text-base text-brand-400 uppercase tracking-wider">
@@ -1499,7 +1692,7 @@ export const ManagementSnapshotActivitySection: React.FC<{ data: ExecutiveDashbo
       </div>
 
       {/* Multi-Dimensional Project Health Matrix */}
-      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3">
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3 shadow-xs">
         <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
           <Activity className="h-4 w-4 text-brand-600" /> Multi-Dimensional Project Health Index & Status Matrix
         </h4>
@@ -1508,24 +1701,22 @@ export const ManagementSnapshotActivitySection: React.FC<{ data: ExecutiveDashbo
           {healthMatrix.map((item, idx) => (
             <div
               key={idx}
-              className={`p-3 border rounded-lg flex flex-col justify-between text-xs space-y-2 ${
-                item.status === 'Healthy'
+              className={`p-3 border rounded-lg flex flex-col justify-between text-xs space-y-2 ${item.status === 'Healthy'
                   ? 'bg-emerald-50/50 border-emerald-200'
                   : item.status === 'Critical'
-                  ? 'bg-rose-50/50 border-rose-200'
-                  : 'bg-amber-50/50 border-amber-200'
-              }`}
+                    ? 'bg-rose-50/50 border-rose-200'
+                    : 'bg-amber-50/50 border-amber-200'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-bold text-gray-900 text-[11px]">{item.dimension}</span>
                 <span
-                  className={`text-[9px] font-bold uppercase px-1.5 py-0.25 rounded ${
-                    item.status === 'Healthy'
+                  className={`text-[9px] font-bold uppercase px-1.5 py-0.25 rounded ${item.status === 'Healthy'
                       ? 'bg-emerald-100 text-emerald-800'
                       : item.status === 'Critical'
-                      ? 'bg-rose-100 text-rose-800'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}
+                        ? 'bg-rose-100 text-rose-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
                 >
                   {item.status}
                 </span>
@@ -1539,14 +1730,19 @@ export const ManagementSnapshotActivitySection: React.FC<{ data: ExecutiveDashbo
       </div>
 
       {/* System Activity Audit Log */}
-      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3">
-        <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
-          <Clock className="h-4 w-4 text-gray-600" /> Recent Chronological System Audit Log
-        </h4>
+      <div className="p-4 border border-gray-200 rounded-lg bg-white space-y-3 shadow-xs">
+        <div className="flex items-center justify-between border-b pb-2">
+          <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+            <Clock className="h-4 w-4 text-gray-600" /> Recent Chronological System Audit Log ({logs.length} Records)
+          </h4>
+          <span className="text-[9.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+            Audit Trail Active
+          </span>
+        </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[380px] overflow-y-auto">
           <table className="w-full text-left text-xs divide-y divide-gray-200">
-            <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500">
+            <thead className="bg-gray-50 text-[9.5px] uppercase font-bold text-gray-500 sticky top-0 z-10">
               <tr>
                 <th className="p-2.5">User</th>
                 <th className="p-2.5">Action Performed</th>
@@ -1557,12 +1753,19 @@ export const ManagementSnapshotActivitySection: React.FC<{ data: ExecutiveDashbo
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
               {logs.map((log) => (
-                <tr key={log.id} className="hover:bg-gray-50">
-                  <td className="p-2.5 font-bold text-gray-900">{log.user}</td>
+                <tr key={log.id} className="hover:bg-gray-50/80 transition-colors">
+                  <td className="p-2.5 font-bold text-gray-900 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-brand-100 text-brand-800 font-bold text-[10px] flex items-center justify-center shrink-0">
+                      {log.user.substring(0, 2).toUpperCase()}
+                    </span>
+                    <span className="truncate">{log.user}</span>
+                  </td>
                   <td className="p-2.5 font-semibold text-brand-800">{log.action}</td>
-                  <td className="p-2.5 text-gray-500 text-[10px]">{log.module}</td>
-                  <td className="p-2.5 font-mono text-[10px] text-gray-800">{log.reference}</td>
-                  <td className="p-2.5 text-right font-mono text-[10px] text-gray-500">{log.timestamp}</td>
+                  <td className="p-2.5 text-gray-500 text-[10px]">
+                    <span className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded font-semibold text-gray-600">{log.module}</span>
+                  </td>
+                  <td className="p-2.5 font-mono text-[10.5px] text-gray-900 font-bold">{log.reference}</td>
+                  <td className="p-2.5 text-right font-mono text-[10px] text-gray-500 whitespace-nowrap">{log.timestamp}</td>
                 </tr>
               ))}
             </tbody>
@@ -1571,4 +1774,139 @@ export const ManagementSnapshotActivitySection: React.FC<{ data: ExecutiveDashbo
       </div>
     </div>
   );
+};
+
+// ============================================================================
+// Operations Overview Analytics Section
+// ============================================================================
+export const OperationsOverviewAnalyticsSection: React.FC<{ data: ExecutiveDashboardData }> = ({ data }) => {
+  const monthlyData = data.operationsMonthlyPerformance || [
+    { month: 'Jan', billing: 120, paymentsReceived: 95 },
+    { month: 'Feb', billing: 175, paymentsReceived: 145 },
+    { month: 'Mar', billing: 245, paymentsReceived: 210 },
+    { month: 'Apr', billing: 210, paymentsReceived: 190 },
+    { month: 'May', billing: 285, paymentsReceived: 240 },
+    { month: 'Jun', billing: 340, paymentsReceived: 305 },
+    { month: 'Jul', billing: 295, paymentsReceived: 275 },
+  ];
+
+  const budgetVsExpData = data.operationsBudgetVsExpenditure || [
+    { month: 'Jan', approvedBudget: 170, actualCost: 135 },
+    { month: 'Feb', approvedBudget: 185, actualCost: 170 },
+    { month: 'Mar', approvedBudget: 205, actualCost: 235 },
+    { month: 'Apr', approvedBudget: 220, actualCost: 210 },
+    { month: 'May', approvedBudget: 250, actualCost: 250 },
+    { month: 'Jun', approvedBudget: 300, actualCost: 295 },
+    { month: 'Jul', approvedBudget: 320, actualCost: 318 },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Monthly Financial Performance */}
+        <div className="p-5 sm:p-6 border border-gray-200 rounded-xl bg-white space-y-3 shadow-xs h-[460px] flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b pb-3 shrink-0">
+            <div>
+              <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                <BarChart3 className="h-4 w-4 text-brand-600" /> Monthly Financial Performance
+              </h4>
+              <p className="text-[10.5px] text-gray-400 font-medium">Billing vs Collections Received Trend (Jan–Jul in ₹ Lakhs)</p>
+            </div>
+            <span className="text-[9.5px] font-bold text-blue-800 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md shrink-0">
+              Billing vs Collections
+            </span>
+          </div>
+
+          <div className="h-[340px] w-full pt-2 grow">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={monthlyData} margin={{ top: 20, right: 20, left: 10, bottom: 30 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#334155', fontWeight: 700 }} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `₹${v}L`} />
+                <Tooltip content={<CustomMonthlyPerfTooltip />} />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Line type="monotone" dataKey="billing" name="Billing (₹ Lakhs)" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4, fill: '#3b82f6' }} />
+                <Line type="monotone" dataKey="paymentsReceived" name="Payments Received (₹ Lakhs)" stroke="#20b486" strokeWidth={2.5} dot={{ r: 4, fill: '#20b486' }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Budget vs Actual Expenditure */}
+        <div className="p-5 sm:p-6 border border-gray-200 rounded-xl bg-white space-y-3 shadow-xs h-[460px] flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b pb-3 shrink-0">
+            <div>
+              <h4 className="font-extrabold text-xs text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                <BarChart3 className="h-4 w-4 text-brand-600" /> Budget vs Actual Expenditure
+              </h4>
+              <p className="text-[10.5px] text-gray-400 font-medium">Approved Baseline Budget vs Actual Expenditure Outlay (₹ Lakhs)</p>
+            </div>
+            <span className="text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md shrink-0">
+              Budget & Expenditure
+            </span>
+          </div>
+
+          <div className="h-[340px] w-full pt-2 grow">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={budgetVsExpData} margin={{ top: 20, right: 20, left: 10, bottom: 30 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#334155', fontWeight: 700 }} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `₹${v}L`} />
+                <Tooltip content={<CustomBudgetVsExpTooltip />} />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Bar dataKey="approvedBudget" name="Approved Budget (₹ Lakhs)" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
+                <Line type="monotone" dataKey="actualCost" name="Actual Cost (₹ Lakhs)" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 5, fill: '#ef4444', stroke: '#ffffff', strokeWidth: 2 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CustomMonthlyPerfTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-gray-900/95 backdrop-blur-sm text-white p-3.5 rounded-xl shadow-xl border border-gray-700 text-xs font-sans space-y-1.5 min-w-[200px]">
+        <div className="font-extrabold text-amber-300 text-xs border-b border-gray-700 pb-1">
+          Month: {label}
+        </div>
+        <div className="space-y-1 font-mono text-[11px] pt-0.5">
+          <div className="flex justify-between items-center text-blue-400">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#3b82f6] inline-block"/> Billing:</span>
+            <span className="font-bold">₹{payload[0]?.value} Lakhs</span>
+          </div>
+          <div className="flex justify-between items-center text-emerald-400">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#20b486] inline-block"/> Received:</span>
+            <span className="font-bold">₹{payload[1]?.value} Lakhs</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomBudgetVsExpTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-gray-900/95 backdrop-blur-sm text-white p-3.5 rounded-xl shadow-xl border border-gray-700 text-xs font-sans space-y-1.5 min-w-[200px]">
+        <div className="font-extrabold text-amber-300 text-xs border-b border-gray-700 pb-1">
+          Month: {label}
+        </div>
+        <div className="space-y-1 font-mono text-[11px] pt-0.5">
+          <div className="flex justify-between items-center text-slate-300">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#cbd5e1] inline-block"/> Approved Budget:</span>
+            <span className="font-bold">₹{payload[0]?.value} Lakhs</span>
+          </div>
+          <div className="flex justify-between items-center text-rose-400">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#ef4444] inline-block"/> Actual Cost:</span>
+            <span className="font-bold">₹{payload[1]?.value} Lakhs</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
 };

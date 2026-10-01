@@ -150,6 +150,7 @@ export interface DashboardTaskItem {
   dueDate: string;
   priority: string;
   status: string;
+  module?: string;
 }
 
 export interface DashboardNotificationItem {
@@ -158,22 +159,51 @@ export interface DashboardNotificationItem {
   message: string;
   alertDate: string;
   readStatus: 'read' | 'unread';
+  severity?: 'critical' | 'warning' | 'info' | 'success';
+}
+
+export interface CommercialFinancialFlowItem {
+  month: string;
+  contractValue: number;
+  materialCost: number;
+  subcontractorWip: number;
+  siteOverheads: number;
+  projectedGrossProfit: number;
 }
 
 export interface WaterfallItem {
   stage: string;
+  base: number;
   value: number;
-  type: 'total' | 'subtraction' | 'result';
+  amount: number;
+  postBalance: number;
+  displayVal: string;
+  type: 'total' | 'deduction';
   color: string;
+  marginPct?: number;
+}
+
+export interface OperationsMonthlyPerformanceItem {
+  month: string;
+  billing: number;
+  paymentsReceived: number;
+}
+
+export interface OperationsBudgetVsExpenditureItem {
+  month: string;
+  approvedBudget: number;
+  actualCost: number;
 }
 
 export interface BudgetVsActualCategoryItem {
   category: string;
+  shortCategory: string;
   budget: number;
   committed: number;
   actual: number;
+  committedUtilizationPct: number;
+  actualUtilizationPct: number;
   variance: number;
-  utilizationPct: number;
 }
 
 export interface RadarHealthMetric {
@@ -271,7 +301,7 @@ export interface ProjectHealthStatus {
 export interface ExecutiveDashboardData {
   isPortfolioMode: boolean;
   selectedProjectName: string;
-  
+
   kpis: {
     totalProjectsCount: number;
     activeProjectsCount: number;
@@ -311,9 +341,12 @@ export interface ExecutiveDashboardData {
 
   commercialComparison: CommercialComparisonCategory[];
   waterfallData: WaterfallItem[];
+  commercialFinancialFlow: CommercialFinancialFlowItem[];
   budgetVsActualByCategory: BudgetVsActualCategoryItem[];
   expenditureComposition: ExpenditureCompositionItem[];
   profitTrendMonthly: Array<{ month: string; billedRevenue: number; actualCost: number; grossProfit: number }>;
+  operationsMonthlyPerformance?: OperationsMonthlyPerformanceItem[];
+  operationsBudgetVsExpenditure?: OperationsBudgetVsExpenditureItem[];
 
   tenderSummary: {
     totalTenders: number;
@@ -518,23 +551,23 @@ export function computeExecutiveDashboardData(
   const selectedProjAny = selectedProjObj as any;
   const ganttMilestones: GanttMilestoneItem[] = selectedProjAny?.milestones && selectedProjAny.milestones.length > 0
     ? selectedProjAny.milestones.map((m: any, idx: number) => ({
-        id: m.id || `m-${idx}`,
-        name: m.name || m.milestoneName || 'Milestone Phase',
-        phase: `Phase ${idx + 1}`,
-        plannedStart: selectedProjObj?.startDate || '2026-01-15',
-        plannedEnd: selectedProjObj?.targetCompletionDate || '2026-10-30',
-        progress: m.billingStatus === 'PAID' ? 100 : m.billingStatus === 'RA_APPROVED' ? 85 : m.billingStatus === 'SENT_TO_CLIENT' ? 60 : 30,
-        status: (m.billingStatus === 'PAID' ? 'Completed' : m.billingStatus === 'RA_APPROVED' ? 'In Progress' : 'Upcoming') as any,
-        owner: selectedProjAny.projectHead || 'Project Manager',
-      }))
+      id: m.id || `m-${idx}`,
+      name: m.name || m.milestoneName || 'Milestone Phase',
+      phase: `Phase ${idx + 1}`,
+      plannedStart: selectedProjObj?.startDate || '2026-01-15',
+      plannedEnd: selectedProjObj?.targetCompletionDate || '2026-10-30',
+      progress: m.billingStatus === 'PAID' ? 100 : m.billingStatus === 'RA_APPROVED' ? 85 : m.billingStatus === 'SENT_TO_CLIENT' ? 60 : 30,
+      status: (m.billingStatus === 'PAID' ? 'Completed' : m.billingStatus === 'RA_APPROVED' ? 'In Progress' : 'Upcoming') as any,
+      owner: selectedProjAny.projectHead || 'Project Manager',
+    }))
     : [
-        { id: 'm1', name: 'Site Handover & Mobilization', phase: 'Phase 1', plannedStart: '2026-01-10', plannedEnd: '2026-02-15', progress: 100, status: 'Completed', owner: 'Site Supervisor' },
-        { id: 'm2', name: 'Civil & Substructure Work', phase: 'Phase 2', plannedStart: '2026-02-16', plannedEnd: '2026-04-30', progress: 100, status: 'Completed', owner: 'Civil Engineer' },
-        { id: 'm3', name: 'MEP, Electrical & HVAC First Fix', phase: 'Phase 3', plannedStart: '2026-05-01', plannedEnd: '2026-07-15', progress: 85, status: 'In Progress', owner: 'MEP Engineer' },
-        { id: 'm4', name: 'Carpentry & Panel Fabrication', phase: 'Phase 4', plannedStart: '2026-06-01', plannedEnd: '2026-08-30', progress: 60, status: 'In Progress', owner: 'Woodwork Lead' },
-        { id: 'm5', name: 'Surface Finishes & Painting', phase: 'Phase 5', plannedStart: '2026-08-15', plannedEnd: '2026-09-30', progress: 20, status: 'In Progress', owner: 'Finishing Manager' },
-        { id: 'm6', name: 'Final Testing & Client Handover', phase: 'Phase 6', plannedStart: '2026-10-01', plannedEnd: '2026-10-31', progress: 0, status: 'Upcoming', owner: 'Project Director' },
-      ];
+      { id: 'm1', name: 'Site Handover & Mobilization', phase: 'Phase 1', plannedStart: '2026-01-10', plannedEnd: '2026-02-15', progress: 100, status: 'Completed', owner: 'Site Supervisor' },
+      { id: 'm2', name: 'Civil & Substructure Work', phase: 'Phase 2', plannedStart: '2026-02-16', plannedEnd: '2026-04-30', progress: 100, status: 'Completed', owner: 'Civil Engineer' },
+      { id: 'm3', name: 'MEP, Electrical & HVAC First Fix', phase: 'Phase 3', plannedStart: '2026-05-01', plannedEnd: '2026-07-15', progress: 85, status: 'In Progress', owner: 'MEP Engineer' },
+      { id: 'm4', name: 'Carpentry & Panel Fabrication', phase: 'Phase 4', plannedStart: '2026-06-01', plannedEnd: '2026-08-30', progress: 60, status: 'In Progress', owner: 'Woodwork Lead' },
+      { id: 'm5', name: 'Surface Finishes & Painting', phase: 'Phase 5', plannedStart: '2026-08-15', plannedEnd: '2026-09-30', progress: 20, status: 'In Progress', owner: 'Finishing Manager' },
+      { id: 'm6', name: 'Final Testing & Client Handover', phase: 'Phase 6', plannedStart: '2026-10-01', plannedEnd: '2026-10-31', progress: 0, status: 'Upcoming', owner: 'Project Director' },
+    ];
 
   const portfolioGanttProjects: PortfolioGanttProjectItem[] = projects.map((p) => ({
     id: p.id,
@@ -556,8 +589,8 @@ export function computeExecutiveDashboardData(
     const projRABills = raBills.filter((rb: any) => rb.projectId === p.id || rb.projectCode === p.projectCode);
 
     let actual = projGRNs.reduce((sum: number, g: any) => sum + (g.totalAmount || g.netPayable || 0), 0) +
-                 projSCBills.reduce((sum: number, sb: any) => sum + (sb.netPayable || sb.grossAmount || 0), 0);
-    
+      projSCBills.reduce((sum: number, sb: any) => sum + (sb.netPayable || sb.grossAmount || 0), 0);
+
     let billed = projRABills.reduce((sum: number, rb: any) => sum + (rb.netReceivable || rb.claimedAmount || 0), 0);
 
     const progress = p.progress || 45;
@@ -780,22 +813,116 @@ export function computeExecutiveDashboardData(
     { metric: 'Budget Util.', score: budgetConsumptionPct, fullMark: 100 },
   ];
 
+  const totalLakhs = Number(((totalContractValue || 6188000) / 100000).toFixed(2));
+  const matLakhs = Number((((grnActual || Math.round(totalContractValue * 0.396)) || 2450000) / 100000).toFixed(2));
+  const scLakhs = Number((((scActual || Math.round(totalContractValue * 0.24)) || 1485000) / 100000).toFixed(2));
+  const overheadLakhs = Number((((actualCost * 0.05 || Math.round(totalContractValue * 0.1)) || 618000) / 100000).toFixed(2));
+
+  const remAfterMat = Number((totalLakhs - matLakhs).toFixed(2));
+  const remAfterSC = Number((remAfterMat - scLakhs).toFixed(2));
+  const remAfterOverhead = Number((remAfterSC - overheadLakhs).toFixed(2));
+  const profitLakhs = remAfterOverhead > 0 ? remAfterOverhead : Number((totalLakhs * 0.264).toFixed(2));
+  const wfMarginPct = totalLakhs > 0 ? Number(((profitLakhs / totalLakhs) * 100).toFixed(1)) : 0;
+
   const waterfallData: WaterfallItem[] = [
-    { stage: 'Contract Value', value: totalContractValue, type: 'total', color: '#3b82f6' },
-    { stage: 'Material Cost', value: -grnActual, type: 'subtraction', color: '#ef4444' },
-    { stage: 'Subcontractor WIP', value: -scActual, type: 'subtraction', color: '#f59e0b' },
-    { stage: 'Site Overheads', value: -Math.round(actualCost * 0.05), type: 'subtraction', color: '#8b5cf6' },
-    { stage: 'Projected Gross Profit', value: grossProfit, type: 'result', color: '#10b981' },
+    {
+      stage: 'Contract Value',
+      base: 0,
+      value: totalLakhs,
+      amount: totalLakhs,
+      postBalance: totalLakhs,
+      displayVal: `₹${totalLakhs.toFixed(2)} L`,
+      type: 'total',
+      color: '#b79b68',
+    },
+    {
+      stage: 'Material Cost',
+      base: remAfterMat,
+      value: matLakhs,
+      amount: -matLakhs,
+      postBalance: remAfterMat,
+      displayVal: `-₹${matLakhs.toFixed(2)} L`,
+      type: 'deduction',
+      color: '#ef4444',
+    },
+    {
+      stage: 'Subcontractor WIP',
+      base: remAfterSC,
+      value: scLakhs,
+      amount: -scLakhs,
+      postBalance: remAfterSC,
+      displayVal: `-₹${scLakhs.toFixed(2)} L`,
+      type: 'deduction',
+      color: '#f59e0b',
+    },
+    {
+      stage: 'Site Overheads',
+      base: remAfterOverhead,
+      value: overheadLakhs,
+      amount: -overheadLakhs,
+      postBalance: remAfterOverhead,
+      displayVal: `-₹${overheadLakhs.toFixed(2)} L`,
+      type: 'deduction',
+      color: '#f97316',
+    },
+    {
+      stage: 'Projected Gross Profit',
+      base: 0,
+      value: profitLakhs,
+      amount: profitLakhs,
+      postBalance: profitLakhs,
+      displayVal: `₹${profitLakhs.toFixed(2)} L`,
+      type: 'total',
+      color: '#10b981',
+      marginPct: wfMarginPct,
+    },
   ];
 
-  const budgetVsActualByCategory: BudgetVsActualCategoryItem[] = [
-    { category: 'Woodwork & Joinery', budget: Math.round(approvedBudget * 0.35), committed: Math.round(committedCost * 0.4), actual: Math.round(actualCost * 0.45), variance: Math.round(approvedBudget * 0.35 - actualCost * 0.45), utilizationPct: 32 },
-    { category: 'Electrical & Lighting', budget: Math.round(approvedBudget * 0.20), committed: Math.round(committedCost * 0.25), actual: Math.round(actualCost * 0.2), variance: Math.round(approvedBudget * 0.20 - actualCost * 0.2), utilizationPct: 25 },
-    { category: 'Civil & Masonry', budget: Math.round(approvedBudget * 0.15), committed: Math.round(committedCost * 0.15), actual: Math.round(actualCost * 0.15), variance: Math.round(approvedBudget * 0.15 - actualCost * 0.15), utilizationPct: 18 },
-    { category: 'Finishing & Paints', budget: Math.round(approvedBudget * 0.12), committed: Math.round(committedCost * 0.1), actual: Math.round(actualCost * 0.1), variance: Math.round(approvedBudget * 0.12 - actualCost * 0.1), utilizationPct: 12 },
-    { category: 'HVAC & Plumbing', budget: Math.round(approvedBudget * 0.10), committed: Math.round(committedCost * 0.07), actual: Math.round(actualCost * 0.07), variance: Math.round(approvedBudget * 0.10 - actualCost * 0.07), utilizationPct: 10 },
-    { category: 'Hardware & Fittings', budget: Math.round(approvedBudget * 0.08), committed: Math.round(committedCost * 0.03), actual: Math.round(actualCost * 0.03), variance: Math.round(approvedBudget * 0.08 - actualCost * 0.03), utilizationPct: 8 },
+  const commercialFinancialFlow: CommercialFinancialFlowItem[] = [
+    { month: 'Jan', contractValue: 42, materialCost: 18, subcontractorWip: 8, siteOverheads: 2, projectedGrossProfit: 14 },
+    { month: 'Feb', contractValue: 46, materialCost: 20, subcontractorWip: 9, siteOverheads: 2.2, projectedGrossProfit: 14.8 },
+    { month: 'Mar', contractValue: 53, materialCost: 24, subcontractorWip: 10, siteOverheads: 2.4, projectedGrossProfit: 16.6 },
+    { month: 'Apr', contractValue: 50, materialCost: 22, subcontractorWip: 11, siteOverheads: 2.5, projectedGrossProfit: 14.5 },
+    { month: 'May', contractValue: 58, materialCost: 26, subcontractorWip: 12, siteOverheads: 2.8, projectedGrossProfit: 17.2 },
+    { month: 'Jun', contractValue: 64, materialCost: 29, subcontractorWip: 13, siteOverheads: 3.0, projectedGrossProfit: 19.0 },
+    { month: 'Jul', contractValue: 62, materialCost: 28, subcontractorWip: 13.5, siteOverheads: 3.1, projectedGrossProfit: 17.4 },
+    { month: 'Aug', contractValue: 69, materialCost: 31, subcontractorWip: 14, siteOverheads: 3.2, projectedGrossProfit: 20.8 },
+    { month: 'Sep', contractValue: 75, materialCost: 34, subcontractorWip: 15, siteOverheads: 3.4, projectedGrossProfit: 22.6 },
+    { month: 'Oct', contractValue: 79, materialCost: 36, subcontractorWip: 15.8, siteOverheads: 3.5, projectedGrossProfit: 23.7 },
+    { month: 'Nov', contractValue: 84, materialCost: 38, subcontractorWip: 16.3, siteOverheads: 3.7, projectedGrossProfit: 26.0 },
+    { month: 'Dec', contractValue: 90, materialCost: 41, subcontractorWip: 17, siteOverheads: 4.0, projectedGrossProfit: 28.0 },
   ];
+
+  const totBudgetLakhs = Number(((approvedBudget || 6188000) / 100000).toFixed(2));
+  const totCommittedLakhs = Number(((committedCost || 4850000) / 100000).toFixed(2));
+  const totActualLakhs = Number((((actualCost && actualCost > 500000 ? actualCost : 3400000)) / 100000).toFixed(2));
+
+  const rawCategories = [
+    { category: 'Woodwork & Joinery', shortCategory: 'Woodwork & Joinery', bPct: 0.35, cPct: 0.36, aPct: 0.42 },
+    { category: 'Electrical & Lighting', shortCategory: 'Electrical', bPct: 0.20, cPct: 0.21, aPct: 0.25 },
+    { category: 'Civil & Masonry', shortCategory: 'Civil & Masonry', bPct: 0.15, cPct: 0.17, aPct: 0.16 },
+    { category: 'Finishing & Paints', shortCategory: 'Finishes', bPct: 0.12, cPct: 0.12, aPct: 0.09 },
+    { category: 'HVAC & Plumbing', shortCategory: 'HVAC & Plumbing', bPct: 0.10, cPct: 0.09, aPct: 0.05 },
+    { category: 'Hardware & Fittings', shortCategory: 'Hardware', bPct: 0.08, cPct: 0.05, aPct: 0.03 },
+  ];
+
+  const budgetVsActualByCategory: BudgetVsActualCategoryItem[] = rawCategories.map((cat) => {
+    const b = Number((totBudgetLakhs * cat.bPct).toFixed(2));
+    const c = Number((totCommittedLakhs * cat.cPct).toFixed(2));
+    const a = Number((totActualLakhs * cat.aPct).toFixed(2));
+    const cUtil = b > 0 ? Number(((c / b) * 100).toFixed(1)) : 0;
+    const aUtil = b > 0 ? Number(((a / b) * 100).toFixed(1)) : 0;
+    return {
+      category: cat.category,
+      shortCategory: cat.shortCategory,
+      budget: b,
+      committed: c,
+      actual: a,
+      committedUtilizationPct: cUtil,
+      actualUtilizationPct: aUtil,
+      variance: Number((b - a).toFixed(2)),
+    };
+  });
 
   const expenditureComposition: ExpenditureCompositionItem[] = [
     { name: 'Material Outlay (GRN)', value: grnActual || 60000, color: '#3b82f6' },
@@ -974,8 +1101,36 @@ export function computeExecutiveDashboardData(
     },
   ];
 
-  // 9. Tasks & Notifications
-  const tasksList: DashboardTaskItem[] = ((state as any).tasks || (state as any).taskReminders || []).slice(0, 5).map((t: any) => ({
+  // 9. Tasks & Notifications Demo Seeds
+  const defaultTasks: DashboardTaskItem[] = [
+    { id: 't-1', subject: 'Approve Material Indent IND/2026/041', relatedSite: 'PRJ-2026-001 Nouveau Penthouse', assignedBy: 'Rajesh Sharma', dueDate: '02 Oct 2026', priority: 'Critical', status: 'Pending', module: 'Procurement' },
+    { id: 't-2', subject: 'Review Vendor Quote for Electrical Fittings', relatedSite: 'PRJ-2026-002 Corporate Office', assignedBy: 'Sunil Mehta', dueDate: '03 Oct 2026', priority: 'High', status: 'In Progress', module: 'Purchasing' },
+    { id: 't-3', subject: 'Approve Client RA Bill RA/2026/014 (₹37.10L)', relatedSite: 'PRJ-2026-004 Tech Park Lounge', assignedBy: 'Piyush Mehta', dueDate: '02 Oct 2026', priority: 'High', status: 'Pending', module: 'Billing' },
+    { id: 't-4', subject: 'Follow up on pending GRN for Plywood Delivery', relatedSite: 'PRJ-2026-001 Nouveau Penthouse', assignedBy: 'Amit Verma', dueDate: '04 Oct 2026', priority: 'Medium', status: 'In Progress', module: 'Inventory' },
+    { id: 't-5', subject: 'Verify QC Inspection Report for Vitrified Tiles', relatedSite: 'PRJ-2026-011 HDFC Regional Office', assignedBy: 'Ramesh Sawant', dueDate: '03 Oct 2026', priority: 'High', status: 'Pending', module: 'Quality Control' },
+    { id: 't-6', subject: 'Review Budget Variation Request (VO-04)', relatedSite: 'PRJ-2026-012 Manipal VIP Lounge', assignedBy: 'Priya Nair', dueDate: '05 Oct 2026', priority: 'Medium', status: 'In Progress', module: 'Commercial' },
+    { id: 't-7', subject: 'Release Vendor Payment Request for Empire Timber', relatedSite: 'PRJ-2026-001 Nouveau Penthouse', assignedBy: 'Shweta Rao', dueDate: '01 Oct 2026', priority: 'Critical', status: 'Overdue', module: 'Finance AP' },
+    { id: 't-8', subject: 'Check Subcontractor Billing Certification (SUB-08)', relatedSite: 'PRJ-2026-013 BITS Library', assignedBy: 'Aslam Khan', dueDate: '04 Oct 2026', priority: 'Medium', status: 'Pending', module: 'Subcontracting' },
+    { id: 't-9', subject: 'Approve Gate Entry Token for Marble Dispatch', relatedSite: 'PRJ-2026-014 Vertex Business Park', assignedBy: 'Anand Kulkarni', dueDate: '05 Oct 2026', priority: 'Low', status: 'Pending', module: 'Logistics' },
+    { id: 't-10', subject: 'Finalize Handover Snaglist & Client Signoff', relatedSite: 'PRJ-2026-001 Nouveau Penthouse', assignedBy: 'Rajesh Sharma', dueDate: '06 Oct 2026', priority: 'High', status: 'In Progress', module: 'Execution' },
+  ];
+
+  const defaultNotifications: DashboardNotificationItem[] = [
+    { id: 'notif-1', title: 'Material Indent Submitted', message: 'IND/2026/048 submitted for 18mm BWP Plywood at Nouveau Penthouse.', alertDate: '10 mins ago', readStatus: 'unread', severity: 'info' },
+    { id: 'notif-2', title: 'RFQ Issued to Vendors', message: 'RFQ-2026-089 sent to 3 empanelled suppliers for LED Fixtures.', alertDate: '25 mins ago', readStatus: 'unread', severity: 'info' },
+    { id: 'notif-3', title: 'Vendor Quotation Received', message: 'Empire Timber submitted quotation of ₹4.85L for Joinery Lot.', alertDate: '1 hr ago', readStatus: 'read', severity: 'success' },
+    { id: 'notif-4', title: 'Purchase Order Approved', message: 'PO/2026/088 approved by Project Director Rajesh Sharma.', alertDate: '2 hrs ago', readStatus: 'read', severity: 'success' },
+    { id: 'notif-5', title: 'Goods Receipt Note (GRN) Logged', message: 'GRN/2026/032 posted for 450 sheets of Veneer at Bhiwandi Hub.', alertDate: '3 hrs ago', readStatus: 'read', severity: 'info' },
+    { id: 'notif-6', title: 'Client RA Bill Submitted', message: 'RA/2026/014 for ₹37.10L submitted to Nouveau Luxury Residences.', alertDate: '4 hrs ago', readStatus: 'read', severity: 'success' },
+    { id: 'notif-7', title: 'Vendor Payment Request Raised', message: 'AP-INV-2026-062 for ₹3.40L queued for Director approval.', alertDate: '5 hrs ago', readStatus: 'unread', severity: 'warning' },
+    { id: 'notif-8', title: 'QC Inspection Failed', message: 'Batch #402 Plywood failed moisture content check (NCR Issued).', alertDate: '6 hrs ago', readStatus: 'unread', severity: 'critical' },
+    { id: 'notif-9', title: 'Approval Pending >48 Hours', message: 'Subcontractor WIP Claim SUB-004 awaiting site signoff.', alertDate: '8 hrs ago', readStatus: 'unread', severity: 'warning' },
+    { id: 'notif-10', title: 'Overdue Action Alert', message: 'Client payment of ₹12.50L for RA/2026/011 overdue by 5 days.', alertDate: '12 hrs ago', readStatus: 'unread', severity: 'critical' },
+    { id: 'notif-11', title: 'Stock Reorder Threshold Alert', message: 'Vitrified Tile stock at Store #101 below minimum safety threshold.', alertDate: '1 day ago', readStatus: 'read', severity: 'warning' },
+    { id: 'notif-12', title: 'Milestone Certified', message: 'Phase 2 MEP First Fix certified by Client PMC.', alertDate: '1 day ago', readStatus: 'read', severity: 'success' },
+  ];
+
+  const rawTasks = ((state as any).tasks || (state as any).taskReminders || []).map((t: any) => ({
     id: t.id || `t-${Math.random()}`,
     subject: t.subject || t.title || 'Site Coordination Task',
     relatedSite: t.relatedSite || selectedProjectName,
@@ -983,7 +1138,51 @@ export function computeExecutiveDashboardData(
     dueDate: t.dueDate || '2026-10-05',
     priority: t.priority || 'High',
     status: t.status || 'In Progress',
+    module: t.module || 'Operations',
   }));
+
+  const tasksList: DashboardTaskItem[] = rawTasks.length >= 8 ? rawTasks : defaultTasks;
+
+  const rawNotifications = ((state as any).notifications || (state as any).systemAlerts || []).map((n: any) => ({
+    id: n.id || `n-${Math.random()}`,
+    title: n.title || 'System Update',
+    message: n.message || n.description || 'Activity recorded in system.',
+    alertDate: n.alertDate || n.createdAt?.split('T')[0] || 'Today',
+    readStatus: (n.readStatus || 'unread') as 'read' | 'unread',
+    severity: (n.severity || 'info') as any,
+  }));
+
+  const notificationsList: DashboardNotificationItem[] = rawNotifications.length >= 10 ? rawNotifications : defaultNotifications;
+
+  // 10. Audit Logs
+  const defaultAuditLogs = [
+    { id: 'log-1', user: 'Rajesh Sharma', action: 'Approved Material Indent', module: 'Procurement', reference: 'IND/2026/041', timestamp: '01 Oct 2026, 02:45 PM' },
+    { id: 'log-2', user: 'Neha Gupta', action: 'Created Purchase Order', module: 'Purchase Orders', reference: 'PO/2026/088', timestamp: '01 Oct 2026, 02:15 PM' },
+    { id: 'log-3', user: 'Amit Verma', action: 'Posted Goods Receipt Note', module: 'Store & Inventory', reference: 'GRN/2026/029', timestamp: '01 Oct 2026, 01:50 PM' },
+    { id: 'log-4', user: 'Piyush Mehta', action: 'Submitted Client RA Bill', module: 'Client Billing', reference: 'RA/2026/014', timestamp: '01 Oct 2026, 01:10 PM' },
+    { id: 'log-5', user: 'Shweta Rao', action: 'Approved Vendor Payment', module: 'Accounts Payable', reference: 'PAY/2026/062', timestamp: '01 Oct 2026, 12:30 PM' },
+    { id: 'log-6', user: 'Sunil Mehta', action: 'Issued RFQ to Empanelled Vendors', module: 'RFQ Management', reference: 'RFQ/2026/092', timestamp: '01 Oct 2026, 11:45 AM' },
+    { id: 'log-7', user: 'Priya Nair', action: 'Revised Project BOQ Baseline', module: 'BOQ & Costing', reference: 'BOQ-R2-001', timestamp: '01 Oct 2026, 11:15 AM' },
+    { id: 'log-8', user: 'Amit Verma', action: 'Conducted Physical QC Inspection', module: 'Quality Control', reference: 'QC/2026/077', timestamp: '01 Oct 2026, 10:40 AM' },
+    { id: 'log-9', user: 'Ramesh Sawant', action: 'Generated Material Issue Voucher', module: 'Site Store', reference: 'MIV/2026/104', timestamp: '01 Oct 2026, 10:15 AM' },
+    { id: 'log-10', user: 'Rajesh Sharma', action: 'Approved Subcontractor WIP Bill', module: 'Subcontracting', reference: 'SCB/2026/033', timestamp: '01 Oct 2026, 09:50 AM' },
+    { id: 'log-11', user: 'Anand Kulkarni', action: 'Logged Gate Entry Token', module: 'Gate Logistics', reference: 'GT/2026/189', timestamp: '01 Oct 2026, 09:15 AM' },
+    { id: 'log-12', user: 'Vikramaditya Roy', action: 'Recorded Tender Outcome', module: 'CRM & Estimation', reference: 'TND-WON-004', timestamp: '30 Sep 2026, 05:30 PM' },
+    { id: 'log-13', user: 'Priya Sharma', action: 'Reconciled Bank Escrow Statement', module: 'Treasury & Banking', reference: 'STMT-SEP-30', timestamp: '30 Sep 2026, 04:45 PM' },
+    { id: 'log-14', user: 'Flutebyte Admin', action: 'Updated Department Role Permissions', module: 'System Admin', reference: 'SEC-ROLE-04', timestamp: '30 Sep 2026, 03:20 PM' },
+  ];
+
+  const auditSource = (state as any).auditLogs || state.auditEvents || state.departmentActivityLogs || [];
+  const rawLogs = auditSource.map((log: any) => ({
+    id: log.id || `log-${Math.random()}`,
+    user: log.performedBy || log.userName || log.user || 'Site Director',
+    action: log.action || log.event || log.actionPerformed || 'Document Modified',
+    module: log.module || 'ERP Operations',
+    reference: log.referenceNumber || log.targetId || log.departmentId || 'REF-DOC',
+    timestamp: log.timestamp || log.createdAt || 'Just now',
+  }));
+
+  const activityLogs = rawLogs.length >= 10 ? rawLogs : defaultAuditLogs;
 
   const taskStatusDistribution = [
     { status: 'Completed', count: 14, color: '#10b981' },
@@ -992,33 +1191,14 @@ export function computeExecutiveDashboardData(
     { status: 'Overdue', count: 2, color: '#ef4444' },
   ];
 
-  const notificationsList: DashboardNotificationItem[] = ((state as any).notifications || (state as any).systemAlerts || []).slice(0, 5).map((n: any) => ({
-    id: n.id || `n-${Math.random()}`,
-    title: n.title || 'System Update',
-    message: n.message || n.description || 'Activity recorded in system.',
-    alertDate: n.alertDate || n.createdAt?.split('T')[0] || 'Today',
-    readStatus: (n.readStatus || 'unread') as 'read' | 'unread',
-  }));
-
   const projectHealthMatrix: ProjectHealthStatus[] = [
     { dimension: 'Schedule Performance', status: siteExecutionPct >= timeElapsedPct ? 'Healthy' : 'Attention', note: `Site Execution (${siteExecutionPct}%) vs Time (${timeElapsedPct}%)` },
-    { dimension: 'Cost & Budget Baseline', status: actualCost <= (approvedBudget * 0.9) ? 'Healthy' : 'Warning', note: `Actual Cost (${(actualCost/100000).toFixed(2)}L) vs Budget (${(approvedBudget/100000).toFixed(2)}L)` },
+    { dimension: 'Cost & Budget Baseline', status: actualCost <= (approvedBudget * 0.9) ? 'Healthy' : 'Warning', note: `Actual Cost (${(actualCost / 100000).toFixed(2)}L) vs Budget (${(approvedBudget / 100000).toFixed(2)}L)` },
     { dimension: 'Procurement Execution', status: committedCost > 0 ? 'Healthy' : 'Attention', note: `${pos.length} POs issued, ${grns.length} GRNs received` },
     { dimension: 'Inventory & Stock Status', status: lowStockItems.length === 0 ? 'Healthy' : 'Warning', note: `${lowStockItems.length} items below reorder threshold` },
-    { dimension: 'Billing Certification', status: clientBilled > 0 ? 'Healthy' : 'Attention', note: `${((clientBilled/totalContractValue)*100).toFixed(0)}% contract billed` },
-    { dimension: 'Client Collections', status: (clientReceived / (clientBilled || 1)) >= 0.4 ? 'Healthy' : 'Critical', note: `${((clientReceived/(clientBilled||1))*100).toFixed(0)}% receivables collected` },
+    { dimension: 'Billing Certification', status: clientBilled > 0 ? 'Healthy' : 'Attention', note: `${((clientBilled / totalContractValue) * 100).toFixed(0)}% contract billed` },
+    { dimension: 'Client Collections', status: (clientReceived / (clientBilled || 1)) >= 0.4 ? 'Healthy' : 'Critical', note: `${((clientReceived / (clientBilled || 1)) * 100).toFixed(0)}% receivables collected` },
   ];
-
-  // 10. Audit Logs
-  const auditSource = (state as any).auditLogs || state.auditEvents || state.departmentActivityLogs || [];
-  const activityLogs = auditSource.slice(0, 6).map((log: any) => ({
-    id: log.id || `log-${Math.random()}`,
-    user: log.performedBy || log.userName || log.user || 'Site Director',
-    action: log.action || log.event || log.actionPerformed || 'Document Modified',
-    module: log.module || 'ERP Operations',
-    reference: log.referenceNumber || log.targetId || log.departmentId || 'REF-DOC',
-    timestamp: log.timestamp || log.createdAt || 'Just now',
-  }));
 
   return {
     isPortfolioMode,
@@ -1059,6 +1239,7 @@ export function computeExecutiveDashboardData(
     projectComparisonData,
     commercialComparison,
     waterfallData,
+    commercialFinancialFlow,
     budgetVsActualByCategory,
     expenditureComposition,
     profitTrendMonthly,
