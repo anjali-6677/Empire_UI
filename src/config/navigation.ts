@@ -44,6 +44,9 @@ import {
   ArrowRightLeft,
   Compass,
   Landmark,
+  Clock,
+  History,
+  Contact,
 } from 'lucide-react';
 
 export const ROUTES = {
@@ -217,6 +220,9 @@ export const ROUTES = {
   ADMIN_ROLES: '/administration/roles',
   ADMIN_USERS: '/administration/users',
   ADMIN_USER_SALARY: '/administration/user-salary',
+  ADMIN_REPORTS_LOGIN_TIME: '/administration/admin-reports/user-login-time',
+  ADMIN_REPORTS_ACTIVITY_HISTORY: '/administration/admin-reports/user-activity-history',
+  ADMIN_REPORTS_CONTACTS: '/administration/admin-reports/contacts',
   ADMIN_PERMISSIONS: '/admin/permissions',
   ADMIN_APPROVAL_MATRIX: '/admin/approval-matrix',
   ADMIN_SETTINGS: '/admin/settings',
@@ -387,6 +393,16 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
           { id: 'adm-rol', label: 'Role', path: ROUTES.ADMIN_ROLES, icon: Shield, projectContext: 'none' },
           { id: 'adm-usr', label: 'Users', path: ROUTES.ADMIN_USERS, icon: User, projectContext: 'none' },
           { id: 'adm-sal', label: 'User Salary', path: ROUTES.ADMIN_USER_SALARY, icon: IndianRupee, projectContext: 'none' },
+        ],
+      },
+      {
+        id: 'admin-reports-subgroup',
+        label: 'Admin Reports',
+        icon: BarChart3,
+        children: [
+          { id: 'adm-rep-login', label: 'User Login Time', path: ROUTES.ADMIN_REPORTS_LOGIN_TIME, icon: Clock, projectContext: 'none' },
+          { id: 'adm-rep-act', label: 'User Activity History', path: ROUTES.ADMIN_REPORTS_ACTIVITY_HISTORY, icon: History, projectContext: 'none' },
+          { id: 'adm-rep-cnt', label: 'Contacts Dir', path: ROUTES.ADMIN_REPORTS_CONTACTS, icon: Contact, projectContext: 'none' },
         ],
       },
       { id: 'adm-prm', label: 'Permissions Matrix', path: ROUTES.ADMIN_PERMISSIONS, icon: ShieldCheck, projectContext: 'none' },

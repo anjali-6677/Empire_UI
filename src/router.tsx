@@ -102,6 +102,11 @@ import { FinanceReportsPage } from './pages/reports/FinanceReportsPage';
 import { InvoiceRegisterPage } from './pages/finance/InvoiceRegisterPage';
 import { CreateInvoicePage } from './pages/finance/CreateInvoicePage';
 
+// Admin Reports Module Pages
+import { UserLoginTimePage } from './pages/administration/admin-reports/UserLoginTimePage';
+import { UserActivityHistoryPage } from './pages/administration/admin-reports/UserActivityHistoryPage';
+import { ContactsDirectoryPage } from './pages/administration/admin-reports/ContactsDirectoryPage';
+
 export const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
@@ -273,6 +278,12 @@ export const AppRouter: React.FC = () => {
             <Route path="administration/roles" element={<RoleMasterPage />} />
             <Route path="administration/users" element={<UsersEmployeesPage />} />
             <Route path="administration/user-salary" element={<Navigate to="/finance/salary" replace />} />
+
+            {/* Admin Reports */}
+            <Route path="administration/admin-reports/user-login-time" element={<UserLoginTimePage />} />
+            <Route path="administration/admin-reports/user-activity-history" element={<UserActivityHistoryPage />} />
+            <Route path="administration/admin-reports/contacts" element={<ContactsDirectoryPage />} />
+            <Route path="reports/admin" element={<Navigate to="/administration/admin-reports/user-activity-history" replace />} />
 
             {/* Legacy Admin Redirect Aliases */}
             <Route path="admin/departments" element={<Navigate to="/administration/departments" replace />} />
