@@ -223,9 +223,9 @@ export const ROUTES = {
   ADMIN_REPORTS_LOGIN_TIME: '/administration/admin-reports/user-login-time',
   ADMIN_REPORTS_ACTIVITY_HISTORY: '/administration/admin-reports/user-activity-history',
   ADMIN_REPORTS_CONTACTS: '/administration/admin-reports/contacts',
-  ADMIN_PERMISSIONS: '/admin/permissions',
-  ADMIN_APPROVAL_MATRIX: '/admin/approval-matrix',
-  ADMIN_SETTINGS: '/admin/settings',
+  ADMIN_PERMISSIONS: '/administration/permissions',
+  ADMIN_APPROVAL_MATRIX: '/administration/approval-matrix',
+  ADMIN_SETTINGS: '/administration/system-settings',
 };
 
 export type ProjectContextRequirement = 'required' | 'optional' | 'none';
@@ -413,7 +413,7 @@ export const NAVIGATION_CONFIG: NavigationGroup[] = [
 ];
 
 export function getProjectContextForPath(pathname: string): ProjectContextRequirement {
-  if (pathname.startsWith('/crm/') || pathname.startsWith('/masters/') || pathname.startsWith('/admin/')) {
+  if (pathname.startsWith('/crm/') || pathname.startsWith('/masters/') || pathname.startsWith('/admin/') || pathname.startsWith('/administration/')) {
     return 'none';
   }
   if (pathname.startsWith('/projects/') || pathname.startsWith('/procurement/') || pathname.startsWith('/inventory/') || pathname.startsWith('/execution/') || pathname.startsWith('/finance/')) {

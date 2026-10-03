@@ -13,10 +13,17 @@ export interface RouteAuditResult {
 export function runRouteAudit(): RouteAuditResult {
   const navPaths: string[] = [];
   
-  NAVIGATION_CONFIG.forEach((group) => {
-    group.items.forEach((item) => {
+  const collectPaths = (items: any[]) => {
+    items.forEach((item) => {
       if (item.path) navPaths.push(item.path);
+      if (item.children && Array.isArray(item.children)) {
+        collectPaths(item.children);
+      }
     });
+  };
+
+  NAVIGATION_CONFIG.forEach((group) => {
+    collectPaths(group.items);
   });
 
   const schemaKeys = Object.keys(MODULE_SCHEMAS);

@@ -2112,5 +2112,89 @@ export const MODULE_SCHEMAS: Record<string, ModuleSchema> = {
       { id: 'arc-2', architectCode: 'ARC-002', firmName: 'Kapadia Associates Architects', principalArchitect: 'Kiran Kapadia', phone: '+91 98220 88990', email: 'kiran@kapadiaassociates.com', status: 'active' },
       { id: 'arc-3', architectCode: 'ARC-003', firmName: 'Inspace Interior Design Consultancy', principalArchitect: 'Meera Iyer', phone: '+91 98450 66778', email: 'meera@inspacedesign.in', status: 'active' }
     ]
+  },
+
+  // ==========================================
+  // 8. ADMINISTRATION MODULE SCHEMAS
+  // ==========================================
+  [ROUTES.ADMIN_DEPARTMENTS]: {
+    id: 'admin-departments',
+    route: ROUTES.ADMIN_DEPARTMENTS,
+    pageType: 'custom',
+    title: 'Department Master',
+    description: 'Manage organizational departments, department heads, and operational scopes.',
+    breadcrumbs: ['Administration', 'Access Control', 'Department'],
+    summaryCards: [
+      { id: '1', label: 'Total Departments', value: 8 },
+      { id: '2', label: 'Active', value: 8, color: 'text-emerald-600' }
+    ]
+  },
+  [ROUTES.ADMIN_DESIGNATIONS]: {
+    id: 'admin-designations',
+    route: ROUTES.ADMIN_DESIGNATIONS,
+    pageType: 'custom',
+    title: 'Designation Master',
+    description: 'Manage employee designations, reporting levels and project responsibility roles.',
+    breadcrumbs: ['Administration', 'Access Control', 'Designation'],
+    summaryCards: [
+      { id: '1', label: 'Total Designations', value: 10 },
+      { id: '2', label: 'Active Designations', value: 9, color: 'text-emerald-600' },
+      { id: '3', label: 'Project Head Roles', value: 2, color: 'text-amber-600' }
+    ],
+    columns: [
+      { key: 'code', label: 'Code', type: 'mono' },
+      { key: 'name', label: 'Designation Name', type: 'text' },
+      { key: 'department', label: 'Department', type: 'text' },
+      { key: 'isProjectHead', label: 'Project Head Role', type: 'badge' },
+      { key: 'status', label: 'Status', type: 'badge' }
+    ]
+  },
+  [ROUTES.ADMIN_ROLES]: {
+    id: 'admin-roles',
+    route: ROUTES.ADMIN_ROLES,
+    pageType: 'custom',
+    title: 'Role Master',
+    description: 'User roles, site approval limits, and permission groupings.',
+    breadcrumbs: ['Administration', 'Access Control', 'Role']
+  },
+  [ROUTES.ADMIN_USERS]: {
+    id: 'admin-users',
+    route: ROUTES.ADMIN_USERS,
+    pageType: 'custom',
+    title: 'Users Directory',
+    description: 'System user accounts, credentials, and role assignments.',
+    breadcrumbs: ['Administration', 'Access Control', 'Users']
+  },
+  [ROUTES.ADMIN_USER_SALARY]: {
+    id: 'admin-user-salary',
+    route: ROUTES.ADMIN_USER_SALARY,
+    pageType: 'custom',
+    title: 'User Salary & Compensation',
+    description: 'Staff compensation, site cost allocations, and payroll records.',
+    breadcrumbs: ['Administration', 'Access Control', 'User Salary']
+  },
+  [ROUTES.ADMIN_PERMISSIONS]: {
+    id: 'admin-permissions',
+    route: ROUTES.ADMIN_PERMISSIONS,
+    pageType: 'custom',
+    title: 'Permissions Matrix',
+    description: 'Configure role-based access to ERP modules, pages, and actions.',
+    breadcrumbs: ['Administration', 'Permissions Matrix']
+  },
+  [ROUTES.ADMIN_APPROVAL_MATRIX]: {
+    id: 'admin-approval-matrix',
+    route: ROUTES.ADMIN_APPROVAL_MATRIX,
+    pageType: 'custom',
+    title: 'Approval Matrix Rules',
+    description: 'Configure multi-level signoff rules, monetary thresholds, and approval workflows.',
+    breadcrumbs: ['Administration', 'Approval Matrix Rules']
+  },
+  [ROUTES.ADMIN_SETTINGS]: {
+    id: 'admin-settings',
+    route: ROUTES.ADMIN_SETTINGS,
+    pageType: 'custom',
+    title: 'System Settings',
+    description: 'Global system configuration, security parameters, and preferences.',
+    breadcrumbs: ['Administration', 'System Settings']
   }
 };

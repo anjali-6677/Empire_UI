@@ -30,6 +30,9 @@ import StockLocationsPage from './pages/masters/StockLocationsPage';
 import UsersEmployeesPage from './pages/masters/UsersEmployeesPage';
 import DepartmentMasterPage from './pages/admin/DepartmentMasterPage';
 import { RoleMasterPage } from './pages/admin/RoleMasterPage';
+import { DesignationMasterPage } from './pages/admin/DesignationMasterPage';
+import { ApprovalMatrixRulesPage } from './pages/admin/ApprovalMatrixRulesPage';
+import { PermissionsMatrixPage } from './pages/admin/PermissionsMatrixPage';
 
 import BrandMasterPage from './pages/masters/BrandMasterPage';
 import MeasurementConversionMasterPage from './pages/masters/MeasurementConversionMasterPage';
@@ -274,10 +277,13 @@ export const AppRouter: React.FC = () => {
 
             {/* Access Control & Administration */}
             <Route path="administration/departments" element={<DepartmentMasterPage />} />
-            <Route path="administration/designations" element={<ModulePageRenderer />} />
+            <Route path="administration/designations" element={<DesignationMasterPage />} />
             <Route path="administration/roles" element={<RoleMasterPage />} />
             <Route path="administration/users" element={<UsersEmployeesPage />} />
             <Route path="administration/user-salary" element={<Navigate to="/finance/salary" replace />} />
+            <Route path="administration/permissions" element={<PermissionsMatrixPage />} />
+            <Route path="administration/approval-matrix" element={<ApprovalMatrixRulesPage />} />
+            <Route path="administration/system-settings" element={<ModulePageRenderer />} />
 
             {/* Admin Reports */}
             <Route path="administration/admin-reports/user-login-time" element={<UserLoginTimePage />} />
@@ -290,6 +296,8 @@ export const AppRouter: React.FC = () => {
             <Route path="admin/designations" element={<Navigate to="/administration/designations" replace />} />
             <Route path="admin/roles" element={<Navigate to="/administration/roles" replace />} />
             <Route path="admin/users" element={<Navigate to="/administration/users" replace />} />
+            <Route path="admin/permissions" element={<Navigate to="/administration/permissions" replace />} />
+            <Route path="admin/approval-matrix" element={<Navigate to="/administration/approval-matrix" replace />} />
 
             {/* Reports Module Central & Category Routes */}
             <Route path="reports" element={<ReportsCenterPage />} />
