@@ -204,17 +204,17 @@ export const VendorQuotationCards: React.FC<VendorQuotationCardsProps> = ({
 
                       {/* Basic Amount */}
                       <td className="py-3 px-3 text-right font-mono text-slate-700 align-middle">
-                        ₹{formatIndianCurrency(basicCost)}
+                        {formatIndianCurrency(basicCost)}
                       </td>
 
                       {/* Freight / Taxes */}
                       <td className="py-3 px-3 text-right font-mono text-slate-500 align-middle">
-                        ₹{formatIndianCurrency(freightTax)}
+                        {formatIndianCurrency(freightTax)}
                       </td>
 
                       {/* Total Landed Amount */}
                       <td className="py-3 px-4 text-right font-mono font-black text-slate-900 text-sm align-middle">
-                        ₹{formatIndianCurrency(landedCost)}
+                        {formatIndianCurrency(landedCost)}
                       </td>
 
                       {/* Payment Terms */}

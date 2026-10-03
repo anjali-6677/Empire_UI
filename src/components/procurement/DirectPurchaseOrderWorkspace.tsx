@@ -844,7 +844,7 @@ export const DirectPurchaseOrderWorkspace: React.FC<DirectPurchaseOrderWorkspace
                       </td>
 
                       <td className="py-3 px-3 text-right font-mono font-black text-slate-900 align-middle">
-                        ₹{formatIndianCurrency(lineTotal)}
+                        {formatIndianCurrency(lineTotal)}
                       </td>
 
                       <td className="py-3 px-3 text-center align-middle">
@@ -1054,25 +1054,25 @@ export const DirectPurchaseOrderWorkspace: React.FC<DirectPurchaseOrderWorkspace
               <div>
                 <span className="text-slate-400 block">Material Basic:</span>
                 <span className="font-mono font-bold text-white text-sm">
-                  ₹{formatIndianCurrency(lineTotals.materialBasic)}
+                  {formatIndianCurrency(lineTotals.materialBasic)}
                 </span>
               </div>
               <div>
                 <span className="text-slate-400 block">Material Tax:</span>
                 <span className="font-mono font-bold text-slate-300 text-sm">
-                  ₹{formatIndianCurrency(lineTotals.materialTax)}
+                  {formatIndianCurrency(lineTotals.materialTax)}
                 </span>
               </div>
               <div>
                 <span className="text-slate-400 block">Freight & Charges:</span>
                 <span className="font-mono font-bold text-slate-300 text-sm">
-                  ₹{formatIndianCurrency(lineTotals.chargesSubtotal)}
+                  {formatIndianCurrency(lineTotals.chargesSubtotal)}
                 </span>
               </div>
               <div>
                 <span className="text-slate-400 block">Total GST:</span>
                 <span className="font-mono font-bold text-slate-300 text-sm">
-                  ₹{formatIndianCurrency(lineTotals.totalTax)}
+                  {formatIndianCurrency(lineTotals.totalTax)}
                 </span>
               </div>
             </div>
@@ -1084,7 +1084,7 @@ export const DirectPurchaseOrderWorkspace: React.FC<DirectPurchaseOrderWorkspace
                 Grand Total Purchase Order Amount
               </span>
               <div className="font-mono font-black text-2xl text-[#AB9570]">
-                ₹{formatIndianCurrency(lineTotals.grandTotal)}
+                {formatIndianCurrency(lineTotals.grandTotal)}
               </div>
             </div>
             {lineTotals.roundOff !== 0 && (

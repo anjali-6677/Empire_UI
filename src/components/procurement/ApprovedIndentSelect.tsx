@@ -116,7 +116,7 @@ export const ApprovedIndentSelect: React.FC<ApprovedIndentSelectProps> = ({
             </span>
             <div>
               <span className="font-bold text-slate-900">{selectedProject?.projectName || selectedIndent.projectName || 'Project'}</span>
-              <span className="ml-2 text-slate-500 font-medium">({(selectedIndent.items || []).length} items • ₹{formatIndianCurrency(selectedIndent.estimatedTotalValue || selectedIndent.approvedValue || 0)})</span>
+              <span className="ml-2 text-slate-500 font-medium">({(selectedIndent.items || []).length} items • {formatIndianCurrency(selectedIndent.estimatedTotalValue || selectedIndent.approvedValue || 0)})</span>
             </div>
           </div>
         ) : (
@@ -187,7 +187,7 @@ export const ApprovedIndentSelect: React.FC<ApprovedIndentSelectProps> = ({
                           Client: <span className="text-slate-800 font-semibold">{proj?.clientName || ind.clientName || 'N/A'}</span> • Category: <span className="text-slate-800 font-semibold">{ind.category || ind.materialCategory || 'General'}</span>
                         </div>
                         <div className="text-slate-500 font-medium text-[11px]">
-                          Items: <span className="text-slate-800 font-bold">{(ind.items || []).length}</span> • Value: <span className="text-emerald-700 font-bold">₹{formatIndianCurrency(totalVal)}</span> • Required By: <span className="text-slate-700 font-mono">{ind.requiredByDate || 'ASAP'}</span>
+                          Items: <span className="text-slate-800 font-bold">{(ind.items || []).length}</span> • Value: <span className="text-emerald-700 font-bold">{formatIndianCurrency(totalVal)}</span> • Required By: <span className="text-slate-700 font-mono">{ind.requiredByDate || 'ASAP'}</span>
                         </div>
                       </div>
                       {isSelected && <Check className="h-5 w-5 text-[#AB9570] shrink-0 mt-1" />}

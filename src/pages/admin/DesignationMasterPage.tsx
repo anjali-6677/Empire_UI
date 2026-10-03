@@ -7,17 +7,14 @@ import {
   UserCheck,
   CheckCircle,
   XCircle,
-  Building2,
   Search,
   MoreVertical,
   Eye,
   Edit2,
-  History,
   Slash,
   AlertCircle,
   Filter,
   Briefcase,
-  ShieldAlert,
 } from 'lucide-react';
 
 export interface DesignationRecord {
@@ -366,7 +363,7 @@ export const DesignationMasterPage: React.FC = () => {
           value={projectHeadCount}
           subtitle="Key Signoff Authority"
           icon={Briefcase}
-          variant="amber"
+          variant="gold"
         />
         <SummaryKpiCard
           title="INACTIVE"

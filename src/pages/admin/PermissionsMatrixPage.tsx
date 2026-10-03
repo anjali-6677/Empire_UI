@@ -9,7 +9,6 @@ import {
   Square,
   Search,
   CheckCircle,
-  Filter,
   Users,
 } from 'lucide-react';
 
@@ -213,7 +212,7 @@ export const PermissionsMatrixPage: React.FC = () => {
     setRolePermissionsState((prev) => {
       const roleMap = { ...prev[selectedRoleId] };
       const row = { ...roleMap[featureId] };
-      row[field] = !row[field] as any;
+      (row as any)[field] = !row[field];
       roleMap[featureId] = row;
       return { ...prev, [selectedRoleId]: roleMap };
     });

@@ -81,7 +81,7 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
                 const basic = q.basicTotal ?? q.basicAmount ?? (landed > 0 ? landed - ((q.freightAmount || 0) + (q.taxAmount || 0)) : 0);
                 return (
                   <td key={q.id} className="py-2.5 px-4 font-mono">
-                    ₹{formatIndianCurrency(basic)}
+                    {formatIndianCurrency(basic)}
                   </td>
                 );
               })}
@@ -92,7 +92,7 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
               <td className="py-2.5 px-4 font-bold text-slate-400">Discount Amount</td>
               {quotations.map((q) => (
                 <td key={q.id} className="py-2.5 px-4 font-mono text-emerald-400">
-                  - ₹{formatIndianCurrency(q.discountAmount || 0)}
+                  - {formatIndianCurrency(q.discountAmount || 0)}
                 </td>
               ))}
             </tr>
@@ -102,7 +102,7 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
               <td className="py-2.5 px-4 font-bold text-slate-400">Freight & Logistics</td>
               {quotations.map((q) => (
                 <td key={q.id} className="py-2.5 px-4 font-mono">
-                  ₹{formatIndianCurrency(q.freightAmount || 0)}
+                  {formatIndianCurrency(q.freightAmount || 0)}
                 </td>
               ))}
             </tr>
@@ -112,7 +112,7 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
               <td className="py-2.5 px-4 font-bold text-slate-400">GST / Tax Amount</td>
               {quotations.map((q) => (
                 <td key={q.id} className="py-2.5 px-4 font-mono">
-                  ₹{formatIndianCurrency(q.taxAmount || (getQuotationLandedAmount(q) * 0.18))}
+                  {formatIndianCurrency(q.taxAmount || (getQuotationLandedAmount(q) * 0.18))}
                 </td>
               ))}
             </tr>
@@ -126,7 +126,7 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
 
                 return (
                   <td key={q.id} className={`py-3 px-4 font-mono text-sm font-black text-white ${isSelected ? 'text-[#AB9570]' : ''}`}>
-                    ₹{formatIndianCurrency(cost)}
+                    {formatIndianCurrency(cost)}
                   </td>
                 );
               })}
@@ -145,7 +145,7 @@ export const VendorComparisonPanel: React.FC<VendorComparisonPanelProps> = ({
                     {diff === 0 ? (
                       <span className="text-emerald-400 font-bold">L1 Baseline (+0%)</span>
                     ) : (
-                      <span className="text-amber-400 font-semibold">+₹{formatIndianCurrency(diff)} (+{pct}%)</span>
+                      <span className="text-amber-400 font-semibold">+{formatIndianCurrency(diff)} (+{pct}%)</span>
                     )}
                   </td>
                 );

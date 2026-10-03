@@ -114,7 +114,7 @@ export const PurchaseOrderItemsTable: React.FC<PurchaseOrderItemsTableProps> = (
                       {/* Summary indicator */}
                       {lastPurchase && !isHistoryOpen && (
                         <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-500 font-mono">
-                          <span>Last: ₹{formatIndianCurrency(lastPurchase.basicRate)}</span>
+                          <span>Last: {formatIndianCurrency(lastPurchase.basicRate)}</span>
                           {diffAmount !== null && diffAmount !== 0 && (
                             <span
                               className={`flex items-center gap-0.5 font-bold ${
@@ -122,7 +122,7 @@ export const PurchaseOrderItemsTable: React.FC<PurchaseOrderItemsTableProps> = (
                               }`}
                             >
                               {diffAmount > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                              {diffAmount > 0 ? '+' : ''}₹{formatIndianCurrency(diffAmount)} ({diffPercent?.toFixed(1)}%)
+                              {diffAmount > 0 ? '+' : ''}{formatIndianCurrency(diffAmount)} ({diffPercent?.toFixed(1)}%)
                             </span>
                           )}
                         </div>
@@ -167,13 +167,13 @@ export const PurchaseOrderItemsTable: React.FC<PurchaseOrderItemsTableProps> = (
                           className="w-24 text-right font-mono font-bold py-1 px-2 bg-white border border-slate-300 rounded-lg text-xs focus:border-[#AB9570]"
                         />
                       ) : (
-                        <span className="font-bold text-slate-900">₹{formatIndianCurrency(item.unitRate)}</span>
+                        <span className="font-bold text-slate-900">{formatIndianCurrency(item.unitRate)}</span>
                       )}
                     </td>
 
                     <td className="py-3 px-4 text-right font-mono text-slate-500">{item.taxPercent}%</td>
                     <td className="py-3 px-4 text-right font-mono font-black text-slate-900">
-                      ₹{formatIndianCurrency(item.lineTotal)}
+                      {formatIndianCurrency(item.lineTotal)}
                     </td>
                   </tr>
 
@@ -218,8 +218,8 @@ export const PurchaseOrderItemsTable: React.FC<PurchaseOrderItemsTableProps> = (
                                       </td>
                                       <td className="py-1.5 px-2 text-slate-500 truncate max-w-xs">{rec.projectName || 'Central ERP Project'}</td>
                                       <td className="py-1.5 px-2 text-right font-mono">{rec.qty} {rec.unit}</td>
-                                      <td className="py-1.5 px-2 text-right font-mono font-bold text-slate-800">₹{formatIndianCurrency(rec.basicRate)}</td>
-                                      <td className="py-1.5 px-2 text-right font-mono font-bold text-emerald-700">₹{formatIndianCurrency(rec.landedRate)}</td>
+                                      <td className="py-1.5 px-2 text-right font-mono font-bold text-slate-800">{formatIndianCurrency(rec.basicRate)}</td>
+                                      <td className="py-1.5 px-2 text-right font-mono font-bold text-emerald-700">{formatIndianCurrency(rec.landedRate)}</td>
                                     </tr>
                                   ))}
                                 </tbody>

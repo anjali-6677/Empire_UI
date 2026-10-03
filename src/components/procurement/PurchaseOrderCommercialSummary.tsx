@@ -155,7 +155,7 @@ export const PurchaseOrderCommercialSummary: React.FC<PurchaseOrderCommercialSum
             <div className="space-y-2 text-xs">
               <div className="flex justify-between items-center text-slate-300">
                 <span>Items Subtotal:</span>
-                <span className="font-mono font-bold text-white">₹{formatIndianCurrency(subtotal)}</span>
+                <span className="font-mono font-bold text-white">{formatIndianCurrency(subtotal)}</span>
               </div>
 
               <div className="flex justify-between items-center text-slate-300">
@@ -184,7 +184,7 @@ export const PurchaseOrderCommercialSummary: React.FC<PurchaseOrderCommercialSum
 
               <div className="flex justify-between items-center text-slate-300">
                 <span>GST Tax (Estimated 18%):</span>
-                <span className="font-mono font-bold text-slate-200">₹{formatIndianCurrency(taxAmount)}</span>
+                <span className="font-mono font-bold text-slate-200">{formatIndianCurrency(taxAmount)}</span>
               </div>
             </div>
           </div>
@@ -192,7 +192,7 @@ export const PurchaseOrderCommercialSummary: React.FC<PurchaseOrderCommercialSum
           <div className="pt-3 border-t border-slate-800 space-y-1">
             <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Grand Total Purchase Order Amount</div>
             <div className="font-mono font-black text-2xl text-[#AB9570]">
-              ₹{formatIndianCurrency(grandTotal)}
+              {formatIndianCurrency(grandTotal)}
             </div>
           </div>
         </div>

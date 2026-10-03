@@ -248,7 +248,7 @@ export const CreatePurchaseOrderPage: React.FC = () => {
       action: targetStatus === 'issued' ? 'PO_ISSUED' : 'PO_CREATED',
       performedBy: 'Current User',
       newStatus: targetStatus,
-      details: `Direct Purchase Order ${poPayload.documentNumber} created for ${poPayload.vendorName}. Total: ₹${formatIndianCurrency(poPayload.grandTotal)}`,
+      details: `Direct Purchase Order ${poPayload.documentNumber} created for ${poPayload.vendorName}. Total: ${formatIndianCurrency(poPayload.grandTotal)}`,
     });
 
     setIsSubmitting(false);

@@ -4,7 +4,6 @@ import SummaryKpiCard from '../../components/common/SummaryKpiCard';
 import { RowActionMenu, RowActionMenuItem, RowActionMenuDivider } from '../../components/common/RowActionMenu';
 import {
   CheckCircle,
-  XCircle,
   Search,
   MoreVertical,
   Eye,
@@ -19,7 +18,6 @@ import {
   Trash2,
   ArrowRight,
   Shield,
-  IndianRupee,
 } from 'lucide-react';
 
 export interface ApprovalLevel {
@@ -439,7 +437,7 @@ export const ApprovalMatrixRulesPage: React.FC = () => {
           value={multiLevelRules}
           subtitle="Multi-tier Authorization"
           icon={FileCheck}
-          variant="amber"
+          variant="gold"
         />
         <SummaryKpiCard
           title="MODULES COVERED"
@@ -878,7 +876,7 @@ export const ApprovalMatrixRulesPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  {formData.levels.map((level, index) => (
+                  {formData.levels.map((level) => (
                     <div
                       key={level.id}
                       className="p-3 bg-white border border-[#D9DEE7] rounded-lg flex items-center justify-between gap-3 shadow-2xs"
